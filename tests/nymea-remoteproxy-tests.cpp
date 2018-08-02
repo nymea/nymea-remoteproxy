@@ -28,14 +28,12 @@ void RemoteProxyTests::restartEngine()
 void RemoteProxyTests::initTestCase()
 {
     qCDebug(dcApplication()) << "Init test case.";
-
     restartEngine();
 }
 
 void RemoteProxyTests::cleanupTestCase()
 {
     qCDebug(dcApplication()) << "Clean up test case.";
-
     cleanUpEngine();
 }
 
