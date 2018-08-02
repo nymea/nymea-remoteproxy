@@ -1,0 +1,6 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>test-certificate.crt</file>
+    <file>test-certificate.key</file>
+</qresource>
+</RCC>

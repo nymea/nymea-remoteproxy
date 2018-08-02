@@ -6,6 +6,8 @@
 #include <QHostAddress>
 #include <QSslConfiguration>
 
+class WebSocketServer;
+
 class Engine : public QObject
 {
     Q_OBJECT
@@ -19,22 +21,26 @@ public:
 
     bool running() const;
 
-    void setHost(const QHostAddress &hostAddress);
-    void setAuthenticationServerUrl(const QUrl &url);
-    void setPort(const quint16 &port);
+    void setWebSocketServerHostAddress(const QHostAddress &hostAddress);
+    void setWebSocketServerPort(const quint16 &port);
+
     void setSslConfiguration(const QSslConfiguration &configuration);
+    void setAuthenticationServerUrl(const QUrl &url);
 
 private:
     explicit Engine(QObject *parent = nullptr);
+    ~Engine();
     static Engine *s_instance;
 
     bool m_running = false;
 
-    quint16 m_port = 0;
-    QHostAddress m_hostAddress;
-    QSslConfiguration m_sslConfiguration;
+    quint16 m_webSocketServerPort = 1212;
+    QHostAddress m_webSocketServerHostAddress = QHostAddress::LocalHost;
 
+    QSslConfiguration m_sslConfiguration;
     QUrl m_authenticationServerUrl;
+
+    WebSocketServer *m_webSocketServer = nullptr;
 
     void setRunning(bool running);
 

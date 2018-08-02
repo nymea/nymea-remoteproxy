@@ -97,25 +97,28 @@ int main(int argc, char *argv[])
     // command line parser
     QCommandLineParser parser;
     parser.addHelpOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.\n\n"
                                              "Copyright %1 2018 Simon Stürz <simon.stuerz@guh.io>").arg(QChar(0xA9)));
 
     QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.", "logfile", "/var/log/nymea-remoteproxy.log");
     parser.addOption(logfileOption);
 
-    QCommandLineOption serverOption(QStringList() << "s" << "server", "The authentication server url.", "url", "http://localhost:8000");
+    QCommandLineOption serverOption(QStringList() << "s" << "server", "The server address this proxy will listen on. Default is 127.0.0.1", "hostaddress", "127.0.0.1");
     parser.addOption(serverOption);
 
-    QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port.", "port", "1212");
+    QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port. Default is 1212", "port", "1212");
     parser.addOption(portOption);
 
-    QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate.", "certificate");
+    QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate used for this proxy server.", "certificate");
     parser.addOption(certOption);
 
-    QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key (KEY).", "certificate-key");
+    QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key used for this proxy server.", "certificate-key");
     parser.addOption(certKeyOption);
 
-    QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print the whole traffic.");
+    QCommandLineOption authenticationUrlOption(QStringList() << "a" << "authentication-server", "The server url of the AWS authentication server.", "url", "https://127.0.0.1");
+    parser.addOption(authenticationUrlOption);
+
+    QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print more verbose.");
     parser.addOption(verboseOption);
 
     parser.process(application);
@@ -141,37 +144,24 @@ int main(int argc, char *argv[])
         s_loggingEnabled = true;
     }
 
-    qCDebug(dcApplication()) << "==============================================";
-    qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
-    qCDebug(dcApplication()) << "==============================================";
-
-    if (s_loggingEnabled)
-        qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
-
-    // Authentication server url
-    QUrl serverUrl("http://localhost:8000");
-    if (parser.isSet(serverOption))
-        serverUrl = QUrl(parser.value(serverOption));
-
-    if (!serverUrl.isValid()) {
-        qCCritical(dcApplication()) << "Invalid authentication server url:" << parser.value(serverOption);
+    // Proxy server host address
+    QHostAddress serverHostAddress = QHostAddress(parser.value(serverOption));
+    if (serverHostAddress.isNull()) {
+        qCCritical(dcApplication()) << "Invalid hostaddress for the proxy server:" << parser.value(serverOption);
         exit(-1);
     }
 
     // Port
-    uint port = 1212;
-    if (parser.isSet(portOption)) {
-        bool ok = false;
-        port = parser.value(portOption).toUInt(&ok);
-        if (!ok) {
-            qCCritical(dcApplication()) << "Invalud port value:" << parser.value(portOption);
-            exit(-1);
-        }
+    bool ok = false;
+    uint port = parser.value(portOption).toUInt(&ok);
+    if (!ok) {
+        qCCritical(dcApplication()) << "Invalid port value:" << parser.value(portOption);
+        exit(-1);
+    }
 
-        if (port > 65535) {
-            qCCritical(dcApplication()) << "Port value is out of range:" << parser.value(portOption);
-            exit(-1);
-        }
+    if (port > 65535) {
+        qCCritical(dcApplication()) << "Port value is out of range:" << parser.value(portOption);
+        exit(-1);
     }
 
     // SSL certificate
@@ -198,18 +188,40 @@ int main(int argc, char *argv[])
     if (parser.isSet(certKeyOption)) {
         QFile certKeyFile(parser.value(certKeyOption));
         if (!certKeyFile.open(QIODevice::ReadOnly)) {
-            qCCritical(dcApplication()) << "ERROR: Could not open certificate key file:" << parser.value(certKeyOption) << certKeyFile.errorString();
+            qCCritical(dcApplication()) << "Could not open certificate key file:" << parser.value(certKeyOption) << certKeyFile.errorString();
             exit(-1);
         }
+
         QSslKey sslKey(&certKeyFile, QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey);
         qCDebug(dcApplication()) << "Loaded successfully certificate key" << parser.value(certKeyOption);
         certKeyFile.close();
         sslConfiguration.setPrivateKey(sslKey);
     }
 
-    Engine::instance()->setAuthenticationServerUrl(serverUrl);
-    Engine::instance()->setPort(static_cast<quint16>(port));
+    if (sslConfiguration.isNull()) {
+        qCCritical(dcApplication()) << "No SSL configuration specified. The server does not suppoert insecure connections.";
+        exit(-1);
+    }
+
+    // Authentication server url
+    QUrl authenticationServerUrl(parser.value(authenticationUrlOption));
+    if (!authenticationServerUrl.isValid()) {
+        qCCritical(dcApplication()) << "Invalid authentication server url:" << parser.value(authenticationUrlOption);
+        exit(-1);
+    }
+
+    qCDebug(dcApplication()) << "==============================================";
+    qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
+    qCDebug(dcApplication()) << "==============================================";
+
+    if (s_loggingEnabled)
+        qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
+
+    // Configure and start the engines
+    Engine::instance()->setWebSocketServerHostAddress(serverHostAddress);
+    Engine::instance()->setWebSocketServerPort(static_cast<quint16>(port));
     Engine::instance()->setSslConfiguration(sslConfiguration);
+    Engine::instance()->setAuthenticationServerUrl(authenticationServerUrl);
     Engine::instance()->start();
 
     return application.exec();

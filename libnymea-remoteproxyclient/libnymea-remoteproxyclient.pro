@@ -1,24 +1,19 @@
 include(../nymea-remoteproxy.pri)
 
 TEMPLATE = lib
-TARGET = nymea-remoteproxy
+TARGET = nymea-remoteproxyclient
 
 HEADERS += \
-    engine.h \
-    loggingcategories.h \
-    transportinterface.h \
-    websocketserver.h
+    remoteproxyconnector.h
+
 
 SOURCES += \
-    engine.cpp \
-    loggingcategories.cpp \
-    transportinterface.cpp \
-    websocketserver.cpp
+    remoteproxyconnector.cpp
 
 
 # install header file with relative subdirectory
 for(header, HEADERS) {
-    path = /usr/include/nymea-remoteproxy/$${dirname(header)}
+    path = /usr/include/nymea-remoteproxyclient/$${dirname(header)}
     eval(headers_$${path}.files += $${header})
     eval(headers_$${path}.path = $${path})
     eval(INSTALLS *= headers_$${path})

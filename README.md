@@ -22,8 +22,8 @@ In the build directory you can find the resulting library and binary files.
 If you want to start the proxy server from the build directory, you need to export the library path before starting the application:
 
 
-    $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/libnymea-remoteproxy
-    $ ./server/nymea-remoteproxy
+    $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/libnymea-remoteproxy:$(pwd)/libnymea-remoteproxyclient
+    $ ./server/nymea-remoteproxy -c ../nymea-remoteproxy/tests/test-certificate.crt -k ../nymea-remoteproxy/tests/test-certificate.key
 
 
 # Install
@@ -46,24 +46,28 @@ In order to get information about the server you can start the command with the 
 
     $ nymea-remoteproxy --help
     
-    usage: nymea-remoteproxy [options]
+    Usage: nymea-remoteproxy [options]
     
-    The nymea remote proxy server.
+    The nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.
     
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
     
     Options:
       -h, --help                               Displays this help.
       -l, --logging <logfile>                  Write log file to the given logfile.
-      -s, --server <url>                       The authentication server url.
-      -p, --port <port>                        The proxy server port.
-      -c, --certificate <certificate>          The path to the SSL certificate.
+      -s, --server <hostaddress>               The server address this proxy will
+                                               listen on. Default is 127.0.0.1
+      -p, --port <port>                        The proxy server port. Default is
+                                               1212
+      -c, --certificate <certificate>          The path to the SSL certificate used
+                                               for this proxy server.
       -k, --certificate-key <certificate-key>  The path to the SSL certificate key
-                                               (KEY).
-      -v, --verbose                            Print the whole traffic.
-
-
-
+                                               used for this proxy server.
+      -a, --authentication-server <url>        The server url of the AWS
+                                               authentication server.
+      -v, --verbose                            Print more verbose.
+    
+    
 # Server API
 
 Once a client connects to the proxy server, he must authenticate him self by passing the token received from the nymea-cloud mqtt connection request.

@@ -1,4 +1,4 @@
-QT *= network
+QT *= network websockets
 QT -= gui
 
 CONFIG += c++11 console
