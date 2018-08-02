@@ -6,7 +6,7 @@
 #include <QHostAddress>
 #include <QSslConfiguration>
 
-class WebSocketServer;
+#include "websocketserver.h"
 
 class Engine : public QObject
 {
@@ -26,6 +26,8 @@ public:
 
     void setSslConfiguration(const QSslConfiguration &configuration);
     void setAuthenticationServerUrl(const QUrl &url);
+
+    WebSocketServer *webSocketServer() const;
 
 private:
     explicit Engine(QObject *parent = nullptr);

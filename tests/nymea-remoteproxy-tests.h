@@ -1,6 +1,7 @@
 #ifndef NYMEA_REMOTEPROXY_TESTS_H
 #define NYMEA_REMOTEPROXY_TESTS_H
 
+#include <QUrl>
 #include <QtTest>
 #include <QSslKey>
 #include <QObject>
@@ -31,6 +32,7 @@ protected slots:
 private slots:
     void startStopServer();
     void authenticate();
+    void sslConfigurations();
 
 };
 

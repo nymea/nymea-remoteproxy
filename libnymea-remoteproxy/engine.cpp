@@ -1,5 +1,4 @@
 #include "engine.h"
-#include "websocketserver.h"
 #include "loggingcategories.h"
 
 Engine *Engine::s_instance = nullptr;
@@ -34,22 +33,20 @@ void Engine::start()
     if (!m_running)
         qCDebug(dcEngine()) << "Start server engine";
 
-    QUrl proxyUrl;
-    proxyUrl.setScheme("wss");
-    proxyUrl.setHost(m_webSocketServerHostAddress.toString());
-    proxyUrl.setPort(m_webSocketServerPort);
-
-    qCDebug(dcApplication()) << "Authentication server"  << m_authenticationServerUrl.toString();
-    qCDebug(dcApplication()) << "Start server"  << proxyUrl.toString();
-
+    qCDebug(dcEngine()) << "Starting websocket server";
     // Init WebSocketServer
     if (m_webSocketServer) {
         delete m_webSocketServer;
         m_webSocketServer = nullptr;
     }
 
+    QUrl websocketServerUrl;
+    websocketServerUrl.setScheme("wss");
+    websocketServerUrl.setHost(m_webSocketServerHostAddress.toString());
+    websocketServerUrl.setPort(m_webSocketServerPort);
+
     m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
-    m_webSocketServer->setServerUrl(proxyUrl);
+    m_webSocketServer->setServerUrl(websocketServerUrl);
     m_webSocketServer->startServer();
 
     setRunning(true);
@@ -104,6 +101,11 @@ void Engine::setAuthenticationServerUrl(const QUrl &url)
 {
     qCDebug(dcEngine()) << "Authentication server URL" << url.toString();
     m_authenticationServerUrl = url;
+}
+
+WebSocketServer *Engine::webSocketServer() const
+{
+    return m_webSocketServer;
 }
 
 Engine::Engine(QObject *parent) :

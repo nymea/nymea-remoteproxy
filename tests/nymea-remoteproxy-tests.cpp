@@ -2,6 +2,9 @@
 
 #include "engine.h"
 #include "loggingcategories.h"
+#include "remoteproxyconnector.h"
+
+#include <QSignalSpy>
 
 RemoteProxyTests::RemoteProxyTests(QObject *parent) :
     QObject(parent)
@@ -54,7 +57,6 @@ void RemoteProxyTests::startServer()
     Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
     Engine::instance()->start();
-
 }
 
 void RemoteProxyTests::initTestCase()
@@ -71,9 +73,19 @@ void RemoteProxyTests::cleanupTestCase()
 
 void RemoteProxyTests::authenticate()
 {
+    // Start the server
     startServer();
 
+    // Connect to the server
+    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
+    connector->setIgnoreSslErrors(QList<QSslError>() << QSslError::HostNameMismatch << QSslError::SelfSignedCertificate);
 
+    QSignalSpy spy(connector, &RemoteProxyConnector::error);
+    connector->connectServer(RemoteProxyConnector::ConnectionTypeWebSocket, QHostAddress::LocalHost, m_port);
+    //spy.wait();
+
+    connector->disconnectServer();
+    connector->deleteLater();
     Engine::instance()->stop();
 }
 
@@ -92,6 +104,24 @@ void RemoteProxyTests::startStopServer()
 
     Engine::instance()->destroy();
     QVERIFY(!Engine::exists());
+}
+
+void RemoteProxyTests::sslConfigurations()
+{
+    // Start the server
+    startServer();
+
+    // Connect to the server
+    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
+    connector->setIgnoreSslErrors(QList<QSslError>() << QSslError::HostNameMismatch << QSslError::SelfSignedCertificate);
+
+    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
+    connector->connectServer(RemoteProxyConnector::ConnectionTypeWebSocket, QHostAddress::LocalHost, m_port);
+    spy.wait();
+
+    connector->disconnectServer();
+    connector->deleteLater();
+    Engine::instance()->stop();
 }
 
 QTEST_MAIN(RemoteProxyTests)

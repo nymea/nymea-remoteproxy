@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("Engine", true);
     s_loggingFilters.insert("JsonRpc", true);
     s_loggingFilters.insert("WebSocketServer", true);
+    s_loggingFilters.insert("WebSocketServerTraffic", false);
     s_loggingFilters.insert("Authenticator", true);
     s_loggingFilters.insert("ConnectionManager", true);
     s_loggingFilters.insert("Debug", false);
@@ -97,25 +98,31 @@ int main(int argc, char *argv[])
     // command line parser
     QCommandLineParser parser;
     parser.addHelpOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and "
+                                             "registered nymea deamons to establish a tunnel connection.\n\n"
                                              "Copyright %1 2018 Simon Stürz <simon.stuerz@guh.io>").arg(QChar(0xA9)));
 
-    QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.", "logfile", "/var/log/nymea-remoteproxy.log");
+    QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.",
+                                     "logfile", "/var/log/nymea-remoteproxy.log");
     parser.addOption(logfileOption);
 
-    QCommandLineOption serverOption(QStringList() << "s" << "server", "The server address this proxy will listen on. Default is 127.0.0.1", "hostaddress", "127.0.0.1");
+    QCommandLineOption serverOption(QStringList() << "s" << "server", "The server address this proxy will listen on. "
+                                                                      "Default is 127.0.0.1", "hostaddress", "127.0.0.1");
     parser.addOption(serverOption);
 
     QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port. Default is 1212", "port", "1212");
     parser.addOption(portOption);
 
-    QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate used for this proxy server.", "certificate");
+    QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate used for "
+                                                                        "this proxy server.", "certificate");
     parser.addOption(certOption);
 
-    QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key used for this proxy server.", "certificate-key");
+    QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key "
+                                                                                "used for this proxy server.", "certificate-key");
     parser.addOption(certKeyOption);
 
-    QCommandLineOption authenticationUrlOption(QStringList() << "a" << "authentication-server", "The server url of the AWS authentication server.", "url", "https://127.0.0.1");
+    QCommandLineOption authenticationUrlOption(QStringList() << "a" << "authentication-server",
+                                               "The server url of the AWS authentication server.", "url", "https://127.0.0.1");
     parser.addOption(authenticationUrlOption);
 
     QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print more verbose.");
@@ -123,8 +130,10 @@ int main(int argc, char *argv[])
 
     parser.process(application);
 
-    if (parser.isSet(verboseOption))
+    if (parser.isSet(verboseOption)) {
         s_loggingFilters["Debug"] = true;
+        s_loggingFilters["WebSocketServerTraffic"] = true;
+    }
 
     QLoggingCategory::installFilter(loggingCategoryFilter);
 

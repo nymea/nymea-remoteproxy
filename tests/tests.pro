@@ -5,8 +5,9 @@ QT += testlib
 
 TARGET = nymea-remoteproxy-tests
 
-INCLUDEPATH += ../libnymea-remoteproxy
-LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy
+INCLUDEPATH += ../libnymea-remoteproxy ../libnymea-remoteproxyclient
+LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy \
+        -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient \
 
 RESOURCES += certificate.qrc
 
