@@ -4,6 +4,7 @@
 #include "loggingcategories.h"
 #include "remoteproxyconnector.h"
 
+#include <QMetaType>
 #include <QSignalSpy>
 
 RemoteProxyTests::RemoteProxyTests(QObject *parent) :
@@ -26,6 +27,7 @@ RemoteProxyTests::RemoteProxyTests(QObject *parent) :
 
     QByteArray keyData = keyFile.readAll();
     //qDebug() << "Certificate key:" << endl << qUtf8Printable(keyData);
+    m_authenticator = new MockAuthenticator(this);
 
     m_sslConfiguration.setPrivateKey(QSslKey(keyData,  QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey));
     m_sslConfiguration.setLocalCertificate(QSslCertificate(certificateData, QSsl::Pem));
@@ -53,14 +55,29 @@ void RemoteProxyTests::startServer()
 {
     restartEngine();
 
+    Engine::instance()->setAuthenticator(m_authenticator);
     Engine::instance()->setWebSocketServerPort(m_port);
     Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
     Engine::instance()->start();
+
+    QVERIFY(Engine::instance()->running());
+
+}
+
+void RemoteProxyTests::stopServer()
+{
+    if (!Engine::instance()->running())
+        return;
+
+    Engine::instance()->stop();
+    QVERIFY(!Engine::instance()->running());
 }
 
 void RemoteProxyTests::initTestCase()
 {
+    qRegisterMetaType<RemoteProxyConnector::Error>();
+
     qCDebug(dcApplication()) << "Init test case.";
     restartEngine();
 }
@@ -73,37 +90,28 @@ void RemoteProxyTests::cleanupTestCase()
 
 void RemoteProxyTests::authenticate()
 {
-    // Start the server
-    startServer();
+//    // Start the server
+//    startServer();
 
-    // Connect to the server
-    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
-    connector->setIgnoreSslErrors(QList<QSslError>() << QSslError::HostNameMismatch << QSslError::SelfSignedCertificate);
+//    // Connect to the server
+//    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
+//    connector->setInsecureConnection(true);
 
-    QSignalSpy spy(connector, &RemoteProxyConnector::error);
-    connector->connectServer(RemoteProxyConnector::ConnectionTypeWebSocket, QHostAddress::LocalHost, m_port);
-    //spy.wait();
+//    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
+//    connector->connectServer(QHostAddress::LocalHost, m_port);
+//    spy.wait();
 
-    connector->disconnectServer();
-    connector->deleteLater();
-    Engine::instance()->stop();
+//    connector->disconnectServer();
+//    connector->deleteLater();
+//    Engine::instance()->stop();
 }
 
 void RemoteProxyTests::startStopServer()
 {
+    restartEngine();
+    startServer();
+    stopServer();
     cleanUpEngine();
-
-    QVERIFY(Engine::instance() != nullptr);
-    QVERIFY(Engine::exists());
-
-    Engine::instance()->start();
-    QVERIFY(Engine::instance()->running());
-
-    Engine::instance()->stop();
-    QVERIFY(!Engine::instance()->running());
-
-    Engine::instance()->destroy();
-    QVERIFY(!Engine::exists());
 }
 
 void RemoteProxyTests::sslConfigurations()
@@ -111,15 +119,30 @@ void RemoteProxyTests::sslConfigurations()
     // Start the server
     startServer();
 
-    // Connect to the server
+    // Connect to the server (insecure disabled)
     RemoteProxyConnector *connector = new RemoteProxyConnector(this);
-    connector->setIgnoreSslErrors(QList<QSslError>() << QSslError::HostNameMismatch << QSslError::SelfSignedCertificate);
+    connector->setInsecureConnection(false);
 
-    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
-    connector->connectServer(RemoteProxyConnector::ConnectionTypeWebSocket, QHostAddress::LocalHost, m_port);
-    spy.wait();
+    QSignalSpy spyError(connector, &RemoteProxyConnector::errorOccured);
+    connector->connectServer(QHostAddress::LocalHost, m_port);
+    spyError.wait();
 
+    QCOMPARE(connector->error(), RemoteProxyConnector::ErrorSocketError);
+    QCOMPARE(connector->socketError(), QAbstractSocket::SslHandshakeFailedError);
+    QCOMPARE(connector->state(), RemoteProxyConnector::StateDisconnected);
+
+    // Connect to server (insecue enabled)
+    QSignalSpy spyConnected(connector, &RemoteProxyConnector::connected);
+    connector->setInsecureConnection(true);
+    connector->connectServer(QHostAddress::LocalHost, m_port);
+    spyConnected.wait();
+
+    QVERIFY(connector->isConnected());
+
+    // Disconnect and clean up
     connector->disconnectServer();
+    QVERIFY(!connector->isConnected());
+
     connector->deleteLater();
     Engine::instance()->stop();
 }

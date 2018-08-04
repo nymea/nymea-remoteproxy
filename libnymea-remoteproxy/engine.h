@@ -6,27 +6,36 @@
 #include <QHostAddress>
 #include <QSslConfiguration>
 
+#include "proxyserver.h"
 #include "websocketserver.h"
+#include "authentication/authenticator.h"
 
 class Engine : public QObject
 {
     Q_OBJECT
 public:
     static Engine *instance();
-    static bool exists();
     void destroy();
+
+    static bool exists();
 
     void start();
     void stop();
 
     bool running() const;
 
+    QString serverName() const;
+    void setServerName(const QString &serverName);
+
     void setWebSocketServerHostAddress(const QHostAddress &hostAddress);
     void setWebSocketServerPort(const quint16 &port);
-
     void setSslConfiguration(const QSslConfiguration &configuration);
     void setAuthenticationServerUrl(const QUrl &url);
 
+    void setAuthenticator(Authenticator *authenticator);
+
+    Authenticator *authenticator() const;
+    ProxyServer *proxyServer() const;
     WebSocketServer *webSocketServer() const;
 
 private:
@@ -35,13 +44,15 @@ private:
     static Engine *s_instance;
 
     bool m_running = false;
+    QString m_serverName;
 
     quint16 m_webSocketServerPort = 1212;
     QHostAddress m_webSocketServerHostAddress = QHostAddress::LocalHost;
-
     QSslConfiguration m_sslConfiguration;
     QUrl m_authenticationServerUrl;
 
+    Authenticator *m_authenticator = nullptr;
+    ProxyServer *m_proxyServer = nullptr;
     WebSocketServer *m_webSocketServer = nullptr;
 
     void setRunning(bool running);

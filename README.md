@@ -110,6 +110,8 @@ The first data a client **must** send to the proxy server is the authentication 
         "id": 0,
         "method": "Authentication.Authenticate"
         "params": {
+            "name": "string",
+            "id": "uuid",
             "token": "tokenstring"
         }
     }

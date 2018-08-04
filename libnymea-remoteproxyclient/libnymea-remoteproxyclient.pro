@@ -4,11 +4,13 @@ TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
 
 HEADERS += \
-    remoteproxyconnector.h
+    remoteproxyconnector.h \
+    websocketconnector.h
 
 
 SOURCES += \
-    remoteproxyconnector.cpp
+    remoteproxyconnector.cpp \
+    websocketconnector.cpp
 
 
 # install header file with relative subdirectory

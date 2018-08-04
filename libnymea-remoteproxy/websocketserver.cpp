@@ -7,7 +7,7 @@ WebSocketServer::WebSocketServer(const QSslConfiguration &sslConfiguration, QObj
     TransportInterface(parent),
     m_sslConfiguration(sslConfiguration)
 {
-
+    m_serverName = "Websocket server";
 }
 
 WebSocketServer::~WebSocketServer()
@@ -144,7 +144,6 @@ bool WebSocketServer::startServer()
 
 bool WebSocketServer::stopServer()
 {
-
     // Clean up client connections
     foreach (QWebSocket *client, m_clientList.values()) {
         client->close(QWebSocketProtocol::CloseCodeNormal, "Stop server");

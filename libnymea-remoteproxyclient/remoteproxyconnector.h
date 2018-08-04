@@ -1,9 +1,13 @@
 #ifndef REMOTEPROXYCONNECTOR_H
 #define REMOTEPROXYCONNECTOR_H
 
+#include <QDebug>
 #include <QObject>
 #include <QWebSocket>
 #include <QHostAddress>
+#include <QLoggingCategory>
+
+Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyConnector)
 
 class RemoteProxyConnector : public QObject
 {
@@ -53,8 +57,8 @@ public:
     QHostAddress serverAddress() const;
     quint16 serverPort() const;
 
-    QList<QSslError> ignoreSslErrors() const;
-    void setIgnoreSslErrors(const QList<QSslError> &errors);
+    bool insecureConnection() const;
+    void setInsecureConnection(bool insecureConnection);
 
     bool sendData(const QByteArray &data);
 
@@ -64,7 +68,7 @@ private:
     quint16 m_serverPort = 443;
     State m_state = StateDisconnected;
     Error m_error = ErrorNoError;
-    QList<QSslError> m_ignoreSslErrors;
+    bool m_insecureConnection = false;
     bool m_tunnelEstablished = false;
     QWebSocket *m_webSocket = nullptr;
 
@@ -79,8 +83,8 @@ signals:
     void connected();
     void disconnected();
     void tunnelEstablished();
-    void stateChanged(State state);
-    void errorOccured(Error error);
+    void stateChanged(RemoteProxyConnector::State state);
+    void errorOccured(RemoteProxyConnector::Error error);
 
     void dataReady(const QByteArray &data);
 
@@ -95,9 +99,13 @@ private slots:
 
 
 public slots:
-    bool connectServer(ConnectionType type, const QHostAddress &serverAddress, quint16 port);
+    bool connectServer(const QHostAddress &serverAddress, quint16 port);
     void disconnectServer();
 
 };
+
+Q_DECLARE_METATYPE(RemoteProxyConnector::State);
+Q_DECLARE_METATYPE(RemoteProxyConnector::Error);
+Q_DECLARE_METATYPE(RemoteProxyConnector::ConnectionType);
 
 #endif // REMOTEPROXYCONNECTOR_H

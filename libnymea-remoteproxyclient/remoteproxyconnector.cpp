@@ -1,5 +1,7 @@
 #include "remoteproxyconnector.h"
 
+Q_LOGGING_CATEGORY(dcRemoteProxyConnector, "RemoteProxyConnector")
+
 RemoteProxyConnector::RemoteProxyConnector(QObject *parent) : QObject(parent)
 {
 
@@ -8,6 +10,11 @@ RemoteProxyConnector::RemoteProxyConnector(QObject *parent) : QObject(parent)
 RemoteProxyConnector::~RemoteProxyConnector()
 {
     disconnectServer();
+}
+
+RemoteProxyConnector::State RemoteProxyConnector::state() const
+{
+    return m_state;
 }
 
 RemoteProxyConnector::Error RemoteProxyConnector::error() const
@@ -66,7 +73,12 @@ QUrl RemoteProxyConnector::serverUrl() const
 
 bool RemoteProxyConnector::isConnected() const
 {
-    return m_state == StateConnected;
+    return m_state == StateConnected || m_state == StateAuthenticating || m_state == StateWaitTunnel || m_state == StateTunnelEstablished;
+}
+
+bool RemoteProxyConnector::tunnelEstablished() const
+{
+    return m_state == StateTunnelEstablished;
 }
 
 RemoteProxyConnector::ConnectionType RemoteProxyConnector::connectionType() const
@@ -84,31 +96,32 @@ quint16 RemoteProxyConnector::serverPort() const
     return m_serverPort;
 }
 
-QList<QSslError> RemoteProxyConnector::ignoreSslErrors() const
+bool RemoteProxyConnector::insecureConnection() const
 {
-    return m_ignoreSslErrors;
+    return m_insecureConnection;
 }
 
-void RemoteProxyConnector::setIgnoreSslErrors(const QList<QSslError> &errors)
+void RemoteProxyConnector::setInsecureConnection(bool insecureConnection)
 {
-    m_ignoreSslErrors = errors;
+    m_insecureConnection = insecureConnection;
 }
 
 bool RemoteProxyConnector::sendData(const QByteArray &data)
 {
-    if (m_state != StateTunnelEstablished) {
-        qWarning() << "RemoteProxyClient: There is no established tunnel for" << serverUrl().toString() << "yet.";
-        return false;
-    }
+    // FIXME: reenable once the auth process is finished
+//    if (m_state != StateTunnelEstablished) {
+//        qWarning() << "RemoteProxyClient: There is no established tunnel for" << serverUrl().toString() << "yet.";
+//        return false;
+//    }
 
     if (!m_webSocket) {
-        qWarning() << "RemoteProxyClient: There is no websocket";
+        qCWarning(dcRemoteProxyConnector()) << "There is no websocket";
         return false;
     }
 
     qint64 dataSendCount = m_webSocket->sendTextMessage(QString::fromUtf8(data));
     if (dataSendCount != data.count()) {
-        qWarning() << "RemoteProxyClient: Could not send all data to" << serverUrl().toString();
+        qCWarning(dcRemoteProxyConnector()) << "Could not send all data to" << serverUrl().toString();
         return false;
     }
 
@@ -120,7 +133,7 @@ void RemoteProxyConnector::setState(RemoteProxyConnector::State state)
     if (m_state == state)
         return;
 
-    qDebug() << "RemoteProxyClient: State changed" << state;
+    qCDebug(dcRemoteProxyConnector()) << "State changed" << state;
     m_state = state;
     emit stateChanged(m_state);
 }
@@ -130,7 +143,7 @@ void RemoteProxyConnector::setError(RemoteProxyConnector::Error error)
     if (m_error == error)
         return;
 
-    qDebug() << "RemoteProxyClient: Error occured" << error;
+    qCDebug(dcRemoteProxyConnector()) << "Error occured" << error;
     m_error = error;
     emit errorOccured(m_error);
 }
@@ -154,7 +167,8 @@ void RemoteProxyConnector::setServerPort(quint16 serverPort)
 void RemoteProxyConnector::onSocketConnected()
 {
     setState(StateConnected);
-    qDebug() << "RemoteProxyClient: Connected to" << serverUrl().toString();
+    qCDebug(dcRemoteProxyConnector()) << "Connected to" << serverUrl().toString();
+    emit connected();
 
     // TODO: start authentication process
 
@@ -163,32 +177,34 @@ void RemoteProxyConnector::onSocketConnected()
 
 void RemoteProxyConnector::onSocketDisconnected()
 {
-    qDebug() << "RemoteProxyClient: Disconnected from" << serverUrl().toString();
+    qCDebug(dcRemoteProxyConnector()) << "Disconnected from" << serverUrl().toString();
     setState(StateDisconnected);
+    emit disconnected();
 }
 
 void RemoteProxyConnector::onSocketError(QAbstractSocket::SocketError error)
 {
-    qWarning() << "RemoteProxyClient: Socket error occured" << error;
+    qCWarning(dcRemoteProxyConnector()) << "Socket error occured" << error;
     setError(ErrorSocketError);
 }
 
 void RemoteProxyConnector::onSocketSslError(const QList<QSslError> &errors)
 {
-    qWarning() << "RemoteProxyClient: Socket ssl errors occured" << errors;
-    foreach (const QSslError sslError, errors) {
-        qWarning() << "RemoteProxyClient: " << static_cast<int>(sslError.error()) << sslError.errorString();
+    if (m_insecureConnection) {
+        qCDebug(dcRemoteProxyConnector()) << "Ignore ssl errors because explicit allowed to use an insecure connection.";
+        m_webSocket->ignoreSslErrors();
+    } else {
+        qCWarning(dcRemoteProxyConnector()) << "Socket ssl errors occured:";
+        foreach (const QSslError sslError, errors) {
+            qCWarning(dcRemoteProxyConnector()) << "    -->" << static_cast<int>(sslError.error()) << sslError.errorString();
+        }
+        setError(ErrorSslError);
     }
-
-    qDebug() << m_ignoreSslErrors;
-
-    m_webSocket->ignoreSslErrors();
-    setError(ErrorSslError);
 }
 
 void RemoteProxyConnector::onSocketStateChanged(QAbstractSocket::SocketState state)
 {
-    qDebug() << "RemoteProxyClient: Socket state changed" << state;
+    qCDebug(dcRemoteProxyConnector()) << "Socket state changed" << state;
     switch (state) {
     case QAbstractSocket::ConnectingState:
     case QAbstractSocket::HostLookupState:
@@ -206,7 +222,7 @@ void RemoteProxyConnector::onSocketStateChanged(QAbstractSocket::SocketState sta
 void RemoteProxyConnector::onTextMessageReceived(const QString &message)
 {
     // TODO: check if tunnel is established, if so, emit data received
-    qDebug() << "RemoteProxyClient: Data recived" << message;
+    qCDebug(dcRemoteProxyConnector()) << "Data received" << message;
 }
 
 void RemoteProxyConnector::onBinaryMessageReceived(const QByteArray &message)
@@ -214,24 +230,20 @@ void RemoteProxyConnector::onBinaryMessageReceived(const QByteArray &message)
     Q_UNUSED(message);
 }
 
-bool RemoteProxyConnector::connectServer(RemoteProxyConnector::ConnectionType type, const QHostAddress &serverAddress, quint16 port)
+bool RemoteProxyConnector::connectServer(const QHostAddress &serverAddress, quint16 port)
 {
-    setConnectionType(type);
     setServerAddress(serverAddress);
     setServerPort(port);
 
     switch (m_connectionType) {
     // TODO: currently only websocket support
     case ConnectionTypeWebSocket:
-        if (m_webSocket) {
-            delete m_webSocket;
-            m_webSocket = nullptr;
-        }
-
-        setState(StateDisconnected);
+        disconnectServer();
 
         m_webSocket = new QWebSocket("libnymea-remoteproxyclient", QWebSocketProtocol::VersionLatest, this);
-        m_webSocket->ignoreSslErrors(m_ignoreSslErrors);
+
+        if (m_insecureConnection)
+            m_webSocket->ignoreSslErrors();
 
         connect(m_webSocket, &QWebSocket::connected, this, &RemoteProxyConnector::onSocketConnected);
         connect(m_webSocket, &QWebSocket::disconnected, this, &RemoteProxyConnector::onSocketDisconnected);
@@ -244,7 +256,7 @@ bool RemoteProxyConnector::connectServer(RemoteProxyConnector::ConnectionType ty
 
         setState(StateConnecting);
         m_webSocket->open(serverUrl());
-        qDebug() << "RemoteProxyClient: Start connecting to" << serverUrl().toString();
+        qCDebug(dcRemoteProxyConnector()) << "Start connecting to" << serverUrl().toString();
         return true;
     }
 
@@ -253,5 +265,12 @@ bool RemoteProxyConnector::connectServer(RemoteProxyConnector::ConnectionType ty
 
 void RemoteProxyConnector::disconnectServer()
 {
+    if (!m_webSocket)
+        return;
 
+    qCDebug(dcRemoteProxyConnector()) << "Disconnect from server" << serverUrl().toString();
+    m_webSocket->close(QWebSocketProtocol::CloseCodeNormal, "Bye bye");
+    m_webSocket->deleteLater();
+    m_webSocket = nullptr;
+    setState(StateDisconnected);
 }

@@ -13,11 +13,6 @@ Engine *Engine::instance()
     return s_instance;
 }
 
-bool Engine::exists()
-{
-    return s_instance != nullptr;
-}
-
 void Engine::destroy()
 {
     qCDebug(dcEngine()) << "Destroy server engine";
@@ -28,12 +23,24 @@ void Engine::destroy()
     s_instance = nullptr;
 }
 
+bool Engine::exists()
+{
+    return s_instance != nullptr;
+}
+
 void Engine::start()
 {
     if (!m_running)
         qCDebug(dcEngine()) << "Start server engine";
 
-    qCDebug(dcEngine()) << "Starting websocket server";
+    // Init proxy server
+    if (m_proxyServer) {
+        delete m_proxyServer;
+        m_proxyServer = nullptr;
+    }
+
+    m_proxyServer = new ProxyServer(this);
+
     // Init WebSocketServer
     if (m_webSocketServer) {
         delete m_webSocketServer;
@@ -47,7 +54,14 @@ void Engine::start()
 
     m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
     m_webSocketServer->setServerUrl(websocketServerUrl);
-    m_webSocketServer->startServer();
+
+    m_proxyServer->registerTransportInterface(m_webSocketServer);
+
+    // Make sure an authenticator was registered
+    Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
+
+    qCDebug(dcEngine()) << "Starting proxy server";
+    m_proxyServer->startServer();
 
     setRunning(true);
 }
@@ -57,8 +71,13 @@ void Engine::stop()
     if (m_running)
         qCDebug(dcEngine()) << "Stop server engine";
 
+    if (m_proxyServer) {
+        m_proxyServer->stopServer();
+        m_proxyServer->deleteLater();
+        m_proxyServer = nullptr;
+    }
+
     if (m_webSocketServer) {
-        m_webSocketServer->stopServer();
         m_webSocketServer->deleteLater();
         m_webSocketServer = nullptr;
     }
@@ -69,6 +88,16 @@ void Engine::stop()
 bool Engine::running() const
 {
     return m_running;
+}
+
+QString Engine::serverName() const
+{
+    return m_serverName;
+}
+
+void Engine::setServerName(const QString &serverName)
+{
+    m_serverName = serverName;
 }
 
 void Engine::setWebSocketServerHostAddress(const QHostAddress &hostAddress)
@@ -101,6 +130,32 @@ void Engine::setAuthenticationServerUrl(const QUrl &url)
 {
     qCDebug(dcEngine()) << "Authentication server URL" << url.toString();
     m_authenticationServerUrl = url;
+}
+
+void Engine::setAuthenticator(Authenticator *authenticator)
+{
+    if (m_authenticator) {
+        qCDebug(dcEngine()) << "There is already an authenticator registered. Unregister default authenticator";
+        m_authenticator->deleteLater();
+        m_authenticator = nullptr;
+
+        // FIXME: do unconnect
+    }
+
+    m_authenticator = authenticator;
+
+
+
+}
+
+Authenticator *Engine::authenticator() const
+{
+    return m_authenticator;
+}
+
+ProxyServer *Engine::proxyServer() const
+{
+    return m_proxyServer;
 }
 
 WebSocketServer *Engine::webSocketServer() const

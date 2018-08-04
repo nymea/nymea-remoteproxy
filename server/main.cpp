@@ -19,6 +19,7 @@
 
 #include "engine.h"
 #include "loggingcategories.h"
+#include "authentication/awsauthenticator.h"
 
 
 static QHash<QString, bool> s_loggingFilters;
@@ -37,6 +38,7 @@ static void loggingCategoryFilter(QLoggingCategory *category)
         category->setEnabled(QtDebugMsg, debugEnabled);
         category->setEnabled(QtWarningMsg, debugEnabled || s_loggingFilters.value("Warnings"));
     } else {
+        // Enable default debug output
         category->setEnabled(QtDebugMsg, true);
         category->setEnabled(QtWarningMsg, s_loggingFilters.value("Warnings"));
     }
@@ -86,14 +88,14 @@ int main(int argc, char *argv[])
     application.setOrganizationName("guh");
     application.setApplicationVersion("0.0.1");
 
-    s_loggingFilters.insert("Application", true);
     s_loggingFilters.insert("Engine", true);
+    s_loggingFilters.insert("Application", true);
     s_loggingFilters.insert("JsonRpc", true);
+    s_loggingFilters.insert("JsonRpcTraffic", true);
     s_loggingFilters.insert("WebSocketServer", true);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
     s_loggingFilters.insert("Authenticator", true);
-    s_loggingFilters.insert("ConnectionManager", true);
-    s_loggingFilters.insert("Debug", false);
+    s_loggingFilters.insert("ProxyServer", true);
 
     // command line parser
     QCommandLineParser parser;
@@ -226,7 +228,11 @@ int main(int argc, char *argv[])
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
+    // Create default authenticator
+    AwsAuthenticator *authenticator = new AwsAuthenticator(nullptr);
+
     // Configure and start the engines
+    Engine::instance()->setAuthenticator(authenticator);
     Engine::instance()->setWebSocketServerHostAddress(serverHostAddress);
     Engine::instance()->setWebSocketServerPort(static_cast<quint16>(port));
     Engine::instance()->setSslConfiguration(sslConfiguration);

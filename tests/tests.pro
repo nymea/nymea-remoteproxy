@@ -11,8 +11,10 @@ LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy \
 
 RESOURCES += certificate.qrc
 
-HEADERS += nymea-remoteproxy-tests.h
-SOURCES += nymea-remoteproxy-tests.cpp
+HEADERS += nymea-remoteproxy-tests.h \
+    mockauthenticator.h
+SOURCES += nymea-remoteproxy-tests.cpp \
+    mockauthenticator.cpp
 
 target.path = /usr/bin
 INSTALLS += target

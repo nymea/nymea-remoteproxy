@@ -6,6 +6,11 @@ TransportInterface::TransportInterface(QObject *parent) :
 
 }
 
+QString TransportInterface::serverName() const
+{
+    return m_serverName;
+}
+
 TransportInterface::~TransportInterface()
 {
 

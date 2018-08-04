@@ -9,6 +9,8 @@
 #include <QSslCertificate>
 #include <QSslConfiguration>
 
+#include "mockauthenticator.h"
+
 class RemoteProxyTests : public QObject
 {
     Q_OBJECT
@@ -19,10 +21,12 @@ private:
     quint16 m_port = 1212;
     QHostAddress m_serverAddress = QHostAddress::LocalHost;
     QSslConfiguration m_sslConfiguration;
+    MockAuthenticator *m_authenticator = nullptr;
 
     void cleanUpEngine();
     void restartEngine();
     void startServer();
+    void stopServer();
 
 protected slots:
     void initTestCase();
