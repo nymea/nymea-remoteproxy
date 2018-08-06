@@ -25,6 +25,7 @@ private:
 
     void cleanUpEngine();
     void restartEngine();
+    void startEngine();
     void startServer();
     void stopServer();
 
@@ -35,8 +36,11 @@ protected slots:
 
 private slots:
     void startStopServer();
-    void authenticate();
+    void webserverConnectionBlocked();
+    void webserverSocketVersion();
+    void webserverConnection();
     void sslConfigurations();
+    void authenticate();
 
 };
 

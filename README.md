@@ -40,6 +40,18 @@ In order to run the test, you can call `make check` in the build directory or ru
 
     $ nymea-remoteproxy-tests
 
+
+## Test coverage report
+
+If you want to create a line coverage report from the tests simply run following command in the source directory:
+
+
+    $ apt install lcov 
+    $ ./create-coverage-html.sh
+
+The resulting coverage report will be place in the `coverage-html` directory.
+
+
 # Usage
 
 In order to get information about the server you can start the command with the `--help` parameter.

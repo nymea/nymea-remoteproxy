@@ -45,7 +45,8 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, const 
 
 void AuthenticationHandler::onAuthenticationFinished()
 {
-    AuthenticationReply *authReply = static_cast<AuthenticationReply *>(sender());
-    JsonReply *jsonReply = m_runningAuthentications.value(authReply);
-
+    //AuthenticationReply *authReply = static_cast<AuthenticationReply *>(sender());
+    //JsonReply *jsonReply = m_runningAuthentications.take(authReply);
+    
+    //emit asyncReply()
 }

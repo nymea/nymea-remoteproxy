@@ -127,13 +127,13 @@ void WebSocketServer::onPing(quint64 elapsedTime, const QByteArray &payload)
 bool WebSocketServer::startServer()
 {
     m_server = new QWebSocketServer(QCoreApplication::applicationName(), QWebSocketServer::SecureMode, this);
-    m_server->setSslConfiguration(m_sslConfiguration);
+    m_server->setSslConfiguration(sslConfiguration());
 
     connect (m_server, &QWebSocketServer::newConnection, this, &WebSocketServer::onClientConnected);
     connect (m_server, &QWebSocketServer::acceptError, this, &WebSocketServer::onServerError);
 
-    qCDebug(dcWebSocketServer()) << "Starting server" << m_server->serverName() << m_serverUrl.toString();
-    if (!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(m_serverUrl.port()))) {
+    qCDebug(dcWebSocketServer()) << "Starting server" << m_server->serverName() << serverUrl().toString();
+    if (!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(serverUrl().port()))) {
         qCWarning(dcWebSocketServer()) << "Server" << m_server->serverName() << "could not listen on" << serverUrl().toString();
         return false;
     }
@@ -151,7 +151,7 @@ bool WebSocketServer::stopServer()
 
     // Delete the server object
     if (m_server) {
-        qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << m_serverUrl.toString();
+        qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
         m_server->close();
         delete m_server;
         m_server = nullptr;

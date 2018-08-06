@@ -6,6 +6,8 @@
 
 #include <QMetaType>
 #include <QSignalSpy>
+#include <QWebSocket>
+#include <QWebSocketServer>
 
 RemoteProxyTests::RemoteProxyTests(QObject *parent) :
     QObject(parent)
@@ -51,18 +53,30 @@ void RemoteProxyTests::restartEngine()
     QVERIFY(Engine::exists());
 }
 
+void RemoteProxyTests::startEngine()
+{
+    if (!Engine::exists()) {
+        Engine::instance();
+        QVERIFY(Engine::exists());
+    }
+}
+
 void RemoteProxyTests::startServer()
 {
-    restartEngine();
+    startEngine();
 
+    QString serverName = "nymea-remoteproxy-testserver";
+    Engine::instance()->setAuthenticationServerUrl(QUrl("https://localhost"));
+    Engine::instance()->setServerName(serverName);
     Engine::instance()->setAuthenticator(m_authenticator);
     Engine::instance()->setWebSocketServerPort(m_port);
     Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
     Engine::instance()->start();
 
+    QVERIFY(Engine::instance()->serverName() == serverName);
     QVERIFY(Engine::instance()->running());
-
+    QVERIFY(Engine::instance()->webSocketServer()->running());
 }
 
 void RemoteProxyTests::stopServer()
@@ -88,28 +102,69 @@ void RemoteProxyTests::cleanupTestCase()
     cleanUpEngine();
 }
 
-void RemoteProxyTests::authenticate()
-{
-//    // Start the server
-//    startServer();
-
-//    // Connect to the server
-//    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
-//    connector->setInsecureConnection(true);
-
-//    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
-//    connector->connectServer(QHostAddress::LocalHost, m_port);
-//    spy.wait();
-
-//    connector->disconnectServer();
-//    connector->deleteLater();
-//    Engine::instance()->stop();
-}
-
 void RemoteProxyTests::startStopServer()
 {
-    restartEngine();
+    startEngine();
     startServer();
+    stopServer();
+    cleanUpEngine();
+}
+
+void RemoteProxyTests::webserverConnectionBlocked()
+{
+    // Create a dummy server which blocks the port
+    QWebSocketServer dummyServer("dummy-server", QWebSocketServer::NonSecureMode);
+    dummyServer.listen(QHostAddress::LocalHost, m_port);
+
+    // Start proxy webserver
+    Engine::instance()->setWebSocketServerPort(m_port);
+    Engine::instance()->setAuthenticator(m_authenticator);
+    Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
+    Engine::instance()->setSslConfiguration(m_sslConfiguration);
+    Engine::instance()->start();
+
+    // Make sure the server is not running
+    QVERIFY(Engine::instance()->running());
+    QVERIFY(!Engine::instance()->webSocketServer()->running());
+
+    dummyServer.close();
+
+    // Try again
+    startServer();
+
+    // Clean up
+    stopServer();
+    cleanUpEngine();
+}
+
+void RemoteProxyTests::webserverSocketVersion()
+{
+    // Start the server
+    startServer();
+
+    QUrl serverUrl;
+    serverUrl.setScheme("wss");
+    serverUrl.setHost("localhost");
+    serverUrl.setPort(m_port);
+
+    // Create a websocket with invalid version
+    QWebSocket socket("tests", QWebSocketProtocol::Version8);
+    socket.open(serverUrl);
+
+    // Clean up
+    stopServer();
+    cleanUpEngine();
+}
+
+void RemoteProxyTests::webserverConnection()
+{
+    // Start the server
+    startServer();
+
+
+
+
+    // Clean up
     stopServer();
     cleanUpEngine();
 }
@@ -146,5 +201,24 @@ void RemoteProxyTests::sslConfigurations()
     connector->deleteLater();
     Engine::instance()->stop();
 }
+
+void RemoteProxyTests::authenticate()
+{
+//    // Start the server
+//    startServer();
+
+//    // Connect to the server
+//    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
+//    connector->setInsecureConnection(true);
+
+//    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
+//    connector->connectServer(QHostAddress::LocalHost, m_port);
+//    spy.wait();
+
+//    connector->disconnectServer();
+//    connector->deleteLater();
+//    Engine::instance()->stop();
+}
+
 
 QTEST_MAIN(RemoteProxyTests)

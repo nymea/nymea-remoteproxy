@@ -155,3 +155,19 @@ void JsonRpcServer::setup()
     registerHandler(new AuthenticationHandler(this));
 }
 
+void JsonRpcServer::clientConnected(const QUuid &clientId)
+{
+    Q_UNUSED(clientId)
+}
+
+void JsonRpcServer::clientDisconnected(const QUuid &clientId)
+{
+    Q_UNUSED(clientId)
+}
+
+void JsonRpcServer::processData(const QUuid &clientId, const QByteArray &data)
+{
+    Q_UNUSED(clientId)
+    Q_UNUSED(data)
+}
+
