@@ -230,9 +230,13 @@ void RemoteProxyTests::webserverConnectionBlocked()
     // Make sure the websocket server is not running
     QVERIFY(!Engine::instance()->webSocketServer()->running());
 
+    QSignalSpy closedSpy(&dummyServer, &QWebSocketServer::closed);
     dummyServer.close();
+    closedSpy.wait();
+    QVERIFY(closedSpy.count() == 1);
 
     // Try again
+    cleanUpEngine();
     startServer();
 
     // Clean up
