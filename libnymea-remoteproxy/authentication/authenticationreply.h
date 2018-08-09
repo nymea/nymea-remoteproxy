@@ -8,16 +8,15 @@
 
 #include "authenticator.h"
 
+namespace remoteproxy {
+
 class AuthenticationReply : public QObject
 {
     Q_OBJECT
 public:
     friend class Authenticator;
 
-    explicit AuthenticationReply(const QUuid clientId, const QString &token, QObject *parent = nullptr);
-
-    QUuid clientId() const;
-    QString token() const;
+    ProxyClient *proxyClient() const;
 
     bool isTimedOut() const;
     bool isFinished() const;
@@ -25,15 +24,18 @@ public:
     Authenticator::AuthenticationError error() const;
 
 private:
-    QUuid m_clientId;
-    QString m_token;
+    explicit AuthenticationReply(ProxyClient *proxyClient, QObject *parent = nullptr);
+
+    ProxyClient *m_proxyClient = nullptr;
     QTimer m_timer;
 
     bool m_timedOut = false;
     bool m_finished = false;
-    Authenticator::AuthenticationError m_error;
+
+    Authenticator::AuthenticationError m_error = Authenticator::AuthenticationErrorUnknown;
 
     void setError(Authenticator::AuthenticationError error);
+    void setFinished();
 
 signals:
     void finished();
@@ -45,5 +47,7 @@ public slots:
     void abort();
 
 };
+
+}
 
 #endif // AUTHENTICATIONREPLY_H

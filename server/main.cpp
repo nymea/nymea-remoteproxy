@@ -21,6 +21,7 @@
 #include "loggingcategories.h"
 #include "authentication/awsauthenticator.h"
 
+using namespace remoteproxy;
 
 static QHash<QString, bool> s_loggingFilters;
 

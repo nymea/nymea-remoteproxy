@@ -1,5 +1,8 @@
+#include "proxyclient.h"
 #include "awsauthenticator.h"
 #include "loggingcategories.h"
+
+namespace remoteproxy {
 
 AwsAuthenticator::AwsAuthenticator(QObject *parent) :
     Authenticator(parent)
@@ -7,11 +10,16 @@ AwsAuthenticator::AwsAuthenticator(QObject *parent) :
 
 }
 
-AuthenticationReply *AwsAuthenticator::authenticate(const QUuid &clientId, const QString &token)
+QString AwsAuthenticator::name() const
 {
-    qCDebug(dcAuthenticator()) << "Start authenticating" << clientId << "using token" << token;
+    return "AWS authenticator";
+}
 
-    AuthenticationReply *reply = new AuthenticationReply(clientId, token, this);
-
+AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
+{
+    qCDebug(dcAuthenticator()) << name() << "Start authenticating" << proxyClient << "using token" << proxyClient->token();
+    AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
     return reply;
+}
+
 }

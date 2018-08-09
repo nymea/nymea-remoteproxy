@@ -7,6 +7,10 @@
 #include <QVariantMap>
 #include <QMetaMethod>
 
+#include "authentication/authenticator.h"
+
+namespace remoteproxy {
+
 class JsonReply;
 
 class JsonHandler : public QObject
@@ -36,8 +40,14 @@ protected:
     void setParams(const QString &methodName, const QVariantMap &params);
     void setReturns(const QString &methodName, const QVariantMap &returns);
 
+    QVariantMap errorToReply(Authenticator::AuthenticationError error) const;
+
+
     JsonReply *createReply(const QVariantMap &data) const;
     JsonReply *createAsyncReply(const QString &method) const;
 
 };
+
+}
+
 #endif // JSONHANDLER_H

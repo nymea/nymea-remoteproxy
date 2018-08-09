@@ -3,11 +3,15 @@
 
 #include <QObject>
 
-class WebSocketConnector : public QObject
+#include "socketconnector.h"
+
+class WebSocketConnector : public SocketConnector
 {
     Q_OBJECT
 public:
     explicit WebSocketConnector(QObject *parent = nullptr);
+
+    void sendData(const QByteArray &data) override;
 
 signals:
 

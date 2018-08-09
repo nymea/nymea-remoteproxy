@@ -10,6 +10,8 @@
 
 #include "transportinterface.h"
 
+namespace remoteproxy {
+
 class WebSocketServer : public TransportInterface
 {
     Q_OBJECT
@@ -26,6 +28,8 @@ public:
 
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void sendData(const QList<QUuid> &clients, const QByteArray &data) override;
+
+    void killClientConnection(const QUuid &clientId) override;
 
 private:
     QUrl m_serverUrl;
@@ -49,5 +53,7 @@ public slots:
     bool stopServer() override;
 
 };
+
+}
 
 #endif // WEBSOCKETSERVER_H

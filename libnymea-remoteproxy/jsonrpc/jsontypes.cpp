@@ -5,6 +5,8 @@
 
 #include "loggingcategories.h"
 
+namespace remoteproxy {
+
 bool JsonTypes::s_initialized = false;
 QString JsonTypes::s_lastError;
 
@@ -198,6 +200,9 @@ QPair<bool, QString> JsonTypes::validateList(const QVariantList &templateList, c
 QPair<bool, QString> JsonTypes::validateBasicType(const QVariant &variant)
 {
     if (variant.canConvert(QVariant::Uuid) && QVariant(variant).convert(QVariant::Uuid)) {
+        if (QUuid(variant.toString()).isNull()) {
+            return report(false, "Invalid uuid format.");
+        }
         return report(true, "");
     }
     if (variant.canConvert(QVariant::String) && QVariant(variant).convert(QVariant::String)) {
@@ -258,4 +263,6 @@ QVariantList JsonTypes::enumToStrings(const QMetaObject &metaObject, const QStri
         enumStrings << metaEnum.valueToKey(metaEnum.value(i));
     }
     return enumStrings;
+}
+
 }

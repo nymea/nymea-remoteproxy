@@ -1,5 +1,7 @@
 #include "jsonreply.h"
 
+namespace remoteproxy {
+
 JsonReply *JsonReply::createReply(JsonHandler *handler, const QVariantMap &data)
 {
     return new JsonReply(TypeSync, handler, QString(), data);
@@ -35,14 +37,14 @@ QString JsonReply::method() const
     return m_method;
 }
 
-QUuid JsonReply::connectionId() const
+QUuid JsonReply::clientId() const
 {
-    return m_connectionId;
+    return m_clientId;
 }
 
-void JsonReply::setClientId(const QUuid &connectionId)
+void JsonReply::setClientId(const QUuid &clientId)
 {
-    m_connectionId = connectionId;
+    m_clientId = clientId;
 }
 
 int JsonReply::commandId() const
@@ -53,6 +55,16 @@ int JsonReply::commandId() const
 void JsonReply::setCommandId(int commandId)
 {
     m_commandId = commandId;
+}
+
+bool JsonReply::success() const
+{
+    return m_success;
+}
+
+void JsonReply::setSuccess(bool success)
+{
+    m_success = success;
 }
 
 bool JsonReply::timedOut() const
@@ -71,12 +83,16 @@ void JsonReply::timeout()
     emit finished();
 }
 
-JsonReply::JsonReply(JsonReply::Type type, JsonHandler *handler, const QString &method, const QVariantMap &data):
+JsonReply::JsonReply(JsonReply::Type type, JsonHandler *handler, const QString &method, const QVariantMap &data, bool success):
     m_type(type),
     m_data(data),
     m_handler(handler),
     m_method(method),
-    m_timedOut(false)
+    m_success(success)
 {
     connect(&m_timeout, &QTimer::timeout, this, &JsonReply::timeout);
+}
+
+
+
 }

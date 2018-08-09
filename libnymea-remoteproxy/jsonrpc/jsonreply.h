@@ -7,6 +7,8 @@
 
 #include "jsonhandler.h"
 
+namespace remoteproxy {
+
 class JsonReply: public QObject
 {
     Q_OBJECT
@@ -16,21 +18,28 @@ public:
         TypeAsync
     };
 
+    friend class JsonRpcServer;
+
     static JsonReply *createReply(JsonHandler *handler, const QVariantMap &data);
     static JsonReply *createAsyncReply(JsonHandler *handler, const QString &method);
 
     Type type() const;
+
     QVariantMap data() const;
     void setData(const QVariantMap &data);
 
     JsonHandler *handler() const;
+
     QString method() const;
 
-    QUuid connectionId() const;
-    void setClientId(const QUuid &connectionId);
+    QUuid clientId() const;
+    void setClientId(const QUuid &clientId);
 
     int commandId() const;
     void setCommandId(int commandId);
+
+    bool success() const;
+    void setSuccess(bool success);
 
     bool timedOut() const;
 
@@ -44,17 +53,22 @@ private slots:
     void timeout();
 
 private:
-    JsonReply(Type type, JsonHandler *handler, const QString &method, const QVariantMap &data = QVariantMap());
-    Type m_type;
+    JsonReply(Type type, JsonHandler *handler, const QString &method, const QVariantMap &data = QVariantMap(), bool success = true);
+
+    Type m_type = TypeSync;
     QVariantMap m_data;
 
-    JsonHandler *m_handler;
+    JsonHandler *m_handler = nullptr;
+
     QString m_method;
-    QUuid m_connectionId;
+    QUuid m_clientId;
     int m_commandId;
-    bool m_timedOut;
+    bool m_timedOut = false;
+    bool m_success = false;
 
     QTimer m_timeout;
 };
+
+}
 
 #endif // JSONRPCREPLY_H

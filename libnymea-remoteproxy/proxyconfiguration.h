@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+namespace remoteproxy {
+
 class ProxyConfiguration : public QObject
 {
     Q_OBJECT
@@ -14,5 +16,7 @@ signals:
 public slots:
 
 };
+
+}
 
 #endif // PROXYCONFIGURATION_H

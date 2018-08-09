@@ -4,6 +4,9 @@
 #include <QUuid>
 #include <QObject>
 
+namespace remoteproxy {
+
+class ProxyClient;
 class AuthenticationReply;
 
 class Authenticator : public QObject
@@ -12,6 +15,7 @@ class Authenticator : public QObject
 public:
     enum AuthenticationError {
         AuthenticationErrorNoError,
+        AuthenticationErrorUnknown,
         AuthenticationErrorTimeout,
         AuthenticationErrorAborted,
         AuthenticationErrorAuthenticationFailed,
@@ -22,8 +26,18 @@ public:
     explicit Authenticator(QObject *parent = nullptr);
     virtual ~Authenticator() = 0;
 
+    virtual QString name() const = 0;
+
 public slots:
-    virtual AuthenticationReply *authenticate(const QUuid &clientId, const QString &token) = 0;
+    virtual AuthenticationReply *authenticate(ProxyClient *proxyClient) = 0;
+
+protected:
+    void setReplyError(AuthenticationReply *reply, AuthenticationError error);
+    void setReplyFinished(AuthenticationReply *reply);
+
+    AuthenticationReply *createAuthenticationReply(ProxyClient *proxyClient, QObject *parent = nullptr);
 };
+
+}
 
 #endif // AUTHENTICATOR_H

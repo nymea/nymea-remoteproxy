@@ -46,11 +46,10 @@ In order to run the test, you can call `make check` in the build directory or ru
 If you want to create a line coverage report from the tests simply run following command in the source directory:
 
 
-    $ apt install lcov 
+    $ apt install lcov gcovr
     $ ./create-coverage-html.sh
 
 The resulting coverage report will be place in the `coverage-html` directory.
-
 
 # Usage
 

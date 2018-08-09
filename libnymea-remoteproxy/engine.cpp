@@ -1,6 +1,8 @@
 #include "engine.h"
 #include "loggingcategories.h"
 
+namespace remoteproxy {
+
 Engine *Engine::s_instance = nullptr;
 
 Engine *Engine::instance()
@@ -73,12 +75,12 @@ void Engine::stop()
 
     if (m_proxyServer) {
         m_proxyServer->stopServer();
-        m_proxyServer->deleteLater();
+        delete m_proxyServer;
         m_proxyServer = nullptr;
     }
 
     if (m_webSocketServer) {
-        m_webSocketServer->deleteLater();
+        delete m_webSocketServer;
         m_webSocketServer = nullptr;
     }
 
@@ -114,7 +116,7 @@ void Engine::setWebSocketServerPort(const quint16 &port)
 
 void Engine::setSslConfiguration(const QSslConfiguration &configuration)
 {
-    qCDebug(dcEngine()) << "SSL Configuration:";
+    qCDebug(dcEngine()) << "SSL certificate information:";
     qCDebug(dcEngine()) << "    Common name:" << configuration.localCertificate().issuerInfo(QSslCertificate::CommonName);
     qCDebug(dcEngine()) << "    Organisation:" << configuration.localCertificate().issuerInfo(QSslCertificate::Organization);
     qCDebug(dcEngine()) << "    Organisation unit name:" << configuration.localCertificate().issuerInfo(QSslCertificate::OrganizationalUnitName);
@@ -134,18 +136,18 @@ void Engine::setAuthenticationServerUrl(const QUrl &url)
 
 void Engine::setAuthenticator(Authenticator *authenticator)
 {
+    if (m_authenticator == authenticator)
+        return;
+
     if (m_authenticator) {
         qCDebug(dcEngine()) << "There is already an authenticator registered. Unregister default authenticator";
-        m_authenticator->deleteLater();
         m_authenticator = nullptr;
-
         // FIXME: do unconnect
     }
 
     m_authenticator = authenticator;
 
-
-
+    // FIXME: connect
 }
 
 Authenticator *Engine::authenticator() const
@@ -182,4 +184,6 @@ void Engine::setRunning(bool running)
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
     m_running = running;
     emit runningChanged(m_running);
+}
+
 }

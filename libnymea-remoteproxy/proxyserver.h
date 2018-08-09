@@ -2,22 +2,32 @@
 #define PROXYSERVER_H
 
 #include <QUuid>
+#include <QHash>
 #include <QObject>
 
 #include "proxyclient.h"
+#include "jsonrpcserver.h"
 #include "transportinterface.h"
+
+namespace remoteproxy {
 
 class ProxyServer : public QObject
 {
     Q_OBJECT
 public:
     explicit ProxyServer(QObject *parent = nullptr);
+    ~ProxyServer();
 
     void registerTransportInterface(TransportInterface *interface);
 
 private:
+    JsonRpcServer *m_jsonRpcServer = nullptr;
     QList<TransportInterface *> m_transportInterfaces;
-    QList<QUuid> m_unauthenticatedClients;
+
+    QHash<QUuid, ProxyClient *> m_proxyClients;
+    QHash<ProxyClient *, ProxyClient *> m_tunnels;
+
+    void sendResponse(TransportInterface *interface, const QUuid &clientId, const QVariantMap &response = QVariantMap());
 
 private slots:
     void onClientConnected(const QUuid &clientId);
@@ -29,5 +39,7 @@ public slots:
     void stopServer();
 
 };
+
+}
 
 #endif // PROXYSERVER_H

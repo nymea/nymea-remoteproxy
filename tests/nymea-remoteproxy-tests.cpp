@@ -7,6 +7,7 @@
 #include <QMetaType>
 #include <QSignalSpy>
 #include <QWebSocket>
+#include <QJsonDocument>
 #include <QWebSocketServer>
 
 RemoteProxyTests::RemoteProxyTests(QObject *parent) :
@@ -40,6 +41,7 @@ RemoteProxyTests::RemoteProxyTests(QObject *parent) :
 void RemoteProxyTests::cleanUpEngine()
 {
     if (Engine::exists()) {
+        Engine::instance()->stop();
         Engine::instance()->destroy();
         QVERIFY(!Engine::exists());
     }
@@ -48,16 +50,22 @@ void RemoteProxyTests::cleanUpEngine()
 void RemoteProxyTests::restartEngine()
 {
     cleanUpEngine();
-
-    QVERIFY(Engine::instance() != nullptr);
-    QVERIFY(Engine::exists());
+    startEngine();
 }
 
 void RemoteProxyTests::startEngine()
 {
     if (!Engine::exists()) {
-        Engine::instance();
+        QString serverName = "nymea-remoteproxy-testserver";
+        Engine::instance()->setAuthenticator(m_authenticator);
+        Engine::instance()->setAuthenticationServerUrl(QUrl("https://localhost"));
+        Engine::instance()->setServerName(serverName);
+        Engine::instance()->setWebSocketServerPort(m_port);
+        Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
+        Engine::instance()->setSslConfiguration(m_sslConfiguration);
+
         QVERIFY(Engine::exists());
+        QVERIFY(Engine::instance()->serverName() == serverName);
     }
 }
 
@@ -65,16 +73,7 @@ void RemoteProxyTests::startServer()
 {
     startEngine();
 
-    QString serverName = "nymea-remoteproxy-testserver";
-    Engine::instance()->setAuthenticationServerUrl(QUrl("https://localhost"));
-    Engine::instance()->setServerName(serverName);
-    Engine::instance()->setAuthenticator(m_authenticator);
-    Engine::instance()->setWebSocketServerPort(m_port);
-    Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
-    Engine::instance()->setSslConfiguration(m_sslConfiguration);
     Engine::instance()->start();
-
-    QVERIFY(Engine::instance()->serverName() == serverName);
     QVERIFY(Engine::instance()->running());
     QVERIFY(Engine::instance()->webSocketServer()->running());
 }
@@ -86,6 +85,99 @@ void RemoteProxyTests::stopServer()
 
     Engine::instance()->stop();
     QVERIFY(!Engine::instance()->running());
+}
+
+QVariant RemoteProxyTests::invokeApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+{
+    Q_UNUSED(remainsConnected)
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+    QWebSocket *socket = new QWebSocket("proxy-testclient", QWebSocketProtocol::Version13);
+    connect(socket, &QWebSocket::sslErrors, this, &RemoteProxyTests::sslErrors);
+    QSignalSpy spyConnection(socket, SIGNAL(connected()));
+    socket->open(Engine::instance()->webSocketServer()->serverUrl());
+    spyConnection.wait();
+    if (spyConnection.count() == 0) {
+        return QVariant();
+    }
+
+//    QSignalSpy disconnectedSpy(socket, SIGNAL(disconnected()));
+    QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
+    socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    dataSpy.wait();
+//    if (remainsConnected) {
+//        disconnectedSpy.wait(1000);
+//        if (socket->state() != QAbstractSocket::UnconnectedState) {
+//            qWarning() << "!!!!!!!!!!!!! socket still connected but should be disconnected!";
+//        }
+//    } else {
+//        disconnectedSpy.wait();
+//        if (socket->state() != QAbstractSocket::ConnectedState) {
+//            qWarning() << "!!!!!!!!!!!!! socket not connected but should be!";
+//        }
+//    }
+
+    socket->close();
+    socket->deleteLater();
+
+    for (int i = 0; i < dataSpy.count(); i++) {
+        // Make sure the response it a valid JSON string
+        QJsonParseError error;
+        jsonDoc = QJsonDocument::fromJson(dataSpy.at(i).last().toByteArray(), &error);
+        if (error.error != QJsonParseError::NoError) {
+            qWarning() << "JSON parser error" << error.errorString();
+            return QVariant();
+        }
+        QVariantMap response = jsonDoc.toVariant().toMap();
+
+        // skip notifications
+        if (response.contains("notification"))
+            continue;
+
+        if (response.value("id").toInt() == m_commandCounter) {
+            m_commandCounter++;
+            return jsonDoc.toVariant();
+        }
+    }
+    m_commandCounter++;
+    return QVariant();
+}
+
+QVariant RemoteProxyTests::injectSocketData(const QByteArray &data)
+{
+    QWebSocket *socket = new QWebSocket("proxy-testclient", QWebSocketProtocol::Version13);
+    connect(socket, &QWebSocket::sslErrors, this, &RemoteProxyTests::sslErrors);
+    QSignalSpy spyConnection(socket, SIGNAL(connected()));
+    socket->open(Engine::instance()->webSocketServer()->serverUrl());
+    spyConnection.wait();
+    if (spyConnection.count() == 0) {
+        return QVariant();
+    }
+
+    QSignalSpy spy(socket, SIGNAL(textMessageReceived(QString)));
+    socket->sendTextMessage(QString(data));
+    spy.wait();
+
+    socket->close();
+    socket->deleteLater();
+
+    for (int i = 0; i < spy.count(); i++) {
+        // Make sure the response it a valid JSON string
+        QJsonParseError error;
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(spy.at(i).last().toByteArray(), &error);
+        if (error.error != QJsonParseError::NoError) {
+            qWarning() << "JSON parser error" << error.errorString();
+            return QVariant();
+        }
+        return jsonDoc.toVariant();
+    }
+    m_commandCounter++;
+    return QVariant();
 }
 
 void RemoteProxyTests::initTestCase()
@@ -104,10 +196,8 @@ void RemoteProxyTests::cleanupTestCase()
 
 void RemoteProxyTests::startStopServer()
 {
-    startEngine();
     startServer();
     stopServer();
-    cleanUpEngine();
 }
 
 void RemoteProxyTests::webserverConnectionBlocked()
@@ -134,7 +224,6 @@ void RemoteProxyTests::webserverConnectionBlocked()
 
     // Clean up
     stopServer();
-    cleanUpEngine();
 }
 
 void RemoteProxyTests::webserverSocketVersion()
@@ -153,20 +242,11 @@ void RemoteProxyTests::webserverSocketVersion()
 
     // Clean up
     stopServer();
-    cleanUpEngine();
 }
 
 void RemoteProxyTests::webserverConnection()
 {
-    // Start the server
-    startServer();
 
-
-
-
-    // Clean up
-    stopServer();
-    cleanUpEngine();
 }
 
 void RemoteProxyTests::sslConfigurations()
@@ -199,25 +279,143 @@ void RemoteProxyTests::sslConfigurations()
     QVERIFY(!connector->isConnected());
 
     connector->deleteLater();
-    Engine::instance()->stop();
+    stopServer();
+}
+
+void RemoteProxyTests::getIntrospect()
+{
+    // Start the server
+    startServer();
+
+    QVariant response = invokeApiCall("RemoteProxy.Introspect");
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTests::getHello()
+{
+    // Start the server
+    startServer();
+
+    QVariant response = invokeApiCall("RemoteProxy.Hello");
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTests::apiBasicCalls_data()
+{
+    QTest::addColumn<QByteArray>("data");
+    QTest::addColumn<bool>("valid");
+
+    QTest::newRow("valid call") << QByteArray("{\"id\":42, \"method\":\"RemoteProxy.Hello\"}") << true;
+    QTest::newRow("missing id") << QByteArray("{\"method\":\"RemoteProxy.Hello\"}")<< false;
+    QTest::newRow("missing method") << QByteArray("{\"id\":42}") << false;
+    QTest::newRow("borked") << QByteArray("{\"id\":42, \"method\":\"RemoteProx")<< false;
+    QTest::newRow("invalid function") << QByteArray("{\"id\":42, \"method\":\"RemoteProxy.Explode\"}") << false;
+    QTest::newRow("invalid namespace") << QByteArray("{\"id\":42, \"method\":\"ProxyRemote.Hello\"}") << false;
+    QTest::newRow("missing dot") << QByteArray("{\"id\":42, \"method\":\"RemoteProxyHello\"}") << false;
+    QTest::newRow("invalid params") << QByteArray("{\"id\":42, \"method\":\"RemoteProxy.Hello\", \"params\":{\"törööö\":\"chooo-chooo\"}}") << false;
+}
+
+void RemoteProxyTests::apiBasicCalls()
+{
+    QFETCH(QByteArray, data);
+    QFETCH(bool, valid);
+
+    // Start the server
+    startServer();
+
+    QVariant response = injectSocketData(data);
+    if (valid) {
+        QVERIFY2(response.toMap().value("status").toString() == "success", "Call wasn't parsed correctly by nymea.");
+    }
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTests::authenticate_data()
+{
+    QTest::addColumn<QString>("uuid");
+    QTest::addColumn<QString>("name");
+    QTest::addColumn<QString>("token");
+
+    QTest::addColumn<int>("timeout");
+    QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
+
+    QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "Hh5JrkdFVstVVyCnfE3vVT3zG_JTacXEhPLZhCei"
+                             << 100 << Authenticator::AuthenticationErrorNoError;
+
+    QTest::newRow("failed") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+                             << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
+
+    QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+                             << 200 << Authenticator::AuthenticationErrorAuthenticationServerNotResponding;
+
+    QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+                             << 100 << Authenticator::AuthenticationErrorAborted;
+
+    QTest::newRow("unknown") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+                             << 100 << Authenticator::AuthenticationErrorUnknown;
+
 }
 
 void RemoteProxyTests::authenticate()
 {
-//    // Start the server
-//    startServer();
+    QFETCH(QString, uuid);
+    QFETCH(QString, name);
+    QFETCH(QString, token);
+    QFETCH(int, timeout);
+    QFETCH(Authenticator::AuthenticationError, expectedError);
 
-//    // Connect to the server
-//    RemoteProxyConnector *connector = new RemoteProxyConnector(this);
-//    connector->setInsecureConnection(true);
+    // Start the server
+    startServer();
 
-//    QSignalSpy spy(connector, &RemoteProxyConnector::connected);
-//    connector->connectServer(QHostAddress::LocalHost, m_port);
-//    spy.wait();
+    // Configure result
+    m_authenticator->setExpectedAuthenticationError(expectedError);
+    m_authenticator->setTimeoutDuration(timeout);
 
-//    connector->disconnectServer();
-//    connector->deleteLater();
-//    Engine::instance()->stop();
+    // Create request
+    QVariantMap params;
+    params.insert("uuid", uuid);
+    params.insert("name", name);
+    params.insert("token", token);
+
+    QVariant response = invokeApiCall("Authentication.Authenticate", params);
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    verifyAuthenticationError(response, expectedError);
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTests::timeout()
+{
+    // Start the server
+    startServer();
+
+    // Configure result
+    // Start the server
+    startServer();
+
+    // Configure result
+    m_authenticator->setExpectedAuthenticationError();
+    m_authenticator->setTimeoutDuration(6000);
+
+    // Create request
+    QVariantMap params;
+    params.insert("uuid", "uuid");
+    params.insert("name", "name");
+    params.insert("token", "token");
+
+    QVariant response = invokeApiCall("Authentication.Authenticate", params);
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    // Clean up
+    stopServer();
 }
 
 

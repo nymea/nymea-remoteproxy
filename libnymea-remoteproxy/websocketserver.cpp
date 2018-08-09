@@ -3,6 +3,8 @@
 
 #include <QCoreApplication>
 
+namespace remoteproxy {
+
 WebSocketServer::WebSocketServer(const QSslConfiguration &sslConfiguration, QObject *parent) :
     TransportInterface(parent),
     m_sslConfiguration(sslConfiguration)
@@ -54,6 +56,16 @@ void WebSocketServer::sendData(const QList<QUuid> &clients, const QByteArray &da
     }
 }
 
+void WebSocketServer::killClientConnection(const QUuid &clientId)
+{
+    QWebSocket *client = m_clientList.value(clientId);
+    if (!client)
+        return;
+
+    qCWarning(dcWebSocketServer()) << "Kill client connection" << clientId.toString();
+    client->close(QWebSocketProtocol::CloseCodeBadOperation);
+}
+
 void WebSocketServer::onClientConnected()
 {
     // Got a new client connected
@@ -69,7 +81,7 @@ void WebSocketServer::onClientConnected()
 
     // Create new uuid for this connection
     QUuid clientId = QUuid::createUuid();
-    qCDebug(dcWebSocketServer()) << "New client connected:" << client->peerAddress().toString() << clientId;
+    qCDebug(dcWebSocketServer()) << "New client connected:" << client << client->peerAddress().toString() << clientId.toString();
 
     // Append the new client to the client list
     m_clientList.insert(clientId, client);
@@ -88,7 +100,7 @@ void WebSocketServer::onClientDisconnected()
     QWebSocket *client = static_cast<QWebSocket *>(sender());
     QUuid clientId = m_clientList.key(client);
 
-    qCDebug(dcWebSocketServer()) << "Client disconnected:" << client->peerAddress().toString() << clientId;
+    qCDebug(dcWebSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
 
     m_clientList.take(clientId)->deleteLater();
     emit clientDisconnected(clientId);
@@ -158,4 +170,6 @@ bool WebSocketServer::stopServer()
     }
 
     return true;
+}
+
 }

@@ -10,6 +10,8 @@
 #include "websocketserver.h"
 #include "authentication/authenticator.h"
 
+namespace remoteproxy {
+
 class Engine : public QObject
 {
     Q_OBJECT
@@ -61,5 +63,7 @@ signals:
     void runningChanged(bool running);
 
 };
+
+}
 
 #endif // ENGINE_H

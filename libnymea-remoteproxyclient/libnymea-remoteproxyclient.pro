@@ -5,12 +5,16 @@ TARGET = nymea-remoteproxyclient
 
 HEADERS += \
     remoteproxyconnector.h \
-    websocketconnector.h
+    websocketconnector.h \
+    socketconnector.h \
+    jsonrpcclient.h
 
 
 SOURCES += \
     remoteproxyconnector.cpp \
-    websocketconnector.cpp
+    websocketconnector.cpp \
+    socketconnector.cpp \
+    jsonrpcclient.cpp
 
 
 # install header file with relative subdirectory

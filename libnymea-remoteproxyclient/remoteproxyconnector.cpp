@@ -119,6 +119,12 @@ bool RemoteProxyConnector::sendData(const QByteArray &data)
         return false;
     }
 
+    if (!isConnected()) {
+        qCWarning(dcRemoteProxyConnector()) << "Not connected";
+        return false;
+    }
+
+    qCDebug(dcRemoteProxyConnector()) << "Sending data:" << data;
     qint64 dataSendCount = m_webSocket->sendTextMessage(QString::fromUtf8(data));
     if (dataSendCount != data.count()) {
         qCWarning(dcRemoteProxyConnector()) << "Could not send all data to" << serverUrl().toString();

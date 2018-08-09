@@ -1,5 +1,7 @@
 #include "transportinterface.h"
 
+namespace remoteproxy {
+
 TransportInterface::TransportInterface(QObject *parent) :
     QObject(parent)
 {
@@ -13,5 +15,7 @@ QString TransportInterface::serverName() const
 
 TransportInterface::~TransportInterface()
 {
+
+}
 
 }

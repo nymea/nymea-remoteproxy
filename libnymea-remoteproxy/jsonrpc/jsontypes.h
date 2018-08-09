@@ -8,6 +8,8 @@
 
 #include "authentication/authenticator.h"
 
+namespace remoteproxy {
+
 #define DECLARE_OBJECT(typeName, jsonName) \
     public: \
     static QString typeName##Ref() { return QStringLiteral("$ref:") + QStringLiteral(jsonName); if (!s_initialized) { init(); } } \
@@ -86,5 +88,7 @@ private:
     static QPair<bool, QString> report(bool status, const QString &message);
     static QVariantList enumToStrings(const QMetaObject &metaObject, const QString &enumName);
 };
+
+}
 
 #endif // JSONTYPES_H

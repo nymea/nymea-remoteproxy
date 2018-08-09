@@ -7,6 +7,8 @@
 #include "jsontypes.h"
 #include "loggingcategories.h"
 
+namespace remoteproxy {
+
 JsonHandler::JsonHandler(QObject *parent):
     QObject(parent)
 {
@@ -106,6 +108,13 @@ void JsonHandler::setReturns(const QString &methodName, const QVariantMap &retur
     qCWarning(dcJsonRpc()) << "Cannot set returns. No such method:" << methodName;
 }
 
+QVariantMap JsonHandler::errorToReply(Authenticator::AuthenticationError error) const
+{
+    QVariantMap returns;
+    returns.insert("authenticationError", JsonTypes::authenticationErrorToString(error));
+    return returns;
+}
+
 JsonReply *JsonHandler::createReply(const QVariantMap &data) const
 {
     return JsonReply::createReply(const_cast<JsonHandler*>(this), data);
@@ -114,4 +123,6 @@ JsonReply *JsonHandler::createReply(const QVariantMap &data) const
 JsonReply *JsonHandler::createAsyncReply(const QString &method) const
 {
     return JsonReply::createAsyncReply(const_cast<JsonHandler*>(this), method);
+}
+
 }

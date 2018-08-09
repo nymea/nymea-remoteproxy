@@ -2,10 +2,15 @@
 #define JSONRPCSERVER_H
 
 #include <QObject>
+#include <QVariant>
 
+#include "proxyclient.h"
+#include "jsonrpc/jsonreply.h"
 #include "transportinterface.h"
 #include "jsonrpc/jsonhandler.h"
 #include "jsonrpc/authenticationhandler.h"
+
+namespace remoteproxy {
 
 class JsonRpcServer : public JsonHandler
 {
@@ -16,39 +21,40 @@ public:
 
     QString name() const override;
 
-    QHash<QString, JsonHandler *> handlers() const;
+    Q_INVOKABLE JsonReply *Hello(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
+    Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
 
-    void registerTransportInterface(TransportInterface *interface);
-    void unregisterTransportInterface(TransportInterface *interface);
-
-    Q_INVOKABLE JsonReply *Hello(const QVariantMap &params) const;
-    Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params) const;
+signals:
+    void TunnelEstablished(const QVariantMap &params, ProxyClient *proxyClient = nullptr);
 
 private:
-    QList<TransportInterface *> m_interfaces;
     QHash<QString, JsonHandler *> m_handlers;
-    QHash<JsonReply *, TransportInterface *> m_asyncReplies;
-    QHash<QUuid, TransportInterface*> m_clientTransports;
-    QHash<QString, JsonReply*> m_pairingRequests;
-
+    QHash<JsonReply *, ProxyClient *> m_asyncReplies;
+    QList<ProxyClient *> m_clients;
     int m_notificationId;
 
-    void sendResponse(TransportInterface *interface, const QUuid &clientId, int commandId, const QVariantMap &params = QVariantMap());
-    void sendErrorResponse(TransportInterface *interface, const QUuid &clientId, int commandId, const QString &error);
+    void sendResponse(ProxyClient *client, int commandId, const QVariantMap &params = QVariantMap());
+    void sendErrorResponse(ProxyClient *client, int commandId, const QString &error);
+
     QString formatAssertion(const QString &targetNamespace, const QString &method, JsonHandler *handler, const QVariantMap &data) const;
 
     void registerHandler(JsonHandler *handler);
-
-
+    void unregisterHandler(JsonHandler *handler);
 
 private slots:
     void setup();
-    void clientConnected(const QUuid &clientId);
-    void clientDisconnected(const QUuid &clientId);
-    void processData(const QUuid &clientId, const QByteArray &data);
-//    void sendNotification(const QVariantMap &params);
-//    void asyncReplyFinished();
+    void asyncReplyFinished();
+
+public slots:
+    // Client registration for JSON RPC traffic
+    void registerClient(ProxyClient *proxyClient);
+    void unregisterClient(ProxyClient *proxyClient);
+
+    // Process data from client
+    void processData(ProxyClient *proxyClient, const QByteArray &data);
 
 };
+
+}
 
 #endif // JSONRPCSERVER_H
