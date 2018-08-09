@@ -46,8 +46,10 @@ void ProxyServer::onClientConnected(const QUuid &clientId)
     qCDebug(dcProxyServer()) << "New client connected"  << interface->serverName() << clientId.toString();
 
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, this);
-    m_proxyClients.insert(clientId, proxyClient);
+    connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
+    connect(proxyClient, &ProxyClient::tunnelConnected, this, &ProxyServer::onProxyClientTunnelConnected);
 
+    m_proxyClients.insert(clientId, proxyClient);
     m_jsonRpcServer->registerClient(proxyClient);
 }
 
@@ -58,11 +60,19 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
 
     if (m_proxyClients.contains(clientId)) {
         ProxyClient *proxyClient = m_proxyClients.take(clientId);
-        m_jsonRpcServer->unregisterClient(proxyClient);
-        proxyClient->deleteLater();
-        // Check if client is in tunnel and clean up tunnel
-        // Disconnect also the other tunnel client
 
+        // Clean up client tables
+        if (m_authenticatedClients.values().contains(proxyClient)) {
+            m_authenticatedClients.remove(proxyClient->token());
+        }
+
+        // Unregister from json rpc server
+        m_jsonRpcServer->unregisterClient(proxyClient);
+
+        // Delete the proxy client
+        proxyClient->deleteLater();
+
+        // TODO: Disconnect also the other tunnel client
     }
 
     // TODO: Clean up this client since it does not exist any more
@@ -77,12 +87,38 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
     }
 
     qCDebug(dcProxyServer()) << "Client data available" << proxyClient << qUtf8Printable(data);
-    if (proxyClient->tunnelConnected()) {
-        // Pipe the data
-    } else {
-        // Pipe data into json rpc server
+
+    // If this client is not authenticated yet, and not tunnel connected, pipe the traffic into the json rpc server
+    if (!proxyClient->isAuthenticated() && !proxyClient->isTunnelConnected()) {
         m_jsonRpcServer->processData(proxyClient, data);
+        return;
     }
+
+    // If the client is authenticated, but no tunnel created yet, kill the connection since no addition call is allowed until
+    // the tunne is fully established.
+    if (proxyClient->isAuthenticated() && !proxyClient->isTunnelConnected()) {
+        qCWarning(dcProxyServer()) << "An authenticated client sent data without tunnel connection. This is not allowed.";
+        m_jsonRpcServer->unregisterClient(proxyClient);
+        // The client is authenticated and tries to send data, this is not allowed.
+        proxyClient->interface()->killClientConnection(proxyClient->clientId());
+        return;
+    }
+
+    if (proxyClient->isAuthenticated() && proxyClient->isTunnelConnected()) {
+        // TODO: Pipe the traffic to the tunnel client
+    }
+}
+
+void ProxyServer::onProxyClientAuthenticated()
+{
+    ProxyClient *proxyClient = static_cast<ProxyClient *>(sender());
+    qCDebug(dcProxyServer()) << "Client authenticated" << proxyClient;
+    m_authenticatedClients.insert(proxyClient->token(), proxyClient);
+}
+
+void ProxyServer::onProxyClientTunnelConnected()
+{
+
 }
 
 void ProxyServer::startServer()

@@ -65,7 +65,7 @@ void Engine::start()
     qCDebug(dcEngine()) << "Starting proxy server";
     m_proxyServer->startServer();
 
-    setRunning(true);
+    QTimer::singleShot(0, this, &Engine::run);
 }
 
 void Engine::stop()
@@ -184,6 +184,11 @@ void Engine::setRunning(bool running)
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
     m_running = running;
     emit runningChanged(m_running);
+}
+
+void Engine::run()
+{
+    setRunning(true);
 }
 
 }

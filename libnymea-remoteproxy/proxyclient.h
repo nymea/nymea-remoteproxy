@@ -18,11 +18,11 @@ public:
 
     QUuid clientId() const;
 
-    bool authenticated() const;
-    void setAuthenticated(bool authenticated);
+    bool isAuthenticated() const;
+    void setAuthenticated(bool isAuthenticated);
 
-    bool tunnelConnected() const;
-    void setTunnelConnected(bool tunnelConnected);
+    bool isTunnelConnected() const;
+    void setTunnelConnected(bool isTunnelConnected);
 
     TransportInterface *interface() const;
 
@@ -36,7 +36,6 @@ public:
     QString token() const;
     void setToken(const QString &token);
 
-
 private:
     TransportInterface *m_interface = nullptr;
     QUuid m_clientId;
@@ -47,8 +46,8 @@ private:
     QString m_token;
 
 signals:
-    void authenticatedChanged(bool authenticated);
-    void tunnelConnectedChanged(bool tunnelConnected);
+    void authenticated();
+    void tunnelConnected();
 
 };
 

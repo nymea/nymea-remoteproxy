@@ -12,8 +12,10 @@
 
 #include "jsonrpc/jsontypes.h"
 #include "mockauthenticator.h"
+#include "remoteproxyconnection.h"
 
 using namespace remoteproxy;
+using namespace remoteproxyclient;
 
 class RemoteProxyTests : public QObject
 {
@@ -48,9 +50,7 @@ private slots:
 
     // WebSocket connection
     void webserverConnectionBlocked();
-    void webserverSocketVersion();
     void webserverConnection();
-    void sslConfigurations();
 
     // Api
     void getIntrospect();
@@ -61,6 +61,10 @@ private slots:
 
     void authenticate_data();
     void authenticate();
+
+    // Client lib
+    void clientConnection();
+    void sslConfigurations();
 
     void timeout();
 

@@ -29,6 +29,9 @@ void WebSocketServer::setServerUrl(const QUrl &serverUrl)
 
 bool WebSocketServer::running() const
 {
+    if (!m_server)
+        return false;
+
     return m_server->isListening();
 }
 
@@ -147,6 +150,8 @@ bool WebSocketServer::startServer()
     qCDebug(dcWebSocketServer()) << "Starting server" << m_server->serverName() << serverUrl().toString();
     if (!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(serverUrl().port()))) {
         qCWarning(dcWebSocketServer()) << "Server" << m_server->serverName() << "could not listen on" << serverUrl().toString();
+        delete  m_server;
+        m_server = nullptr;
         return false;
     }
 

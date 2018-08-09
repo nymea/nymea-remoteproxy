@@ -15,32 +15,32 @@ QUuid ProxyClient::clientId() const
     return m_clientId;
 }
 
-bool ProxyClient::authenticated() const
+bool ProxyClient::isAuthenticated() const
 {
     return m_authenticated;
 }
 
-void ProxyClient::setAuthenticated(bool authenticated)
+void ProxyClient::setAuthenticated(bool isAuthenticated)
 {
-    if (m_authenticated == authenticated)
-        return;
-
-    m_authenticated = authenticated;
-    emit authenticatedChanged(m_authenticated);
+    // TODO: start the timeout counter and disconnect if no tunnel established
+    m_authenticated = isAuthenticated;
+    if (m_authenticated){
+        emit authenticated();
+    }
 }
 
-bool ProxyClient::tunnelConnected() const
+bool ProxyClient::isTunnelConnected() const
 {
     return m_tunnelConnected;
 }
 
-void ProxyClient::setTunnelConnected(bool tunnelConnected)
+void ProxyClient::setTunnelConnected(bool isTunnelConnected)
 {
-    if (m_tunnelConnected == tunnelConnected)
-        return;
-
-    m_tunnelConnected = tunnelConnected;
-    emit tunnelConnectedChanged(m_tunnelConnected);
+    // TODO: reset the timeout counter and disconnect if no tunnel established
+    m_tunnelConnected = isTunnelConnected;
+    if (m_tunnelConnected){
+        emit tunnelConnected();
+    }
 }
 
 TransportInterface *ProxyClient::interface() const
@@ -82,8 +82,8 @@ QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
     debug.nospace() << "ProxyClient(" << proxyClient->interface()->serverName();
     debug.nospace() << ", " << proxyClient->clientId().toString() << ") :" << endl;
-    debug.nospace() << "    tunnel: " << proxyClient->tunnelConnected() << endl;
-    debug.nospace() << "    authenticated: " << proxyClient->authenticated() << endl;
+    debug.nospace() << "    tunnel: " << proxyClient->isTunnelConnected() << endl;
+    debug.nospace() << "    authenticated: " << proxyClient->isAuthenticated() << endl;
     if (!proxyClient->name().isEmpty() && !proxyClient->token().isEmpty() && !proxyClient->uuid().isEmpty()) {
         debug.nospace() << "    name: " << proxyClient->name() << endl;
         debug.nospace() << "    uuid: " << proxyClient->uuid() << endl;

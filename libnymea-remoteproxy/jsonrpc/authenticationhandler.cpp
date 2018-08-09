@@ -12,7 +12,13 @@ AuthenticationHandler::AuthenticationHandler(QObject *parent) :
     // Methods
     QVariantMap params; QVariantMap returns;
 
-    setDescription("Authenticate", "Authenticate this connection. This should always be the first request to the server. The given id is the unique server/client uuid (i.e. the uuid of server/client).");
+    setDescription("Authenticate", "Authenticate this connection. The returned AuthenticationError informs "
+                   "about the result. If the authentication was not successfull, the server will close the "
+                   "connection immediatly after sending the error response. The given id should be a unique "
+                   "id the other tunnel client can understand. Once the authentication was successfull, you "
+                   "can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before "
+                   "getting this notification, the server will close the connection. If the tunnel client does "
+                   "not show up within 10 seconds, the server will close the connection.");
     params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("token", JsonTypes::basicTypeToString(JsonTypes::String));
@@ -60,7 +66,9 @@ void AuthenticationHandler::onAuthenticationFinished()
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
         qCWarning(dcJsonRpc()) << "Authentication error occured" << authenticationReply->error();
         jsonReply->setSuccess(true);
+        authenticationReply->proxyClient()->setAuthenticated(true);
     } else {
+        authenticationReply->proxyClient()->setAuthenticated(false);
         jsonReply->setSuccess(false);
     }
     

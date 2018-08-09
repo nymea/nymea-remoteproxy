@@ -24,8 +24,10 @@ public:
     Q_INVOKABLE JsonReply *Hello(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
     Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
 
+    void sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient = nullptr);
+
 signals:
-    void TunnelEstablished(const QVariantMap &params, ProxyClient *proxyClient = nullptr);
+    void TunnelEstablished(const QVariantMap &params);
 
 private:
     QHash<QString, JsonHandler *> m_handlers;

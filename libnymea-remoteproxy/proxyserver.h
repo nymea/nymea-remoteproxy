@@ -25,7 +25,7 @@ private:
     QList<TransportInterface *> m_transportInterfaces;
 
     QHash<QUuid, ProxyClient *> m_proxyClients;
-    QHash<ProxyClient *, ProxyClient *> m_tunnels;
+    QHash<QString, ProxyClient *> m_authenticatedClients;
 
     void sendResponse(TransportInterface *interface, const QUuid &clientId, const QVariantMap &response = QVariantMap());
 
@@ -33,6 +33,9 @@ private slots:
     void onClientConnected(const QUuid &clientId);
     void onClientDisconnected(const QUuid &clientId);
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
+
+    void onProxyClientAuthenticated();
+    void onProxyClientTunnelConnected();
 
 public slots:
     void startServer();

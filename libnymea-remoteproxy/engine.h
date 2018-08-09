@@ -59,6 +59,9 @@ private:
 
     void setRunning(bool running);
 
+private slots:
+    void run();
+
 signals:
     void runningChanged(bool running);
 

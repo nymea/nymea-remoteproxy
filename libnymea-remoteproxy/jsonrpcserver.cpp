@@ -17,7 +17,7 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
 
     params.clear(); returns.clear();
     setDescription("Hello", "Once connected to this server, a client can get information about the server by saying Hello. "
-                            "The response informs the client about the server.");
+                            "The response informs the client about this proxy server.");
     setParams("Hello", params);
     returns.insert("server", JsonTypes::basicTypeToString(JsonTypes::String));
     returns.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
@@ -32,6 +32,16 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
     returns.insert("types", JsonTypes::basicTypeToString(JsonTypes::Object));
     returns.insert("notifications", JsonTypes::basicTypeToString(JsonTypes::Object));
     setReturns("Introspect", returns);
+
+    // Notifications
+    params.clear(); returns.clear();
+    setDescription("TunnelEstablished", "Emitted whenever the tunnel has been established successfully. "
+                   "This is the last message from the remote proxy server! Any following data will be from "
+                   "the other tunnel client until the connection will be closed. The parameter contain some information "
+                   "about the other tunnel client.");
+    params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
+    setParams("TunnelEstablished", params);
 
     QMetaObject::invokeMethod(this, "setup", Qt::QueuedConnection);
 }
@@ -90,6 +100,18 @@ JsonReply *JsonRpcServer::Introspect(const QVariantMap &params, ProxyClient *pro
     return createReply(data);
 }
 
+void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient)
+{
+    QVariantMap notification;
+    notification.insert("id", m_notificationId++);
+    notification.insert("notification", nameSpace + "." + method);
+    notification.insert("params", params);
+
+    QByteArray data = QJsonDocument::fromVariant(notification).toJson(QJsonDocument::Compact);
+    qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
+    proxyClient->interface()->sendData(proxyClient->clientId(), data);
+}
+
 void JsonRpcServer::sendResponse(ProxyClient *client, int commandId, const QVariantMap &params)
 {
     QVariantMap response;
@@ -126,27 +148,14 @@ QString JsonRpcServer::formatAssertion(const QString &targetNamespace, const QSt
 
 void JsonRpcServer::registerHandler(JsonHandler *handler)
 {
-    m_handlers.insert(handler->name(), handler);
     qCDebug(dcJsonRpc()) << "Register handler" << handler->name();
-    for (int i = 0; i < handler->metaObject()->methodCount(); ++i) {
-        QMetaMethod method = handler->metaObject()->method(i);
-        if (method.methodType() == QMetaMethod::Signal && QString(method.name()).contains(QRegExp("^[A-Z]"))) {
-            QObject::connect(handler, method, this, metaObject()->method(metaObject()->indexOfSlot("sendNotification(QVariantMap)")));
-        }
-    }
+    m_handlers.insert(handler->name(), handler);
 }
 
 void JsonRpcServer::unregisterHandler(JsonHandler *handler)
 {
-    m_handlers.remove(handler->name());
     qCDebug(dcJsonRpc()) << "Unregister handler" << handler->name();
-
-    for (int i = 0; i < handler->metaObject()->methodCount(); ++i) {
-        QMetaMethod method = handler->metaObject()->method(i);
-        if (method.methodType() == QMetaMethod::Signal && QString(method.name()).contains(QRegExp("^[A-Z]"))) {
-            QObject::connect(handler, method, this, metaObject()->method(metaObject()->indexOfSlot("sendNotification(QVariantMap)")));
-        }
-    }
+    m_handlers.remove(handler->name());
 }
 
 void JsonRpcServer::setup()

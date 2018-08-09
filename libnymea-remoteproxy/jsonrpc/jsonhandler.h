@@ -42,10 +42,8 @@ protected:
 
     QVariantMap errorToReply(Authenticator::AuthenticationError error) const;
 
-
     JsonReply *createReply(const QVariantMap &data) const;
     JsonReply *createAsyncReply(const QString &method) const;
-
 };
 
 }
