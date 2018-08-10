@@ -35,26 +35,17 @@ void Engine::start()
     if (!m_running)
         qCDebug(dcEngine()) << "Start server engine";
 
-    // Init proxy server
-    if (m_proxyServer) {
-        delete m_proxyServer;
-        m_proxyServer = nullptr;
-    }
+    // Clean up
+    clean();
 
+    m_configuration = new ProxyConfiguration(this);
     m_proxyServer = new ProxyServer(this);
-
-    // Init WebSocketServer
-    if (m_webSocketServer) {
-        delete m_webSocketServer;
-        m_webSocketServer = nullptr;
-    }
+    m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
 
     QUrl websocketServerUrl;
     websocketServerUrl.setScheme("wss");
     websocketServerUrl.setHost(m_webSocketServerHostAddress.toString());
     websocketServerUrl.setPort(m_webSocketServerPort);
-
-    m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
     m_webSocketServer->setServerUrl(websocketServerUrl);
 
     m_proxyServer->registerTransportInterface(m_webSocketServer);
@@ -65,7 +56,8 @@ void Engine::start()
     qCDebug(dcEngine()) << "Starting proxy server";
     m_proxyServer->startServer();
 
-    QTimer::singleShot(0, this, &Engine::run);
+    // Set tunning true in the next event loop
+    QMetaObject::invokeMethod(this, QString("setRunning").toLatin1().data(), Qt::QueuedConnection, Q_ARG(bool, true));
 }
 
 void Engine::stop()
@@ -73,17 +65,7 @@ void Engine::stop()
     if (m_running)
         qCDebug(dcEngine()) << "Stop server engine";
 
-    if (m_proxyServer) {
-        m_proxyServer->stopServer();
-        delete m_proxyServer;
-        m_proxyServer = nullptr;
-    }
-
-    if (m_webSocketServer) {
-        delete m_webSocketServer;
-        m_webSocketServer = nullptr;
-    }
-
+    clean();
     setRunning(false);
 }
 
@@ -176,6 +158,26 @@ Engine::~Engine()
     stop();
 }
 
+void Engine::clean()
+{
+    if (m_proxyServer) {
+        m_proxyServer->stopServer();
+        delete m_proxyServer;
+        m_proxyServer = nullptr;
+    }
+
+    if (m_webSocketServer) {
+        delete m_webSocketServer;
+        m_webSocketServer = nullptr;
+    }
+
+    if (m_configuration) {
+        delete m_configuration;
+        m_configuration = nullptr;
+    }
+}
+
+
 void Engine::setRunning(bool running)
 {
     if (m_running == running)
@@ -186,9 +188,5 @@ void Engine::setRunning(bool running)
     emit runningChanged(m_running);
 }
 
-void Engine::run()
-{
-    setRunning(true);
-}
 
 }

@@ -28,6 +28,7 @@ private:
     QHostAddress m_serverAddress = QHostAddress::LocalHost;
     QSslConfiguration m_sslConfiguration;
     MockAuthenticator *m_authenticator = nullptr;
+    QString m_testToken;
 
     int m_commandCounter = 0;
 
@@ -63,10 +64,11 @@ private slots:
     void authenticate();
 
     // Client lib
+    void clientConnection();
+    void remoteConnection();
     void sslConfigurations();
     void timeout();
 
-    void clientConnection();
 
 
 public slots:

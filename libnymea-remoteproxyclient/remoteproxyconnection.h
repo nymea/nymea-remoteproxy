@@ -46,7 +46,7 @@ public:
     };
     Q_ENUM(Error)
 
-    explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType = ConnectionTypeWebSocket, QObject *parent = nullptr);
+    explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType = RemoteProxyConnection::ConnectionTypeWebSocket, QObject *parent = nullptr);
     ~RemoteProxyConnection();
 
     RemoteProxyConnection::State state() const;
@@ -54,6 +54,7 @@ public:
     QString errorString() const;
 
     bool isConnected() const;
+    bool isAuthenticated() const;
     bool isRemoteConnected() const;
 
     RemoteProxyConnection::ConnectionType connectionType() const;
@@ -100,9 +101,11 @@ private:
 
 signals:
     void connected();
-    void disconnected();
     void ready();
-    void remoteConnectedChanged(bool remoteConnected);
+    void authenticated();
+    void remoteConnectionEstablished();
+    void disconnected();
+
     void stateChanged(RemoteProxyConnection::State state);
     void errorOccured(RemoteProxyConnection::Error error);
 
@@ -116,6 +119,7 @@ private slots:
 
     void onHelloFinished();
     void onAuthenticateFinished();
+    void onTunnelEstablished(const QString &clientName, const QString &clientUuid);
 
 public slots:
     bool connectServer(const QHostAddress &serverAddress, quint16 port);
@@ -126,8 +130,8 @@ public slots:
 
 }
 
-Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::State);
 Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::Error);
+Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::State);
 Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::ConnectionType);
 
 #endif // REMOTEPROXYCONNECTOR_H

@@ -8,4 +8,5 @@ Q_LOGGING_CATEGORY(dcWebSocketServer, "WebSocketServer")
 Q_LOGGING_CATEGORY(dcWebSocketServerTraffic, "WebSocketServerTraffic")
 Q_LOGGING_CATEGORY(dcAuthenticator, "Authenticator")
 Q_LOGGING_CATEGORY(dcProxyServer, "ProxyServer")
+Q_LOGGING_CATEGORY(dcProxyServerTraffic, "ProxyServerTraffic")
 

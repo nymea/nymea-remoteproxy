@@ -35,7 +35,6 @@ void MockAuthenticator::replyFinished()
     setReplyFinished(reply->authenticationReply());
 }
 
-
 AuthenticationReply *MockAuthenticator::authenticate(ProxyClient *proxyClient)
 {
     qCDebug(dcAuthenticator()) << name() << "Start authentication for" << proxyClient << "using token" << proxyClient->token();

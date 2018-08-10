@@ -24,8 +24,6 @@ public:
     Q_INVOKABLE JsonReply *Hello(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
     Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
 
-    void sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient = nullptr);
-
 signals:
     void TunnelEstablished(const QVariantMap &params);
 
@@ -33,7 +31,7 @@ private:
     QHash<QString, JsonHandler *> m_handlers;
     QHash<JsonReply *, ProxyClient *> m_asyncReplies;
     QList<ProxyClient *> m_clients;
-    int m_notificationId;
+    int m_notificationId = 0;
 
     void sendResponse(ProxyClient *client, int commandId, const QVariantMap &params = QVariantMap());
     void sendErrorResponse(ProxyClient *client, int commandId, const QString &error);
@@ -54,6 +52,7 @@ public slots:
 
     // Process data from client
     void processData(ProxyClient *proxyClient, const QByteArray &data);
+    void sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient = nullptr);
 
 };
 

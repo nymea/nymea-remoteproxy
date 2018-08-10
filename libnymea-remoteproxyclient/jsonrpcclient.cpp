@@ -82,10 +82,17 @@ void JsonRpcClient::processData(const QByteArray &data)
     if (dataMap.contains("notification")) {
         QStringList notification = dataMap.value("notification").toString().split(".");
         QString nameSpace = notification.first();
+        QString notificationName = notification.last();
+        QVariantMap notificationParams = dataMap.value("params").toMap();
 
-        qCDebug(dcRemoteProxyClientJsonRpc()) << "Notification received" << nameSpace << notification;
+        qCDebug(dcRemoteProxyClientJsonRpc()) << "Notification received" << nameSpace << notificationName;
+
+        if (nameSpace == "ProxyServer" && notificationName == "TunnelEstablished") {
+            QString clientName = notificationParams.value("name").toString();
+            QString clientUuid = notificationParams.value("uuid").toString();
+            emit tunnelEstablished(clientName, clientUuid);
+        }
     }
-
 }
 
 }

@@ -18,7 +18,8 @@ HEADERS += \
     authentication/authenticator.h \
     authentication/awsauthenticator.h \
     authentication/authenticationreply.h \
-    proxyconfiguration.h
+    proxyconfiguration.h \
+    tunnelconnection.h
 
 SOURCES += \
     engine.cpp \
@@ -35,7 +36,8 @@ SOURCES += \
     authentication/authenticator.cpp \
     authentication/awsauthenticator.cpp \
     authentication/authenticationreply.cpp \
-    proxyconfiguration.cpp
+    proxyconfiguration.cpp \
+    tunnelconnection.cpp
 
 
 # install header file with relative subdirectory

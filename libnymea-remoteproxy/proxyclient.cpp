@@ -81,15 +81,7 @@ void ProxyClient::setToken(const QString &token)
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
     debug.nospace() << "ProxyClient(" << proxyClient->interface()->serverName();
-    debug.nospace() << ", " << proxyClient->clientId().toString() << ") :" << endl;
-    debug.nospace() << "    tunnel: " << proxyClient->isTunnelConnected() << endl;
-    debug.nospace() << "    authenticated: " << proxyClient->isAuthenticated() << endl;
-    if (!proxyClient->name().isEmpty() && !proxyClient->token().isEmpty() && !proxyClient->uuid().isEmpty()) {
-        debug.nospace() << "    name: " << proxyClient->name() << endl;
-        debug.nospace() << "    uuid: " << proxyClient->uuid() << endl;
-        debug.nospace() << "    token: " << proxyClient->token() << endl;
-
-    }
+    debug.nospace() << ", " << proxyClient->clientId().toString() << ") ";
     return debug;
 }
 

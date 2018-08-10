@@ -36,6 +36,20 @@ RemoteProxyTests::RemoteProxyTests(QObject *parent) :
     m_sslConfiguration.setLocalCertificate(QSslCertificate(certificateData, QSsl::Pem));
     m_sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
     m_sslConfiguration.setProtocol(QSsl::TlsV1_2OrLater);
+
+    m_testToken = "eyJraWQiOiJXdnFFT3prVVh5VDlINzFyRUpoNWdxRnkxNFhnR2l3SFAzVEIzUFQ1V3ZrPSIsImFsZyI6IlJT"
+                  "MjU2In0.eyJzdWIiOiJmZTJmZDNlNC1hMGJhLTQ1OTUtOWRiZS00ZDkxYjRiMjFlMzUiLCJhdWQiOiI4cmpoZ"
+                  "mRsZjlqZjFzdW9rMmpjcmx0ZDZ2IiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV2ZW50X2lkIjoiN2Y5NTRiNm"
+                  "ItOTYyZi0xMWU4LWI0ZjItMzU5NWRiZmRiODVmIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE1MzM"
+                  "xOTkxMzgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS13ZXN0LTEuYW1hem9uYXdzLmNvbVwvZXUt"
+                  "d2VzdC0xXzZlWDZZam1YciIsImNvZ25pdG86dXNlcm5hbWUiOiIyYzE3YzUwZC0xZDFlLTRhM2UtYmFjOS0zZ"
+                  "DI0YjQ1MTFiYWEiLCJleHAiOjE1MzMyMDI3MzgsImlhdCI6MTUzMzE5OTEzOCwiZW1haWwiOiJqZW5raW5zQG"
+                  "d1aC5pbyJ9.hMMSvZMx7pMvV70PaUmTZOZgdez5WGX5yagRFPZojBm8jNWZND1lUmi0RFkybeD4HonDiKHxTF"
+                  "_psyJoBVndgHbxYBBl3Np4gn0MxECWjvLxYzGxVBBkN24SqNUyAGkr0uFcZKkBecdtJlqNQnZN8Uk49twmODf"
+                  "raRaRmGmKmRBAK1qDITpUgP6AWqH9xoJWaoDzt0kwJ3EtPxS7vL1PHqOaN8ggXA8Eq4iTCSfXU1HAXhIWJH9Y"
+                  "pQbj58v1vktaAEATdmKmlzmcix-HJK9wWHRSuv3TsNa8DGxvcPOoeTu8Vql7krZ-y7Zu-s2WsgeP4VxyT80VE"
+                  "T_xh6pMkOhE6g";
+
 }
 
 void RemoteProxyTests::cleanUpEngine()
@@ -177,6 +191,8 @@ QVariant RemoteProxyTests::injectSocketData(const QByteArray &data)
 void RemoteProxyTests::initTestCase()
 {
     qRegisterMetaType<RemoteProxyConnection::Error>();
+    qRegisterMetaType<RemoteProxyConnection::State>();
+    qRegisterMetaType<RemoteProxyConnection::ConnectionType>();
 
     qCDebug(dcApplication()) << "Init test case.";
     restartEngine();
@@ -301,19 +317,19 @@ void RemoteProxyTests::authenticate_data()
     QTest::addColumn<int>("timeout");
     QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
 
-    QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "Hh5JrkdFVstVVyCnfE3vVT3zG_JTacXEhPLZhCei"
+    QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                              << 100 << Authenticator::AuthenticationErrorNoError;
 
-    QTest::newRow("failed") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+    QTest::newRow("failed") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                             << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
-    QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+    QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                                     << 200 << Authenticator::AuthenticationErrorAuthenticationServerNotResponding;
 
-    QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+    QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                              << 100 << Authenticator::AuthenticationErrorAborted;
 
-    QTest::newRow("unknown") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << "invalid_token_42"
+    QTest::newRow("unknown") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                              << 100 << Authenticator::AuthenticationErrorUnknown;
 
 }
@@ -352,90 +368,189 @@ void RemoteProxyTests::clientConnection()
     // Start the server
     startServer();
 
-    // Connect to the server (insecure disabled)
-    RemoteProxyConnection *connectorOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", RemoteProxyConnection::ConnectionTypeWebSocket, this);
-    connectorOne->setInsecureConnection(true);
-
-    // Connect to server (insecue enabled for testing)
-    QSignalSpy readySpy(connectorOne, &RemoteProxyConnection::ready);
-    QVERIFY(connectorOne->connectServer(QHostAddress::LocalHost, m_port));
-    readySpy.wait();
-    QVERIFY(readySpy.count() == 1);
-    QVERIFY(connectorOne->isConnected());
-    QVERIFY(connectorOne->state() == RemoteProxyConnection::StateReady);
-
-    // Authenticate
+    // Configure moch authenticator
     m_authenticator->setTimeoutDuration(100);
     m_authenticator->setExpectedAuthenticationError();
-    connectorOne->authenticate("foobar");
 
-    QTest::qWait(1000);
+    // Connect to the server (insecure disabled)
+    RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    connection->setInsecureConnection(true);
+
+    // Connect to server (insecue enabled for testing)
+    QSignalSpy readySpy(connection, &RemoteProxyConnection::ready);
+    QVERIFY(connection->connectServer(QHostAddress::LocalHost, m_port));
+    readySpy.wait();
+    QVERIFY(readySpy.count() == 1);
+    QVERIFY(connection->isConnected());
+    QVERIFY(!connection->isRemoteConnected());
+    QVERIFY(connection->state() == RemoteProxyConnection::StateReady);
+    QVERIFY(connection->error() == RemoteProxyConnection::ErrorNoError);
+    QVERIFY(connection->serverAddress() == QHostAddress::LocalHost);
+    QVERIFY(connection->serverPort() == m_port);
+    QVERIFY(connection->connectionType() == RemoteProxyConnection::ConnectionTypeWebSocket);
+    QVERIFY(connection->insecureConnection() == true);
+    QVERIFY(connection->serverName() == SERVER_NAME_STRING);
+    QVERIFY(connection->proxyServerName() == Engine::instance()->serverName());
+    QVERIFY(connection->proxyServerVersion() == SERVER_VERSION_STRING);
+    QVERIFY(connection->proxyServerApiVersion() == API_VERSION_STRING);
+
+    QSignalSpy authenticatedSpy(connection, &RemoteProxyConnection::authenticated);
+    QVERIFY(connection->authenticate("foobar"));
+    authenticatedSpy.wait();
+    QVERIFY(authenticatedSpy.count() == 1);
+    QVERIFY(connection->isConnected());
+    QVERIFY(connection->isAuthenticated());
+    QVERIFY(connection->state() == RemoteProxyConnection::StateWaitTunnel);
 
     // Disconnect and clean up
-    QSignalSpy spyDisconnected(connectorOne, &RemoteProxyConnection::disconnected);
-    connectorOne->disconnectServer();
-    spyDisconnected.wait();
-    QVERIFY(!connectorOne->isConnected());
+    QSignalSpy spyDisconnected(connection, &RemoteProxyConnection::disconnected);
+    connection->disconnectServer();
+    // FIXME: check why it waits the full time here
+    spyDisconnected.wait(100);
+    QVERIFY(spyDisconnected.count() == 1);
+    QVERIFY(!connection->isConnected());
 
-    connectorOne->deleteLater();
+    connection->deleteLater();
+    stopServer();
+}
+
+void RemoteProxyTests::remoteConnection()
+{
+    // Start the server
+    startServer();
+
+    // Configure moch authenticator
+    m_authenticator->setTimeoutDuration(100);
+    m_authenticator->setExpectedAuthenticationError();
+
+    // Create two connection
+    RemoteProxyConnection *connectionOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    connectionOne->setInsecureConnection(true);
+
+    RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(QUuid::createUuid(), "Test client two", RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    connectionTwo->setInsecureConnection(true);
+
+    // Connect one
+    QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
+    QVERIFY(connectionOne->connectServer(QHostAddress::LocalHost, m_port));
+    connectionOneReadySpy.wait();
+    QVERIFY(connectionOneReadySpy.count() == 1);
+    QVERIFY(connectionOne->isConnected());
+
+    // Connect two
+    QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
+    QVERIFY(connectionTwo->connectServer(QHostAddress::LocalHost, m_port));
+    connectionTwoReadySpy.wait();
+    QVERIFY(connectionTwoReadySpy.count() == 1);
+    QVERIFY(connectionTwo->isConnected());
+
+    // Authenticate one
+    QSignalSpy remoteConnectionEstablishedOne(connectionOne, &RemoteProxyConnection::remoteConnectionEstablished);
+    QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
+    QVERIFY(connectionOne->authenticate(m_testToken));
+    connectionOneAuthenticatedSpy.wait();
+    QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
+    QVERIFY(connectionOne->isConnected());
+    QVERIFY(connectionOne->isAuthenticated());
+    QVERIFY(connectionOne->state() == RemoteProxyConnection::StateWaitTunnel);
+
+    // Authenticate two
+    QSignalSpy remoteConnectionEstablishedTwo(connectionTwo, &RemoteProxyConnection::remoteConnectionEstablished);
+    QSignalSpy connectionTwoAuthenticatedSpy(connectionTwo, &RemoteProxyConnection::authenticated);
+    QVERIFY(connectionTwo->authenticate(m_testToken));
+    connectionTwoAuthenticatedSpy.wait();
+    QVERIFY(connectionTwoAuthenticatedSpy.count() == 1);
+    QVERIFY(connectionTwo->isConnected());
+    QVERIFY(connectionTwo->isAuthenticated());
+
+    // Wait for both to be connected
+    remoteConnectionEstablishedOne.wait();
+    remoteConnectionEstablishedTwo.wait();
+
+    QVERIFY(remoteConnectionEstablishedOne.count() == 1);
+    QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
+    QVERIFY(connectionOne->state() == RemoteProxyConnection::StateRemoteConnected);
+    QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
+
+    // Pipe data trought the tunnel
+    QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
+    QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
+
+    QByteArray dataOne = "Hello from client one :-)";
+    QByteArray dataTwo = "Hello from client two :-)";
+
+    connectionOne->sendData(dataOne);
+    remoteConnectionDataTwo.wait();
+    QVERIFY(remoteConnectionDataTwo.count() == 1);
+
+    // verify if data is the same
+
+    connectionTwo->sendData(dataTwo);
+    remoteConnectionDataOne.wait();
+    QVERIFY(remoteConnectionDataOne.count() == 1);
+
+    // verify if data is the same
+
+    connectionOne->deleteLater();
+    connectionTwo->deleteLater();
+
+    // Clean up
     stopServer();
 }
 
 void RemoteProxyTests::sslConfigurations()
 {
-//    // Start the server
-//    startServer();
+    //    // Start the server
+    //    startServer();
 
-//    // Connect to the server (insecure disabled)
-//    RemoteProxyConnection *connector = new RemoteProxyConnection(RemoteProxyConnection::ConnectionTypeWebSocket, this);
-//    connector->setInsecureConnection(false);
+    //    // Connect to the server (insecure disabled)
+    //    RemoteProxyConnection *connector = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    //    QSignalSpy spyError(connector, &RemoteProxyConnection::errorOccured);
+    //    QVERIFY(connector->connectServer(QHostAddress::LocalHost, m_port));
+    //    spyError.wait();
+    //    QVERIFY(spyError.count() == 1);
+    //    QVERIFY(connector->error() == RemoteProxyConnection::ErrorSslError);
+    //    QVERIFY(connector->state() == RemoteProxyConnection::StateDisconnected);
 
-//    QSignalSpy spyError(connector, &RemoteProxyConnection::errorOccured);
-//    connector->connectServer(QHostAddress::LocalHost, m_port);
-//    spyError.wait();
+    //    // Connect to server (insecue enabled)
+    //    QSignalSpy spyConnected(connector, &RemoteProxyConnection::connected);
+    //    connector->setInsecureConnection(true);
+    //    connector->connectServer(QHostAddress::LocalHost, m_port);
+    //    spyConnected.wait();
 
-//    QCOMPARE(connector->error(), RemoteProxyConnection::ErrorSslError);
-//    QCOMPARE(connector->state(), RemoteProxyConnection::StateDisconnected);
+    //    QVERIFY(connector->isConnected());
 
-//    // Connect to server (insecue enabled)
-//    QSignalSpy spyConnected(connector, &RemoteProxyConnection::connected);
-//    connector->setInsecureConnection(true);
-//    connector->connectServer(QHostAddress::LocalHost, m_port);
-//    spyConnected.wait();
+    //    // Disconnect and clean up
+    //    connector->disconnectServer();
+    //    QVERIFY(!connector->isConnected());
 
-//    QVERIFY(connector->isConnected());
-
-//    // Disconnect and clean up
-//    connector->disconnectServer();
-//    QVERIFY(!connector->isConnected());
-
-//    connector->deleteLater();
-//    stopServer();
+    //    connector->deleteLater();
+    //    stopServer();
 }
 
 void RemoteProxyTests::timeout()
 {
-    // Start the server
-    startServer();
+    //    // Start the server
+    //    startServer();
 
-    // Configure result
-    // Start the server
-    startServer();
+    //    // Configure result
+    //    // Start the server
+    //    startServer();
 
-    // Configure result
-    m_authenticator->setExpectedAuthenticationError();
-    m_authenticator->setTimeoutDuration(6000);
+    //    // Configure result
+    //    m_authenticator->setExpectedAuthenticationError();
+    //    m_authenticator->setTimeoutDuration(6000);
 
-    // Create request
-    QVariantMap params;
-    params.insert("uuid", "uuid");
-    params.insert("name", "name");
-    params.insert("token", "token");
+    //    // Create request
+    //    QVariantMap params;
+    //    params.insert("uuid", "uuid");
+    //    params.insert("name", "name");
+    //    params.insert("token", "token");
 
-    QVariant response = invokeApiCall("Authentication.Authenticate", params);
-    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
-    // Clean up
-    stopServer();
+    //    QVariant response = invokeApiCall("Authentication.Authenticate", params);
+    //    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    //    // Clean up
+    //    stopServer();
 }
 
 QTEST_MAIN(RemoteProxyTests)

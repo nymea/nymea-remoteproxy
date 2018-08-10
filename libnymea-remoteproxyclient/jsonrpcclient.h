@@ -33,6 +33,7 @@ private:
     void sendRequest(const QVariantMap &request);
 
 signals:
+    void tunnelEstablished(const QString clientName, const QString &clientUuid);
 
 public slots:
     void onConnectedChanged(bool connected);

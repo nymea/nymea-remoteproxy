@@ -8,6 +8,7 @@
 
 #include "proxyserver.h"
 #include "websocketserver.h"
+#include "proxyconfiguration.h"
 #include "authentication/authenticator.h"
 
 namespace remoteproxy {
@@ -53,17 +54,17 @@ private:
     QSslConfiguration m_sslConfiguration;
     QUrl m_authenticationServerUrl;
 
+    ProxyConfiguration *m_configuration = nullptr;
     Authenticator *m_authenticator = nullptr;
     ProxyServer *m_proxyServer = nullptr;
     WebSocketServer *m_webSocketServer = nullptr;
 
-    void setRunning(bool running);
-
-private slots:
-    void run();
-
 signals:
     void runningChanged(bool running);
+
+private slots:
+    void clean();
+    void setRunning(bool running);
 
 };
 

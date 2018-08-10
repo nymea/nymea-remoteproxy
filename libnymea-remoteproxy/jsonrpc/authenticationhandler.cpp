@@ -66,15 +66,16 @@ void AuthenticationHandler::onAuthenticationFinished()
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
         qCWarning(dcJsonRpc()) << "Authentication error occured" << authenticationReply->error();
         jsonReply->setSuccess(false);
-        authenticationReply->proxyClient()->setAuthenticated(false);
     } else {
         // Successfully authenticated
-        authenticationReply->proxyClient()->setAuthenticated(true);
         jsonReply->setSuccess(true);
     }
     
     jsonReply->setData(errorToReply(authenticationReply->error()));
     jsonReply->finished();
+
+    // Set client authenticated
+    authenticationReply->proxyClient()->setAuthenticated(authenticationReply->error() == Authenticator::AuthenticationErrorNoError);
 }
 
 }

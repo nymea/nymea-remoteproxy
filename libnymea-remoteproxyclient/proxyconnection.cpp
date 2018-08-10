@@ -22,5 +22,4 @@ void ProxyConnection::setAllowSslErrors(bool allowSslErrors)
     m_allowSslErrors = allowSslErrors;
 }
 
-
 }

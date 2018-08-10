@@ -17,7 +17,7 @@ QString AwsAuthenticator::name() const
 
 AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
 {
-    qCDebug(dcAuthenticator()) << name() << "Start authenticating" << proxyClient << "using token" << proxyClient->token();
+    qCDebug(dcAuthenticator()) << name() << "Start authenticating" <<  proxyClient << "using token" << proxyClient->token();
     AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
     return reply;
 }

@@ -100,18 +100,6 @@ JsonReply *JsonRpcServer::Introspect(const QVariantMap &params, ProxyClient *pro
     return createReply(data);
 }
 
-void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient)
-{
-    QVariantMap notification;
-    notification.insert("id", m_notificationId++);
-    notification.insert("notification", nameSpace + "." + method);
-    notification.insert("params", params);
-
-    QByteArray data = QJsonDocument::fromVariant(notification).toJson(QJsonDocument::Compact);
-    qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
-    proxyClient->interface()->sendData(proxyClient->clientId(), data);
-}
-
 void JsonRpcServer::sendResponse(ProxyClient *client, int commandId, const QVariantMap &params)
 {
     QVariantMap response;
@@ -288,6 +276,18 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
         reply->setCommandId(commandId);
         sendResponse(proxyClient, commandId, reply->data());
     }
+}
+
+void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &method, const QVariantMap &params, ProxyClient *proxyClient)
+{
+    QVariantMap notification;
+    notification.insert("id", m_notificationId++);
+    notification.insert("notification", nameSpace + "." + method);
+    notification.insert("params", params);
+
+    QByteArray data = QJsonDocument::fromVariant(notification).toJson(QJsonDocument::Compact);
+    qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
+    proxyClient->interface()->sendData(proxyClient->clientId(), data);
 }
 
 }
