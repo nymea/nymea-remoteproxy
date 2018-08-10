@@ -126,17 +126,17 @@ Once a client connects to the proxy server, he must authenticate him self by pas
 
 #### Response
 
-{
-    "id": 0,
-    "params": {
-        "apiVersion": "0.1",
-        "name": "nymea-remoteproxy-testserver",
-        "server": "nymea-remoteproxy",
-        "version": "0.0.1"
-    },
-    "status": "success"
-}
-
+    {
+        "id": 0,
+        "params": {
+            "apiVersion": "0.1",
+            "name": "nymea-remoteproxy-testserver",
+            "server": "nymea-remoteproxy",
+            "version": "0.0.1"
+        },
+        "status": "success"
+    }
+    
 
 ## Authenticate the connection
 
@@ -145,7 +145,7 @@ The first data a client **must** send to the proxy server is the authentication 
 #### Request
 
     {
-        "id": 0,
+        "id": 1,
         "method": "Authentication.Authenticate",
         "params": {
             "id": "string",
@@ -159,14 +159,14 @@ The first data a client **must** send to the proxy server is the authentication 
 * **On Success**: If the token was authenticated successfully, the response will look like this:
 
         {
-            "id": 0,
+            "id": 1,
             "status": "success"
         }
 
 * **On Failure** If the token was invalid, the response will look like this and the server will close the connection immediatly:
 
         {
-            "id": 0,
+            "id": 1,
             "status": "error",
             "error": "Invalid token. You are not allowed to use this server."
         }
@@ -178,7 +178,7 @@ Once the other client is here and ready, the server will send a notification to 
 > **Important:** Any data traffic following after this notification comes from the tunnel endpoint, __not__ from the __proxy server__ any more.
 
     {
-        "id": "1",
+        "id": "0",
         "notification": "RemoteProxy.TunnelEstablished",
         "params": {
             "name": "String",
@@ -187,9 +187,19 @@ Once the other client is here and ready, the server will send a notification to 
     }
 
 
-## The complete API
+## Introspect the API
 
-    s"methods": {
+
+#### Request
+
+
+#### Response
+
+
+ {
+    "id": 0,
+    "params": {
+        "methods": {
             "Authentication.Authenticate": {
                 "description": "Authenticate this connection. The returned AuthenticationError informs about the result. If the authentication was not successfull, the server will close the connection immediatly after sending the error response. The given id should be a unique id the other tunnel client can understand. Once the authentication was successfull, you can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before getting this notification, the server will close the connection. If the tunnel client does not show up within 10 seconds, the server will close the connection.",
                 "params": {
@@ -252,8 +262,9 @@ Once the other client is here and ready, the server will send a notification to 
                 "Object"
             ]
         }
-
-
+    },
+    "status": "success"
+}
 
 # License
 
