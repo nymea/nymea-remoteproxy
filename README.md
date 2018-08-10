@@ -56,15 +56,20 @@ The resulting coverage report will be place in the `coverage-html` directory.
 In order to get information about the server you can start the command with the `--help` parameter.
 
     $ nymea-remoteproxy --help
-    
+
     Usage: nymea-remoteproxy [options]
     
     The nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.
     
+    Server version: 0.0.1
+    API version: 0.1
+    
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
+    
     
     Options:
       -h, --help                               Displays this help.
+      -v, --version                            Displays version information.
       -l, --logging <logfile>                  Write log file to the given logfile.
       -s, --server <hostaddress>               The server address this proxy will
                                                listen on. Default is 127.0.0.1
@@ -76,9 +81,8 @@ In order to get information about the server you can start the command with the 
                                                used for this proxy server.
       -a, --authentication-server <url>        The server url of the AWS
                                                authentication server.
-      -v, --verbose                            Print more verbose.
     
-    
+
 # Server API
 
 Once a client connects to the proxy server, he must authenticate him self by passing the token received from the nymea-cloud mqtt connection request.
@@ -110,6 +114,29 @@ Once a client connects to the proxy server, he must authenticate him self by pas
         "o:params" { }
     }
 
+## Say Hello
+
+#### Request
+
+    {
+        "id": 0,
+        "method": "RemoteProxy.Hello"
+    }
+
+
+#### Response
+
+{
+    "id": 0,
+    "params": {
+        "apiVersion": "0.1",
+        "name": "nymea-remoteproxy-testserver",
+        "server": "nymea-remoteproxy",
+        "version": "0.0.1"
+    },
+    "status": "success"
+}
+
 
 ## Authenticate the connection
 
@@ -119,10 +146,10 @@ The first data a client **must** send to the proxy server is the authentication 
 
     {
         "id": 0,
-        "method": "Authentication.Authenticate"
+        "method": "Authentication.Authenticate",
         "params": {
+            "id": "string",
             "name": "string",
-            "id": "uuid",
             "token": "tokenstring"
         }
     }
@@ -152,7 +179,11 @@ Once the other client is here and ready, the server will send a notification to 
 
     {
         "id": "1",
-        "notification": "Tunnel.Established"
+        "notification": "RemoteProxy.TunnelEstablished",
+        "params": {
+            "name": "String",
+            "uuid": "String"
+        }
     }
 
 
