@@ -6,9 +6,11 @@ Q_LOGGING_CATEGORY(dcRemoteProxyClientConnectionTraffic, "RemoteProxyClientConne
 
 namespace remoteproxyclient {
 
-RemoteProxyConnection::RemoteProxyConnection(ConnectionType connectionType, QObject *parent) :
+RemoteProxyConnection::RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType, QObject *parent) :
     QObject(parent),
-    m_connectionType(connectionType)
+    m_connectionType(connectionType),
+    m_clientUuid(clientUuid),
+    m_clientName(clientName)
 {
 
 }
@@ -54,7 +56,12 @@ QString RemoteProxyConnection::errorString() const
 
 bool RemoteProxyConnection::isConnected() const
 {
-    return m_state == StateConnected || m_state == StateAuthenticating || m_state == StateWaitTunnel || m_state == StateRemoteConnected;
+    return m_state == StateConnected
+            || m_state == StateInitializing
+            || m_state == StateReady
+            || m_state == StateAuthenticating
+            || m_state == StateWaitTunnel
+            || m_state == StateRemoteConnected;
 }
 
 bool RemoteProxyConnection::isRemoteConnected() const
@@ -75,6 +82,26 @@ QHostAddress RemoteProxyConnection::serverAddress() const
 quint16 RemoteProxyConnection::serverPort() const
 {
     return m_serverPort;
+}
+
+QString RemoteProxyConnection::serverName() const
+{
+    return m_serverName;
+}
+
+QString RemoteProxyConnection::proxyServerName() const
+{
+    return m_proxyServerName;
+}
+
+QString RemoteProxyConnection::proxyServerVersion() const
+{
+    return m_proxyServerVersion;
+}
+
+QString RemoteProxyConnection::proxyServerApiVersion() const
+{
+    return m_proxyServerApiVersion;
 }
 
 bool RemoteProxyConnection::insecureConnection() const
@@ -147,6 +174,7 @@ void RemoteProxyConnection::onConnectionChanged(bool isConnected)
         setState(StateConnected);
         emit connected();
 
+        setState(StateInitializing);
         JsonReply *reply = m_jsonClient->callHello();
         connect(reply, &JsonReply::finished, this, &RemoteProxyConnection::onHelloFinished);
     }
@@ -155,13 +183,20 @@ void RemoteProxyConnection::onConnectionChanged(bool isConnected)
 void RemoteProxyConnection::onConnectionDataAvailable(const QByteArray &data)
 {
     switch (m_state) {
+    case StateConnecting:
     case StateConnected:
+    case StateInitializing:
+    case StateReady:
+    case StateAuthenticating:
         m_jsonClient->processData(data);
+        break;
     case StateRemoteConnected:
         // Remote data arrived
         emit dataReady(data);
+        break;
     default:
-        qCDebug(dcRemoteProxyClientConnection()) << "Unhandled: Data reviced" << data;
+        qCWarning(dcRemoteProxyClientConnection()) << "Unhandled: Data reviced" << data;
+        break;
     }
 }
 
@@ -178,15 +213,35 @@ void RemoteProxyConnection::onConnectionSslError()
 void RemoteProxyConnection::onHelloFinished()
 {
     JsonReply *reply = static_cast<JsonReply *>(sender());
+    reply->deleteLater();
+
     QVariantMap response = reply->response();
     qCDebug(dcRemoteProxyClientConnection()) << "Hello response ready" << response;
+
+    if (response.value("status").toString() != "success") {
+        qCWarning(dcRemoteProxyClientConnection()) << "Could not get initial information from proxy server.";
+        m_connection->disconnectServer();
+        return;
+    }
+
+    QVariantMap responseParams = response.value("params").toMap();
+
+    // TODO: verify success
+
+    m_serverName = response.value("server").toString();
+    m_proxyServerName = response.value("name").toString();
+    m_proxyServerVersion = response.value("version").toString();
+    m_proxyServerApiVersion = response.value("apiVersion").toString();
+
+    setState(StateReady);
+    emit ready();
 }
 
 void RemoteProxyConnection::onAuthenticateFinished()
 {
     JsonReply *reply = static_cast<JsonReply *>(sender());
     QVariantMap response = reply->response();
-    qCDebug(dcRemoteProxyClientConnection()) << "Hello response ready" << response;
+    qCDebug(dcRemoteProxyClientConnection()) << "Authentication response ready" << response;
 }
 
 bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, quint16 port)
@@ -216,13 +271,26 @@ bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, qui
     connect(m_connection, &ProxyConnection::errorOccured, this, &RemoteProxyConnection::onConnectionSocketError);
     connect(m_connection, &ProxyConnection::sslErrorOccured, this, &RemoteProxyConnection::onConnectionSslError);
 
-    m_jsonClient = new JsonRpcClient(this);
+    m_jsonClient = new JsonRpcClient(m_connection, this);
 
-    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << QString("%1:%2").arg(serverAddress.toString()).arg(port);
+    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << m_connection->serverUrl().toString();
     m_connection->connectServer(serverAddress, port);
 
     setState(StateConnecting);
 
+    return true;
+}
+
+bool RemoteProxyConnection::authenticate(const QString &token)
+{
+    if (m_state != StateReady) {
+        qCWarning(dcRemoteProxyClientConnection()) << "Could not authenticate. The connection is not ready";
+        return false;
+    }
+
+    qCDebug(dcRemoteProxyClientConnection()) << "Start authentication using token" << token;
+    JsonReply *reply = m_jsonClient->callAuthenticate(m_clientUuid, m_clientName, token);
+    connect(reply, &JsonReply::finished, this, &RemoteProxyConnection::onAuthenticateFinished);
     return true;
 }
 

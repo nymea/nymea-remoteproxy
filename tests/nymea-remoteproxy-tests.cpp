@@ -112,21 +112,9 @@ QVariant RemoteProxyTests::invokeApiCall(const QString &method, const QVariantMa
         return QVariant();
     }
 
-    //    QSignalSpy disconnectedSpy(socket, SIGNAL(disconnected()));
     QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
     socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
     dataSpy.wait();
-    //    if (remainsConnected) {
-    //        disconnectedSpy.wait(1000);
-    //        if (socket->state() != QAbstractSocket::UnconnectedState) {
-    //            qWarning() << "!!!!!!!!!!!!! socket still connected but should be disconnected!";
-    //        }
-    //    } else {
-    //        disconnectedSpy.wait();
-    //        if (socket->state() != QAbstractSocket::ConnectedState) {
-    //            qWarning() << "!!!!!!!!!!!!! socket not connected but should be!";
-    //        }
-    //    }
 
     socket->close();
     socket->deleteLater();
@@ -365,14 +353,23 @@ void RemoteProxyTests::clientConnection()
     startServer();
 
     // Connect to the server (insecure disabled)
-    RemoteProxyConnection *connectorOne = new RemoteProxyConnection(RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    RemoteProxyConnection *connectorOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", RemoteProxyConnection::ConnectionTypeWebSocket, this);
     connectorOne->setInsecureConnection(true);
 
     // Connect to server (insecue enabled for testing)
-    QSignalSpy spyConnected(connectorOne, &RemoteProxyConnection::connected);
-    connectorOne->connectServer(QHostAddress::LocalHost, m_port);
-    spyConnected.wait();
-    //QVERIFY(connectorOne->isConnected());
+    QSignalSpy readySpy(connectorOne, &RemoteProxyConnection::ready);
+    QVERIFY(connectorOne->connectServer(QHostAddress::LocalHost, m_port));
+    readySpy.wait();
+    QVERIFY(readySpy.count() == 1);
+    QVERIFY(connectorOne->isConnected());
+    QVERIFY(connectorOne->state() == RemoteProxyConnection::StateReady);
+
+    // Authenticate
+    m_authenticator->setTimeoutDuration(100);
+    m_authenticator->setExpectedAuthenticationError();
+    connectorOne->authenticate("foobar");
+
+    QTest::qWait(1000);
 
     // Disconnect and clean up
     QSignalSpy spyDisconnected(connectorOne, &RemoteProxyConnection::disconnected);

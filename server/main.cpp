@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
     qInstallMessageHandler(consoleLogHandler);
 
     QCoreApplication application(argc, argv);
-    application.setApplicationName("nymea-remoteproxy");
+    application.setApplicationName(SERVER_NAME_STRING);
     application.setOrganizationName("guh");
-    application.setApplicationVersion("0.0.1");
+    application.setApplicationVersion(SERVER_VERSION_STRING);
 
     s_loggingFilters.insert("Engine", true);
     s_loggingFilters.insert("Application", true);
@@ -101,9 +101,15 @@ int main(int argc, char *argv[])
     // command line parser
     QCommandLineParser parser;
     parser.addHelpOption();
+    parser.addVersionOption();
     parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and "
                                              "registered nymea deamons to establish a tunnel connection.\n\n"
-                                             "Copyright %1 2018 Simon Stürz <simon.stuerz@guh.io>").arg(QChar(0xA9)));
+                                             "Server version: %1\n"
+                                             "API version: %2\n\n"
+                                             "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
+                                     .arg(SERVER_VERSION_STRING)
+                                     .arg(API_VERSION_STRING)
+                                     .arg(QChar(0xA9)));
 
     QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.",
                                      "logfile", "/var/log/nymea-remoteproxy.log");

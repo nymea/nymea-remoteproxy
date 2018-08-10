@@ -1,10 +1,15 @@
 QT *= network websockets
 QT -= gui
 
-# define protocol versions
+# Define versions
+SERVER_NAME=nymea-remoteproxy
 API_VERSION_MAJOR=0
 API_VERSION_MINOR=1
-DEFINES += API_VERSION_STRING=\\\"$${API_VERSION_MAJOR}.$${API_VERSION_MINOR}\\\"
+SERVER_VERSION=0.0.1
+
+DEFINES += SERVER_NAME_STRING=\\\"$${SERVER_NAME}\\\" \
+           SERVER_VERSION_STRING=\\\"$${SERVER_VERSION}\\\" \
+           API_VERSION_STRING=\\\"$${API_VERSION_MAJOR}.$${API_VERSION_MINOR}\\\"
 
 CONFIG += c++11 console
 
@@ -15,8 +20,6 @@ top_srcdir=$$PWD
 top_builddir=$$shadowed($$PWD)
 
 coverage {
-    message("Building with coverage report")
-
     # Note: this works only if you build in the source dir
     OBJECTS_DIR =
     MOC_DIR =

@@ -8,37 +8,52 @@ Q_LOGGING_CATEGORY(dcRemoteProxyClientJsonRpcTraffic, "RemoteProxyClientJsonRpcT
 
 namespace remoteproxyclient {
 
-JsonRpcClient::JsonRpcClient(QObject *parent) :
-    QObject(parent)
+JsonRpcClient::JsonRpcClient(ProxyConnection *connection, QObject *parent) :
+    QObject(parent),
+    m_connection(connection)
 {
 
 }
 
 JsonReply *JsonRpcClient::callHello()
 {
-
     JsonReply *reply = new JsonReply(m_commandId, "RemoteProxy", "Hello", QVariantMap(), this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap());
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
 
+JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token)
+{
+    QVariantMap params;
+    params.insert("name", clientName);
+    params.insert("uuid", clientUuid.toString());
+    params.insert("token", token);
+
+    JsonReply *reply = new JsonReply(m_commandId, "Authentication", "Authenticate", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method()) << params;
+    sendRequest(reply->requestMap());
+    m_replies.insert(m_commandId, reply);
     return reply;
 }
 
 void JsonRpcClient::sendRequest(const QVariantMap &request)
 {
-    m_connection->sendData(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n');
+    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << qUtf8Printable(data);
+    m_connection->sendData(data);
 }
 
 void JsonRpcClient::onConnectedChanged(bool connected)
 {
-    if (!connected) {
-        m_serverName = QString();
-        m_proxyServerName = QString();
-        m_proxyServerVersion = QString();
-        m_proxyApiVersion = QString();
-    }
+    Q_UNUSED(connected)
 }
 
 void JsonRpcClient::processData(const QByteArray &data)
 {
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Received data:" << qUtf8Printable(data);
+
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
     if (error.error != QJsonParseError::NoError) {
@@ -52,15 +67,10 @@ void JsonRpcClient::processData(const QByteArray &data)
     int commandId = dataMap.value("id").toInt();
     JsonReply *reply = m_replies.take(commandId);
     if (reply) {
-        reply->deleteLater();
-
-        qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << QString("Got response for %1.%2: %3").arg(reply->nameSpace(),
-                                                                                            reply->method(),
-                                                                                            QString::fromUtf8(jsonDoc.toJson(QJsonDocument::Indented)));
+        qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << QString("Got response for %1.%2: %3").arg(reply->nameSpace(), reply->method(), QString::fromUtf8(jsonDoc.toJson(QJsonDocument::Indented)));
 
         if (dataMap.value("status").toString() == "error") {
             qCWarning(dcRemoteProxyClientJsonRpc()) << "Api error happend" << dataMap.value("error").toString();
-            return;
         }
 
         reply->setResponse(dataMap);

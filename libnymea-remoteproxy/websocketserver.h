@@ -29,7 +29,7 @@ public:
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void sendData(const QList<QUuid> &clients, const QByteArray &data) override;
 
-    void killClientConnection(const QUuid &clientId) override;
+    void killClientConnection(const QUuid &clientId, const QString &killReason) override;
 
 private:
     QUrl m_serverUrl;

@@ -1,6 +1,7 @@
 #ifndef JSONRPCCLIENT_H
 #define JSONRPCCLIENT_H
 
+#include <QUuid>
 #include <QObject>
 #include <QVariantMap>
 #include <QLoggingCategory>
@@ -17,9 +18,10 @@ class JsonRpcClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit JsonRpcClient(QObject *parent = nullptr);
+    explicit JsonRpcClient(ProxyConnection *connection, QObject *parent = nullptr);
 
     JsonReply *callHello();
+    JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token);
 
 private:
     ProxyConnection *m_connection = nullptr;
@@ -27,11 +29,6 @@ private:
     int m_commandId = 0;
 
     QHash<int, JsonReply *> m_replies;
-
-    QString m_serverName;
-    QString m_proxyServerName;
-    QString m_proxyServerVersion;
-    QString m_proxyApiVersion;
 
     void sendRequest(const QVariantMap &request);
 

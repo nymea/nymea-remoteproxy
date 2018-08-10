@@ -7,10 +7,7 @@ namespace remoteproxyclient {
 WebSocketConnection::WebSocketConnection(QObject *parent) :
     ProxyConnection(parent)
 {
-    m_webSocket = new QWebSocket("libnymea-remoteproxyclient", QWebSocketProtocol::VersionLatest, this);
-
-    if (allowSslErrors())
-        m_webSocket->ignoreSslErrors();
+    m_webSocket = new QWebSocket("libnymea-remoteproxyclient", QWebSocketProtocol::Version13, this);
 
     connect(m_webSocket, &QWebSocket::connected, this, &WebSocketConnection::onConnected);
     connect(m_webSocket, &QWebSocket::disconnected, this, &WebSocketConnection::onDisconnected);
@@ -24,7 +21,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
 
 WebSocketConnection::~WebSocketConnection()
 {
-    disconnectServer();
+
 }
 
 QUrl WebSocketConnection::serverUrl() const
@@ -69,6 +66,7 @@ void WebSocketConnection::onSslError(const QList<QSslError> &errors)
         foreach (const QSslError sslError, errors) {
             qCWarning(dcRemoteProxyClientWebSocket()) << "    -->" << static_cast<int>(sslError.error()) << sslError.errorString();
         }
+        emit sslErrorOccured();
     }
 }
 
@@ -89,10 +87,14 @@ void WebSocketConnection::onBinaryMessageReceived(const QByteArray &message)
 
 void WebSocketConnection::connectServer(const QHostAddress &address, quint16 port)
 {
+    if (isConnected()) {
+        m_webSocket->close();
+    }
+
     QUrl url;
     url.setScheme("wss");
     url.setHost(address.toString());
-    url.port(port);
+    url.setPort(port);
 
     m_serverUrl = url;
 

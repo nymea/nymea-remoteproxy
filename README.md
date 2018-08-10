@@ -156,6 +156,74 @@ Once the other client is here and ready, the server will send a notification to 
     }
 
 
+## The complete API
+
+    s"methods": {
+            "Authentication.Authenticate": {
+                "description": "Authenticate this connection. The returned AuthenticationError informs about the result. If the authentication was not successfull, the server will close the connection immediatly after sending the error response. The given id should be a unique id the other tunnel client can understand. Once the authentication was successfull, you can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before getting this notification, the server will close the connection. If the tunnel client does not show up within 10 seconds, the server will close the connection.",
+                "params": {
+                    "name": "String",
+                    "token": "String",
+                    "uuid": "String"
+                },
+                "returns": {
+                    "authenticationError": "$ref:AuthenticationError"
+                }
+            },
+            "RemoteProxy.Hello": {
+                "description": "Once connected to this server, a client can get information about the server by saying Hello. The response informs the client about this proxy server.",
+                "params": {
+                },
+                "returns": {
+                    "apiVersion": "String",
+                    "name": "String",
+                    "server": "String",
+                    "version": "String"
+                }
+            },
+            "RemoteProxy.Introspect": {
+                "description": "Introspect this API.",
+                "params": {
+                },
+                "returns": {
+                    "methods": "Object",
+                    "notifications": "Object",
+                    "types": "Object"
+                }
+            }
+        },
+        "notifications": {
+            "RemoteProxy.TunnelEstablished": {
+                "description": "Emitted whenever the tunnel has been established successfully. This is the last message from the remote proxy server! Any following data will be from the other tunnel client until the connection will be closed. The parameter contain some information about the other tunnel client.",
+                "params": {
+                    "name": "String",
+                    "uuid": "String"
+                }
+            }
+        },
+        "types": {
+            "AuthenticationError": [
+                "AuthenticationErrorNoError",
+                "AuthenticationErrorUnknown",
+                "AuthenticationErrorTimeout",
+                "AuthenticationErrorAborted",
+                "AuthenticationErrorAuthenticationFailed",
+                "AuthenticationErrorAuthenticationServerNotResponding"
+            ],
+            "BasicType": [
+                "Uuid",
+                "String",
+                "Int",
+                "UInt",
+                "Double",
+                "Bool",
+                "Variant",
+                "Object"
+            ]
+        }
+
+
+
 # License
 
 This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3 of the License.

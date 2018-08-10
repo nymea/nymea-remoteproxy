@@ -100,7 +100,7 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         qCWarning(dcProxyServer()) << "An authenticated client sent data without tunnel connection. This is not allowed.";
         m_jsonRpcServer->unregisterClient(proxyClient);
         // The client is authenticated and tries to send data, this is not allowed.
-        proxyClient->interface()->killClientConnection(proxyClient->clientId());
+        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "Data received while authenticated but not remote connected.");
         return;
     }
 

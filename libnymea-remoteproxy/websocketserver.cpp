@@ -59,14 +59,14 @@ void WebSocketServer::sendData(const QList<QUuid> &clients, const QByteArray &da
     }
 }
 
-void WebSocketServer::killClientConnection(const QUuid &clientId)
+void WebSocketServer::killClientConnection(const QUuid &clientId, const QString &killReason)
 {
     QWebSocket *client = m_clientList.value(clientId);
     if (!client)
         return;
 
-    qCWarning(dcWebSocketServer()) << "Kill client connection" << clientId.toString();
-    client->close(QWebSocketProtocol::CloseCodeBadOperation);
+    qCWarning(dcWebSocketServer()) << "Kill client connection" << clientId.toString() << "Reason:" << killReason;
+    client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
 }
 
 void WebSocketServer::onClientConnected()

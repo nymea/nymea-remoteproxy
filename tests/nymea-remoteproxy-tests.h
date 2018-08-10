@@ -63,10 +63,11 @@ private slots:
     void authenticate();
 
     // Client lib
-    void clientConnection();
     void sslConfigurations();
-
     void timeout();
+
+    void clientConnection();
+
 
 public slots:
     void sslErrors(const QList<QSslError> &) {

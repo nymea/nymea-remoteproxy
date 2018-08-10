@@ -40,6 +40,7 @@ QVariantMap JsonReply::requestMap()
     if (!m_params.isEmpty())
         request.insert("params", m_params);
 
+    m_commandId++;
     return request;
 }
 
