@@ -26,6 +26,38 @@ If you want to start the proxy server from the build directory, you need to expo
     $ ./server/nymea-remoteproxy -c ../nymea-remoteproxy/tests/test-certificate.crt -k ../nymea-remoteproxy/tests/test-certificate.key
 
 
+## AWS SDK
+
+Get the latest source code and build dependecies
+
+    $ apt update
+    $ apt install git build-essential cmake libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev
+    
+    $ git clone https://github.com/aws/aws-sdk-cpp.git
+
+Create the build and install folder
+
+    $ cd aws-sdk-cpp
+    $ mkdir -p build/install
+    $ cd build
+
+    $ cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_ONLY="lambda" -DCMAKE_INSTALL_PREFIX=$(pwd)/install ../
+    $ make -j$(nproc)
+
+Install build output into install directory
+
+    $ make install
+
+#### Building debian package
+
+    $ git clone https://github.com/aws/aws-sdk-cpp.git
+    $ cd aws-sdk-cpp
+
+    $ git clone git@gitlab.guh.io:cloud/aws-sdk-cpp-debian.git debian
+
+    $ crossbuilder
+
+
 # Install
 
 

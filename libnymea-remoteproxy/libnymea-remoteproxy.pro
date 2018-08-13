@@ -3,6 +3,12 @@ include(../nymea-remoteproxy.pri)
 TEMPLATE = lib
 TARGET = nymea-remoteproxy
 
+# -L/home/timon/guh/development/cloud/aws-sdk-cpp/build/install/lib
+#        -laws-cpp-sdk-access-management \
+#        -laws-cpp-sdk-cognito-identity \
+#        -laws-cpp-sdk-iam \
+#        -laws-cpp-sdk-kinesis\
+
 HEADERS += \
     engine.h \
     loggingcategories.h \
@@ -19,7 +25,8 @@ HEADERS += \
     authentication/awsauthenticator.h \
     authentication/authenticationreply.h \
     proxyconfiguration.h \
-    tunnelconnection.h
+    tunnelconnection.h \
+    authentication/sigv4utils.h
 
 SOURCES += \
     engine.cpp \
@@ -37,7 +44,8 @@ SOURCES += \
     authentication/awsauthenticator.cpp \
     authentication/authenticationreply.cpp \
     proxyconfiguration.cpp \
-    tunnelconnection.cpp
+    tunnelconnection.cpp \
+    authentication/sigv4utils.cpp
 
 
 # install header file with relative subdirectory

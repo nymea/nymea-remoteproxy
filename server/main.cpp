@@ -124,15 +124,13 @@ int main(int argc, char *argv[])
 
     QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate used for "
                                                                         "this proxy server.", "certificate");
+    certOption.setDefaultValue("/etc/ssl/certs/ssl-cert-snakeoil.pem");
     parser.addOption(certOption);
 
     QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key "
                                                                                 "used for this proxy server.", "certificate-key");
+    certKeyOption.setDefaultValue("/etc/ssl/private/ssl-cert-snakeoil.key");
     parser.addOption(certKeyOption);
-
-    QCommandLineOption authenticationUrlOption(QStringList() << "a" << "authentication-server",
-                                               "The server url of the AWS authentication server.", "url", "https://127.0.0.1");
-    parser.addOption(authenticationUrlOption);
 
     QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print more verbose.");
     parser.addOption(verboseOption);
@@ -221,13 +219,6 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    // Authentication server url
-    QUrl authenticationServerUrl(parser.value(authenticationUrlOption));
-    if (!authenticationServerUrl.isValid()) {
-        qCCritical(dcApplication()) << "Invalid authentication server url:" << parser.value(authenticationUrlOption);
-        exit(-1);
-    }
-
     qCDebug(dcApplication()) << "==============================================";
     qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
     qCDebug(dcApplication()) << "==============================================";
@@ -243,7 +234,6 @@ int main(int argc, char *argv[])
     Engine::instance()->setWebSocketServerHostAddress(serverHostAddress);
     Engine::instance()->setWebSocketServerPort(static_cast<quint16>(port));
     Engine::instance()->setSslConfiguration(sslConfiguration);
-    Engine::instance()->setAuthenticationServerUrl(authenticationServerUrl);
     Engine::instance()->start();
 
     return application.exec();

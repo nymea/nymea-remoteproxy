@@ -13,9 +13,12 @@ class AwsAuthenticator : public Authenticator
     Q_OBJECT
 public:
     explicit AwsAuthenticator(QObject *parent = nullptr);
-    ~AwsAuthenticator() override = default;
+    ~AwsAuthenticator() override;
 
     QString name() const override;
+
+private:
+
 
 public slots:
     AuthenticationReply *authenticate(ProxyClient *proxyClient) override;
