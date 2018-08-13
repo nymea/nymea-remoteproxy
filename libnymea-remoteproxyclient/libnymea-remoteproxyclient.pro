@@ -3,21 +3,7 @@ include(../nymea-remoteproxy.pri)
 TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
 
-HEADERS += \
-    jsonrpcclient.h \
-    jsonreply.h \
-    remoteproxyconnection.h \
-    proxyconnection.h \
-    websocketconnection.h
-
-
-SOURCES += \
-    jsonrpcclient.cpp \
-    jsonreply.cpp \
-    remoteproxyconnection.cpp \
-    proxyconnection.cpp \
-    websocketconnection.cpp
-
+include(libnymea-remoteproxyclient.pri)
 
 # install header file with relative subdirectory
 for(header, HEADERS) {
