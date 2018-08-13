@@ -12,3 +12,6 @@ for(header, HEADERS) {
     eval(headers_$${path}.path = $${path})
     eval(INSTALLS *= headers_$${path})
 }
+
+target.path = /usr/lib/
+INSTALLS += target

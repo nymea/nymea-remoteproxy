@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+%:
+	dh $@
+
+#override_dh_auto_build:
+#	JANUSP=/usr make -j1
+
+#override_dh_auto_install:
+#	install build/janus_guhio.so debian/janus-guh-plugin/lib/$(DEB_HOST_MULTIARCH)/janus/plugins/
+#	install -m 0644 conf/janus.plugin.guhio.cfg debian/janus-guh-plugin/etc/janus/
+
+override_dh_auto_check:
+	LD_LIBRARY_PATH=libnymea-remoteproxy dh_auto_check
+
