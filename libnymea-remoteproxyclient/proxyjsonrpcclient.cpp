@@ -1,4 +1,4 @@
-#include "jsonrpcclient2.h"
+#include "proxyjsonrpcclient.h"
 #include "proxyconnection.h"
 
 #include <QJsonDocument>
