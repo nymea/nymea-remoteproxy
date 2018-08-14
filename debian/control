@@ -13,6 +13,13 @@ Depends: ${shlibs:Depends},
 Description: The nymea remote proxy server
   The nymea remote proxy server
 
+Package: nymea-remoteproxy-client
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy client for testing
+  The nymea remote proxy client for testing
+
 Package: libnymea-remoteproxyclient
 Architecture: any
 Depends: ${shlibs:Depends},
