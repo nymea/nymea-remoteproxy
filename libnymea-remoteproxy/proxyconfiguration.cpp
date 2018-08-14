@@ -38,8 +38,8 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     settings.endGroup();
 
     settings.beginGroup("TcpServer");
-    setWebSocketServerHost(QHostAddress(settings.value("host", "127.0.0.1").toString()));
-    setWebSocketServerPort(static_cast<quint16>(settings.value("port", 1213).toInt()));
+    setTcpServerHost(QHostAddress(settings.value("host", "127.0.0.1").toString()));
+    setTcpServerPort(static_cast<quint16>(settings.value("port", 1213).toInt()));
     settings.endGroup();
 
     return true;
