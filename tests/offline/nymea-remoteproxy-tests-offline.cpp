@@ -70,7 +70,7 @@ void RemoteProxyTests::webserverConnectionBlocked()
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
 
     QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
-    Engine::instance()->start();
+    Engine::instance()->start(m_configuration);
     runningSpy.wait();
 
     QVERIFY(runningSpy.count() == 1);

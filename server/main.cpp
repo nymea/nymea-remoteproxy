@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
     Engine::instance()->setSslConfiguration(sslConfiguration);
     Engine::instance()->setAuthenticator(authenticator);
 
-    Engine::instance()->start();
+    Engine::instance()->start(configuration);
 
     return application.exec();
 }

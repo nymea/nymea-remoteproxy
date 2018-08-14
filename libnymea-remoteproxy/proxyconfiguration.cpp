@@ -25,7 +25,6 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     }
 
     QSettings settings(fileName, QSettings::IniFormat);
-    qCDebug(dcApplication()) << settings.childGroups();
 
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
@@ -141,7 +140,7 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - port:" << configuration->tcpServerPort() << endl;
     debug.nospace() << "========== ProxyConfiguration ==========" << endl;
 
-    return debug;    return debug;
+    return debug;
 }
 
 
