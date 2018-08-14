@@ -1,18 +1,10 @@
-#include <QDir>
 #include <QUrl>
-#include <QtDebug>
-#include <QSslKey>
-#include <QDateTime>
-#include <QFileInfo>
-#include <QTextStream>
-#include <QMessageLogger>
-#include <QSslCertificate>
-#include <QCoreApplication>
 #include <QCoreApplication>
 #include <QLoggingCategory>
-#include <QSslConfiguration>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+
+#include "proxyclient.h"
 
 int main(int argc, char *argv[])
 {
@@ -38,10 +30,15 @@ int main(int argc, char *argv[])
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
     parser.addOption(tokenOption);
 
-
     parser.process(application);
 
+    if (!parser.isSet(tokenOption)) {
+        qWarning() << "Please specify the token for authentication." << endl;
+        exit(-1);
+    }
 
+    ProxyClient client;
+    client.start(parser.value(tokenOption));
 
     return application.exec();
 }

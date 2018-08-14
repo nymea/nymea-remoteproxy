@@ -31,6 +31,7 @@ private:
 
     void requestDynamicCredentials();
     void startVerificationProcess();
+    void cleanUp();
 
 signals:
     void authenticationFinished(Authenticator::AuthenticationError error);

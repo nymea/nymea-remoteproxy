@@ -42,7 +42,8 @@ void AuthenticationReply::setError(Authenticator::AuthenticationError error)
 void AuthenticationReply::setFinished()
 {
     m_timer->stop();
-    emit finished();
+    // emit in next event loop
+    QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
 
 void AuthenticationReply::onTimeout()

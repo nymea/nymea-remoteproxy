@@ -14,7 +14,7 @@ AwsAuthenticator::AwsAuthenticator(QObject *parent) :
 
 AwsAuthenticator::~AwsAuthenticator()
 {
-    qCDebug(dcAuthenticator()) << "Shutting down" << name();
+    qCDebug(dcAuthentication()) << "Shutting down" << name();
 }
 
 QString AwsAuthenticator::name() const
@@ -30,12 +30,12 @@ void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::Authentica
     setReplyError(reply, error);
     setReplyFinished(reply);
 
-    qCDebug(dcAuthenticator()) << "" << error;
+    qCDebug(dcAuthentication()) << "" << error;
 }
 
 AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
 {
-    qCDebug(dcAuthenticator()) << name() << "Start authenticating" <<  proxyClient << "using token" << proxyClient->token();
+    qCDebug(dcAuthentication()) << name() << "Start authenticating" <<  proxyClient << "using token" << proxyClient->token();
     AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
 
     AuthenticationProcess *process = new AuthenticationProcess(m_manager, this);

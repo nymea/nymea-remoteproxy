@@ -1,4 +1,5 @@
 include(../nymea-remoteproxy.pri)
+include(../libnymea-remoteproxyclient/libnymea-remoteproxyclient.pri)
 
 TARGET = nymea-remoteproxy-client
 TEMPLATE = app

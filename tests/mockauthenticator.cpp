@@ -29,7 +29,7 @@ void MockAuthenticator::replyFinished()
     MockAuthenticationReply *reply = static_cast<MockAuthenticationReply *>(sender());
     reply->deleteLater();
 
-    qCDebug(dcAuthenticator()) << name() << "Authentication finished.";
+    qCDebug(dcAuthentication()) << name() << "Authentication finished.";
 
     setReplyError(reply->authenticationReply(), reply->error());
     setReplyFinished(reply->authenticationReply());
@@ -37,7 +37,7 @@ void MockAuthenticator::replyFinished()
 
 AuthenticationReply *MockAuthenticator::authenticate(ProxyClient *proxyClient)
 {
-    qCDebug(dcAuthenticator()) << name() << "Start authentication for" << proxyClient << "using token" << proxyClient->token();
+    qCDebug(dcAuthentication()) << name() << "Start authentication for" << proxyClient << "using token" << proxyClient->token();
 
     AuthenticationReply *authenticationReply = createAuthenticationReply(proxyClient, this);
 

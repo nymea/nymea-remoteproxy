@@ -21,6 +21,7 @@
 #include "loggingcategories.h"
 #include "proxyconfiguration.h"
 #include "authentication/awsauthenticator.h"
+#include "authentication/dummyauthenticator.h"
 
 using namespace remoteproxy;
 
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("JsonRpcTraffic", true);
     s_loggingFilters.insert("WebSocketServer", true);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
-    s_loggingFilters.insert("Authenticator", true);
+    s_loggingFilters.insert("Authentication", true);
     s_loggingFilters.insert("ProxyServer", true);
 
     // command line parser
@@ -120,7 +121,10 @@ int main(int argc, char *argv[])
                                                                                 "assumes there are static AWS credentials provided to aws-cli.");
     parser.addOption(developmentOption);
 
-    QCommandLineOption configOption(QStringList() << "c" <<"config", "The path to the proxy server configuration file. The default is /etc/nymea-remoteproxy/nymea-remoteproxy.conf", "configuration");
+    QCommandLineOption mockAuthenticatorOption(QStringList() << "m" << "mock-authenticator", "Start the server using a mock authenticator which returns always true.");
+    parser.addOption(mockAuthenticatorOption);
+
+    QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is /etc/nymea-remoteproxy/nymea-remoteproxy.conf", "configuration");
     configOption.setDefaultValue("/etc/nymea-remoteproxy/nymea-remoteproxy.conf");
     parser.addOption(configOption);
 
@@ -194,21 +198,26 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    qCDebug(dcApplication()) << "==========================================================";
+    qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
+    qCDebug(dcApplication()) << "==========================================================";
+
     if (parser.isSet(developmentOption)) {
         qCWarning(dcApplication()) << "##########################################################";
         qCWarning(dcApplication()) << "#                   DEVELOPMENT MODE                     #";
         qCWarning(dcApplication()) << "##########################################################";
     }
 
-    qCDebug(dcApplication()) << "==========================================================";
-    qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
-    qCDebug(dcApplication()) << "==========================================================";
-
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
-    // Create default authenticator
-    AwsAuthenticator *authenticator = new AwsAuthenticator(nullptr);
+    Authenticator *authenticator = nullptr;
+    if (parser.isSet(mockAuthenticatorOption)) {
+        authenticator = qobject_cast<Authenticator *>(new DummyAuthenticator(nullptr));
+    } else {
+        // Create default authenticator
+        authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(nullptr));
+    }
 
     // Configure and start the engines
     Engine::instance()->setConfiguration(configuration);
