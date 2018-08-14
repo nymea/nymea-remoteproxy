@@ -27,12 +27,10 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     QSettings settings(fileName, QSettings::IniFormat);
     qCDebug(dcApplication()) << settings.childGroups();
 
-    settings.beginGroup("General");
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
     setSslCertificateFileName(settings.value("certificate", "/etc/ssl/certs/ssl-cert-snakeoil.pem").toString());
     setSslCertificateKeyFileName(settings.value("certificateKey", "/etc/ssl/private/ssl-cert-snakeoil.key").toString());
-    settings.endGroup();
 
     settings.beginGroup("WebSocketServer");
     setWebSocketServerHost(QHostAddress(settings.value("host", "127.0.0.1").toString()));
@@ -74,7 +72,7 @@ QString ProxyConfiguration::sslCertificateFileName() const
 
 void ProxyConfiguration::setSslCertificateFileName(const QString &fileName)
 {
-    m_logFileName = fileName;
+    m_sslCertificateFileName = fileName;
 }
 
 QString ProxyConfiguration::sslCertificateKeyFileName() const

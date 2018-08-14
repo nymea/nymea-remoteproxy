@@ -13,6 +13,7 @@
 #include <QSslConfiguration>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QStandardPaths>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -100,6 +101,8 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("Authentication", true);
     s_loggingFilters.insert("ProxyServer", true);
 
+    QString configFile = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation).first() + "/nymea/nymea-remoteproxy.conf";
+
     // command line parser
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -124,11 +127,11 @@ int main(int argc, char *argv[])
     QCommandLineOption mockAuthenticatorOption(QStringList() << "m" << "mock-authenticator", "Start the server using a mock authenticator which returns always true.");
     parser.addOption(mockAuthenticatorOption);
 
-    QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is /etc/nymea-remoteproxy/nymea-remoteproxy.conf", "configuration");
-    configOption.setDefaultValue("/etc/nymea-remoteproxy/nymea-remoteproxy.conf");
+    QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is " + configFile, "configuration");
+    configOption.setDefaultValue(configFile);
     parser.addOption(configOption);
 
-    QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print more verbose.");
+    QCommandLineOption verboseOption(QStringList() << "verbose", "Print more verbose.");
     parser.addOption(verboseOption);
 
     parser.process(application);
@@ -136,11 +139,12 @@ int main(int argc, char *argv[])
     // Create a default configuration
     ProxyConfiguration *configuration = new ProxyConfiguration(nullptr);
     if (parser.isSet(configOption)) {
-        qCDebug(dcApplication()) << "Loading configuration file from" << parser.value(configOption);
-        if (!configuration->loadConfiguration(parser.value(configOption))) {
-            qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
-            exit(-1);
-        }
+        configFile = parser.value(configOption);
+    }
+    qCDebug(dcApplication()) << "Loading configuration file from" << configFile;
+    if (!configuration->loadConfiguration(parser.value(configOption))) {
+        qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
+        exit(-1);
     }
 
 
