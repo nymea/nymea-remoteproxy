@@ -26,16 +26,16 @@ public:
     void stop();
 
     bool running() const;
+    bool developerMode() const;
 
     QString serverName() const;
     void setServerName(const QString &serverName);
 
-    void setWebSocketServerHostAddress(const QHostAddress &hostAddress);
-    void setWebSocketServerPort(const quint16 &port);
+    void setConfiguration(ProxyConfiguration *configuration);
     void setSslConfiguration(const QSslConfiguration &configuration);
-    void setAuthenticationServerUrl(const QUrl &url);
-
     void setAuthenticator(Authenticator *authenticator);
+
+    void setDeveloperModeEnabled(bool enabled);
 
     Authenticator *authenticator() const;
     ProxyServer *proxyServer() const;
@@ -47,13 +47,10 @@ private:
     static Engine *s_instance;
 
     bool m_running = false;
+    bool m_developerMode = false;
     QString m_serverName;
 
-    quint16 m_webSocketServerPort = 1212;
-    QHostAddress m_webSocketServerHostAddress = QHostAddress::LocalHost;
     QSslConfiguration m_sslConfiguration;
-    QUrl m_authenticationServerUrl;
-
     ProxyConfiguration *m_configuration = nullptr;
     Authenticator *m_authenticator = nullptr;
     ProxyServer *m_proxyServer = nullptr;

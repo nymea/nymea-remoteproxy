@@ -8,13 +8,13 @@
 #include <QHostAddress>
 #include <QLoggingCategory>
 
-#include "jsonrpcclient.h"
-#include "proxyconnection.h"
-
 Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClientConnection)
 Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClientConnectionTraffic)
 
 namespace remoteproxyclient {
+
+class JsonRpcClient;
+class ProxyConnection;
 
 class RemoteProxyConnection : public QObject
 {

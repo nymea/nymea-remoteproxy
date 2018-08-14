@@ -12,6 +12,7 @@
 
 #include "jsonrpc/jsontypes.h"
 #include "mockauthenticator.h"
+#include "proxyconfiguration.h"
 #include "remoteproxyconnection.h"
 
 using namespace remoteproxy;
@@ -24,8 +25,11 @@ public:
     explicit RemoteProxyTests(QObject *parent = nullptr);
 
 private:
+    ProxyConfiguration *m_configuration = nullptr;
+
     quint16 m_port = 1212;
     QHostAddress m_serverAddress = QHostAddress::LocalHost;
+
     QSslConfiguration m_sslConfiguration;
     MockAuthenticator *m_authenticator = nullptr;
     QString m_testToken;

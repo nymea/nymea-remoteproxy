@@ -2,13 +2,11 @@ include(../nymea-remoteproxy.pri)
 
 TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
+target.path = /usr/lib/$$system('dpkg-architecture -q DEB_HOST_MULTIARCH')
 
 include(libnymea-remoteproxyclient.pri)
 
-# install header file with relative subdirectory
-for(header, HEADERS) {
-    path = /usr/include/nymea-remoteproxyclient/$${dirname(header)}
-    eval(headers_$${path}.files += $${header})
-    eval(headers_$${path}.path = $${path})
-    eval(INSTALLS *= headers_$${path})
-}
+installheaders.files = remoteproxyconnection.h
+installheaders.path = /usr/include/nymea-remoteproxyclient/
+
+INSTALLS += target installheaders

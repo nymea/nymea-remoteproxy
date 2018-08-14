@@ -19,7 +19,7 @@ public:
         AuthenticationErrorTimeout,
         AuthenticationErrorAborted,
         AuthenticationErrorAuthenticationFailed,
-        AuthenticationErrorAuthenticationServerNotResponding
+        AuthenticationErrorProxyError
     };
     Q_ENUM(AuthenticationError)
 

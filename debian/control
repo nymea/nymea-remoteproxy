@@ -1,0 +1,42 @@
+Source: nymea-remoteproxy
+Section: utils
+Priority: options
+Maintainer: Simon Stürz <simon.stürz@guh.io>
+Build-depends: debhelper (>= 0.0.0),
+    libqt5websockets5-dev,
+Standards-Version: 3.9.3
+
+Package: nymea-remoteproxy
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy server
+  The nymea remote proxy server
+
+Package: nymea-remoteproxy-client
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy client for testing
+  The nymea remote proxy client for testing
+
+Package: libnymea-remoteproxyclient
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy server client lib
+  The nymea remote proxy server client lib
+
+Package: libnymea-remoteproxyclient-dev
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy server client lib, development files
+  The nymea remote proxy server client lib, development files
+
+Package: nymea-remoteproxy-tests
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy server tests
+  The nymea remote proxy server tests

@@ -1,5 +1,7 @@
 #include "remoteproxyconnection.h"
 #include "websocketconnection.h"
+#include "proxyjsonrpcclient.h"
+#include "proxyconnection.h"
 
 Q_LOGGING_CATEGORY(dcRemoteProxyClientConnection, "RemoteProxyClientConnection")
 Q_LOGGING_CATEGORY(dcRemoteProxyClientConnectionTraffic, "RemoteProxyClientConnectionTraffic")

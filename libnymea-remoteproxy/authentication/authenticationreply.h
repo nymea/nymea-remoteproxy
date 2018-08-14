@@ -4,6 +4,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <QObject>
+#include <QProcess>
 #include <QElapsedTimer>
 
 #include "authenticator.h"
@@ -25,9 +26,9 @@ public:
 
 private:
     explicit AuthenticationReply(ProxyClient *proxyClient, QObject *parent = nullptr);
-
     ProxyClient *m_proxyClient = nullptr;
-    QTimer m_timer;
+    QTimer *m_timer = nullptr;
+    QProcess *m_process = nullptr;
 
     bool m_timedOut = false;
     bool m_finished = false;

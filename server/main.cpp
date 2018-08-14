@@ -19,7 +19,9 @@
 
 #include "engine.h"
 #include "loggingcategories.h"
+#include "proxyconfiguration.h"
 #include "authentication/awsauthenticator.h"
+#include "authentication/dummyauthenticator.h"
 
 using namespace remoteproxy;
 
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("JsonRpcTraffic", true);
     s_loggingFilters.insert("WebSocketServer", true);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
-    s_loggingFilters.insert("Authenticator", true);
+    s_loggingFilters.insert("Authentication", true);
     s_loggingFilters.insert("ProxyServer", true);
 
     // command line parser
@@ -115,29 +117,32 @@ int main(int argc, char *argv[])
                                      "logfile", "/var/log/nymea-remoteproxy.log");
     parser.addOption(logfileOption);
 
-    QCommandLineOption serverOption(QStringList() << "s" << "server", "The server address this proxy will listen on. "
-                                                                      "Default is 127.0.0.1", "hostaddress", "127.0.0.1");
-    parser.addOption(serverOption);
+    QCommandLineOption developmentOption(QStringList() << "d" << "development", "Enable the development mode. This enabled the server "
+                                                                                "assumes there are static AWS credentials provided to aws-cli.");
+    parser.addOption(developmentOption);
 
-    QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port. Default is 1212", "port", "1212");
-    parser.addOption(portOption);
+    QCommandLineOption mockAuthenticatorOption(QStringList() << "m" << "mock-authenticator", "Start the server using a mock authenticator which returns always true.");
+    parser.addOption(mockAuthenticatorOption);
 
-    QCommandLineOption certOption(QStringList() << "c" <<"certificate", "The path to the SSL certificate used for "
-                                                                        "this proxy server.", "certificate");
-    parser.addOption(certOption);
-
-    QCommandLineOption certKeyOption(QStringList() << "k" << "certificate-key", "The path to the SSL certificate key "
-                                                                                "used for this proxy server.", "certificate-key");
-    parser.addOption(certKeyOption);
-
-    QCommandLineOption authenticationUrlOption(QStringList() << "a" << "authentication-server",
-                                               "The server url of the AWS authentication server.", "url", "https://127.0.0.1");
-    parser.addOption(authenticationUrlOption);
+    QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is /etc/nymea-remoteproxy/nymea-remoteproxy.conf", "configuration");
+    configOption.setDefaultValue("/etc/nymea-remoteproxy/nymea-remoteproxy.conf");
+    parser.addOption(configOption);
 
     QCommandLineOption verboseOption(QStringList() << "v" << "verbose", "Print more verbose.");
     parser.addOption(verboseOption);
 
     parser.process(application);
+
+    // Create a default configuration
+    ProxyConfiguration *configuration = new ProxyConfiguration(nullptr);
+    if (parser.isSet(configOption)) {
+        qCDebug(dcApplication()) << "Loading configuration file from" << parser.value(configOption);
+        if (!configuration->loadConfiguration(parser.value(configOption))) {
+            qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
+            exit(-1);
+        }
+    }
+
 
     if (parser.isSet(verboseOption)) {
         s_loggingFilters["Debug"] = true;
@@ -146,104 +151,80 @@ int main(int argc, char *argv[])
 
     QLoggingCategory::installFilter(loggingCategoryFilter);
 
-    // Open the logfile, if any specified
-    if (parser.isSet(logfileOption)) {
-        QFileInfo fi(parser.value(logfileOption));
-        QDir logDir(fi.absolutePath());
-        if (!logDir.exists() && !logDir.mkpath(logDir.absolutePath())) {
-            qCCritical(dcApplication()) << "Error opening log file" << parser.value(logfileOption);
-            return 1;
-        }
-        s_logFile.setFileName(parser.value(logfileOption));
-        if (!s_logFile.open(QFile::WriteOnly | QFile::Append)) {
-            qCCritical(dcApplication()) << "Error opening log file" << parser.value(logfileOption);
-            return 1;
-        }
-        s_loggingEnabled = true;
-    }
-
-    // Proxy server host address
-    QHostAddress serverHostAddress = QHostAddress(parser.value(serverOption));
-    if (serverHostAddress.isNull()) {
-        qCCritical(dcApplication()) << "Invalid hostaddress for the proxy server:" << parser.value(serverOption);
+    // Verify webserver configuration
+    if (configuration->webSocketServerHost().isNull()) {
+        qCCritical(dcApplication()) << "Invalid web socket host address passed.";
         exit(-1);
     }
 
-    // Port
-    bool ok = false;
-    uint port = parser.value(portOption).toUInt(&ok);
-    if (!ok) {
-        qCCritical(dcApplication()) << "Invalid port value:" << parser.value(portOption);
-        exit(-1);
-    }
-
-    if (port > 65535) {
-        qCCritical(dcApplication()) << "Port value is out of range:" << parser.value(portOption);
+    // Verify tcp server configuration
+    if (configuration->tcpServerHost().isNull()) {
+        qCCritical(dcApplication()) << "Invalid TCP server host address passed.";
         exit(-1);
     }
 
     // SSL certificate
     QSslConfiguration sslConfiguration;
-    if (parser.isSet(certOption)) {
-        // Load certificate
-        QFile certFile(parser.value(certOption));
-        if (!certFile.open(QIODevice::ReadOnly)) {
-            qCCritical(dcApplication()) << "Could not open certificate file:" << parser.value(certOption) << certFile.errorString();
-            exit(-1);
-        }
-
-        QSslCertificate certificate(&certFile, QSsl::Pem);
-        qCDebug(dcApplication()) << "Loaded successfully certificate" << parser.value(certOption);
-        certFile.close();
-
-        // Create SSL configuration
-        sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
-        sslConfiguration.setLocalCertificate(certificate);
-        sslConfiguration.setProtocol(QSsl::TlsV1_2OrLater);
+    // Load certificate
+    QFile certFile(configuration->sslCertificateFileName());
+    if (!certFile.open(QIODevice::ReadOnly)) {
+        qCCritical(dcApplication()) << "Could not open certificate file" << configuration->sslCertificateFileName() << certFile.errorString();
+        exit(-1);
     }
+
+    QSslCertificate certificate(&certFile, QSsl::Pem);
+    qCDebug(dcApplication()) << "Loaded successfully certificate" << configuration->sslCertificateFileName();
+    certFile.close();
+
+    // Create SSL configuration
+    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
+    sslConfiguration.setLocalCertificate(certificate);
+    sslConfiguration.setProtocol(QSsl::TlsV1_2OrLater);
 
     // SSL key
-    if (parser.isSet(certKeyOption)) {
-        QFile certKeyFile(parser.value(certKeyOption));
-        if (!certKeyFile.open(QIODevice::ReadOnly)) {
-            qCCritical(dcApplication()) << "Could not open certificate key file:" << parser.value(certKeyOption) << certKeyFile.errorString();
-            exit(-1);
-        }
-
-        QSslKey sslKey(&certKeyFile, QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey);
-        qCDebug(dcApplication()) << "Loaded successfully certificate key" << parser.value(certKeyOption);
-        certKeyFile.close();
-        sslConfiguration.setPrivateKey(sslKey);
+    QFile certKeyFile(configuration->sslCertificateKeyFileName());
+    if (!certKeyFile.open(QIODevice::ReadOnly)) {
+        qCCritical(dcApplication()) << "Could not open certificate key file:" << configuration->sslCertificateKeyFileName() << certKeyFile.errorString();
+        exit(-1);
     }
+
+    QSslKey sslKey(&certKeyFile, QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey);
+    qCDebug(dcApplication()) << "Loaded successfully certificate key" << configuration->sslCertificateKeyFileName();
+    certKeyFile.close();
+    sslConfiguration.setPrivateKey(sslKey);
 
     if (sslConfiguration.isNull()) {
         qCCritical(dcApplication()) << "No SSL configuration specified. The server does not suppoert insecure connections.";
         exit(-1);
     }
 
-    // Authentication server url
-    QUrl authenticationServerUrl(parser.value(authenticationUrlOption));
-    if (!authenticationServerUrl.isValid()) {
-        qCCritical(dcApplication()) << "Invalid authentication server url:" << parser.value(authenticationUrlOption);
-        exit(-1);
-    }
-
-    qCDebug(dcApplication()) << "==============================================";
+    qCDebug(dcApplication()) << "==========================================================";
     qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
-    qCDebug(dcApplication()) << "==============================================";
+    qCDebug(dcApplication()) << "==========================================================";
+
+    if (parser.isSet(developmentOption)) {
+        qCWarning(dcApplication()) << "##########################################################";
+        qCWarning(dcApplication()) << "#                   DEVELOPMENT MODE                     #";
+        qCWarning(dcApplication()) << "##########################################################";
+    }
 
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
-    // Create default authenticator
-    AwsAuthenticator *authenticator = new AwsAuthenticator(nullptr);
+    Authenticator *authenticator = nullptr;
+    if (parser.isSet(mockAuthenticatorOption)) {
+        authenticator = qobject_cast<Authenticator *>(new DummyAuthenticator(nullptr));
+    } else {
+        // Create default authenticator
+        authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(nullptr));
+    }
 
     // Configure and start the engines
-    Engine::instance()->setAuthenticator(authenticator);
-    Engine::instance()->setWebSocketServerHostAddress(serverHostAddress);
-    Engine::instance()->setWebSocketServerPort(static_cast<quint16>(port));
+    Engine::instance()->setConfiguration(configuration);
+    Engine::instance()->setDeveloperModeEnabled(parser.isSet(developmentOption));
     Engine::instance()->setSslConfiguration(sslConfiguration);
-    Engine::instance()->setAuthenticationServerUrl(authenticationServerUrl);
+    Engine::instance()->setAuthenticator(authenticator);
+
     Engine::instance()->start();
 
     return application.exec();
