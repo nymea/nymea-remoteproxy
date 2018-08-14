@@ -59,6 +59,8 @@ private:
 
 };
 
+QDebug operator<< (QDebug debug, ProxyConfiguration *configuration);
+
 }
 
 #endif // PROXYCONFIGURATION_H

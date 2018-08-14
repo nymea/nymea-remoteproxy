@@ -13,6 +13,8 @@
 RemoteProxyTests::RemoteProxyTests(QObject *parent) :
     QObject(parent)
 {
+    m_configuration = new ProxyConfiguration(this);
+
     QFile certificateFile(":/test-certificate.crt");
     if (!certificateFile.open(QIODevice::ReadOnly)) {
         qWarning() << "Could not open resource file" << certificateFile.fileName();
@@ -72,11 +74,10 @@ void RemoteProxyTests::startEngine()
     if (!Engine::exists()) {
         QString serverName = "nymea-remoteproxy-testserver";
         Engine::instance()->setAuthenticator(m_authenticator);
-        Engine::instance()->setAuthenticationServerUrl(QUrl("https://localhost"));
         Engine::instance()->setServerName(serverName);
-        Engine::instance()->setWebSocketServerPort(m_port);
-        Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
+        Engine::instance()->setConfiguration(m_configuration);
         Engine::instance()->setSslConfiguration(m_sslConfiguration);
+        Engine::instance()->setDeveloperModeEnabled(true);
 
         QVERIFY(Engine::exists());
         QVERIFY(Engine::instance()->serverName() == serverName);
@@ -89,6 +90,8 @@ void RemoteProxyTests::startServer()
 
     if (!Engine::instance()->running()) {
         QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
+        Engine::instance()->setConfiguration(m_configuration);
+        Engine::instance()->setDeveloperModeEnabled(true);
         Engine::instance()->start();
         runningSpy.wait();
         QVERIFY(runningSpy.count() == 1);
@@ -217,9 +220,8 @@ void RemoteProxyTests::webserverConnectionBlocked()
     dummyServer.listen(QHostAddress::LocalHost, m_port);
 
     // Start proxy webserver
-    Engine::instance()->setWebSocketServerPort(m_port);
+    Engine::instance()->setConfiguration(m_configuration);
     Engine::instance()->setAuthenticator(m_authenticator);
-    Engine::instance()->setWebSocketServerHostAddress(QHostAddress::LocalHost);
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
 
     QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
@@ -324,7 +326,7 @@ void RemoteProxyTests::authenticate_data()
                             << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
     QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
-                                    << 200 << Authenticator::AuthenticationErrorAuthenticationServerNotResponding;
+                                    << 200 << Authenticator::AuthenticationErrorProxyError;
 
     QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken
                              << 100 << Authenticator::AuthenticationErrorAborted;

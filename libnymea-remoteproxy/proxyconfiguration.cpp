@@ -14,18 +14,18 @@ ProxyConfiguration::ProxyConfiguration(QObject *parent) :
 bool ProxyConfiguration::loadConfiguration(const QString &fileName)
 {
     QFileInfo fileInfo(fileName);
-
     if (!fileInfo.exists()) {
-        qCWarning(dcApplication()) << "Could not find configuration file" << fileName;
+        qCWarning(dcApplication()) << "Configuration: Could not find configuration file" << fileName;
         return false;
     }
 
     if (!fileInfo.isReadable()) {
-        qCWarning(dcApplication()) << "Cannot read configuration file" << fileName;
+        qCWarning(dcApplication()) << "Configuration: Cannot read configuration file" << fileName;
         return false;
     }
 
     QSettings settings(fileName, QSettings::IniFormat);
+    qCDebug(dcApplication()) << settings.childGroups();
 
     settings.beginGroup("General");
     setWriteLogFile(settings.value("writeLogs", false).toBool());
@@ -125,6 +125,25 @@ quint16 ProxyConfiguration::tcpServerPort() const
 void ProxyConfiguration::setTcpServerPort(quint16 port)
 {
     m_tcpServerPort = port;
+}
+
+QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
+{
+    debug.nospace() << endl << "========== ProxyConfiguration ==========" << endl;
+    debug.nospace() << "General" << endl;
+    debug.nospace() << "  - write logfile:" << configuration->writeLogFile() << endl;
+    debug.nospace() << "  - logfile:" << configuration->logFileName() << endl;
+    debug.nospace() << "  - certificate:" << configuration->sslCertificateFileName() << endl;
+    debug.nospace() << "  - certificate key:" << configuration->sslCertificateKeyFileName() << endl;
+    debug.nospace() << "WebSocketServer" << endl;
+    debug.nospace() << "  - host:" << configuration->webSocketServerHost().toString() << endl;
+    debug.nospace() << "  - port:" << configuration->webSocketServerPort() << endl;
+    debug.nospace() << "TcpServer" << endl;
+    debug.nospace() << "  - host:" << configuration->tcpServerHost().toString() << endl;
+    debug.nospace() << "  - port:" << configuration->tcpServerPort() << endl;
+    debug.nospace() << "========== ProxyConfiguration ==========" << endl;
+
+    return debug;    return debug;
 }
 
 

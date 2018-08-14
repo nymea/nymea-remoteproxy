@@ -1,0 +1,17 @@
+include(../nymea-remoteproxy.pri)
+
+TARGET = nymea-remoteproxy-client
+TEMPLATE = app
+
+INCLUDEPATH += ../libnymea-remoteproxy
+
+LIBS += -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient
+
+SOURCES += main.cpp \
+    proxyclient.cpp
+
+target.path = /usr/bin
+INSTALLS += target
+
+HEADERS += \
+    proxyclient.h

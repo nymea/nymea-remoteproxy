@@ -2,9 +2,11 @@
 #define AWSAUTHENTICATOR_H
 
 #include <QObject>
+#include <QNetworkAccessManager>
 
 #include "authenticator.h"
 #include "authenticationreply.h"
+#include "authenticationprocess.h"
 
 namespace remoteproxy {
 
@@ -18,7 +20,11 @@ public:
     QString name() const override;
 
 private:
+    QNetworkAccessManager *m_manager = nullptr;
+    QHash<AuthenticationProcess *, AuthenticationReply *> m_runningProcesses;
 
+private slots:
+    void onAuthenticationProcessFinished(Authenticator::AuthenticationError error);
 
 public slots:
     AuthenticationReply *authenticate(ProxyClient *proxyClient) override;

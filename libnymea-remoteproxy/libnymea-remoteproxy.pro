@@ -26,7 +26,7 @@ HEADERS += \
     authentication/authenticationreply.h \
     proxyconfiguration.h \
     tunnelconnection.h \
-    authentication/sigv4utils.h
+    authentication/authenticationprocess.h
 
 SOURCES += \
     engine.cpp \
@@ -45,7 +45,7 @@ SOURCES += \
     authentication/authenticationreply.cpp \
     proxyconfiguration.cpp \
     tunnelconnection.cpp \
-    authentication/sigv4utils.cpp
+    authentication/authenticationprocess.cpp
 
 
 # install header file with relative subdirectory
