@@ -151,14 +151,34 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    if (parser.isSet(logfileOption)) {
+        configuration->setWriteLogFile(true);
+        configuration->setLogFileName(parser.value(logfileOption));
+    }
+
     if (parser.isSet(verboseOption)) {
         s_loggingFilters["JsonRpcTraffic"] = true;
         s_loggingFilters["ProxyServerTraffic"] = true;
         s_loggingFilters["AuthenticationProcess"] = true;
         s_loggingFilters["WebSocketServerTraffic"] = true;
     }
-
     QLoggingCategory::installFilter(loggingCategoryFilter);
+
+    // Open logfile if configured
+    if (configuration->writeLogFile()) {
+        s_loggingEnabled = true;
+        QFileInfo fi(configuration->logFileName());
+        QDir dir(fi.absolutePath());
+        if (!dir.exists() && !dir.mkpath(dir.absolutePath())) {
+            qCWarning(dcApplication()) << "Error opening log file" << configuration->logFileName();
+            exit(-1);
+        }
+        s_logFile.setFileName(configuration->logFileName());
+        if (!s_logFile.open(QFile::WriteOnly | QFile::Append)) {
+            qWarning() << "Error opening log file" << configuration->logFileName();
+            exit(-1);
+        }
+    }
 
     // Verify webserver configuration
     if (configuration->webSocketServerHost().isNull()) {
