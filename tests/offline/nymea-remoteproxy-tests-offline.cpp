@@ -28,12 +28,11 @@ void RemoteProxyTests::dummyAuthenticator()
     DummyAuthenticator *dummyAuthenticator = new DummyAuthenticator(this);
 
     // Start proxy webserver
-    Engine::instance()->setConfiguration(m_configuration);
     Engine::instance()->setAuthenticator(dummyAuthenticator);
     Engine::instance()->setSslConfiguration(m_sslConfiguration);
 
     QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
-    Engine::instance()->start();
+    Engine::instance()->start(m_configuration);
     runningSpy.wait();
 
     QVERIFY(runningSpy.count() == 1);

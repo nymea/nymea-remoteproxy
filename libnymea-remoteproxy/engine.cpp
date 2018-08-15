@@ -34,7 +34,6 @@ void Engine::start(ProxyConfiguration *configuration)
 {
     // Make sure an authenticator was registered
     Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
-    Q_ASSERT_X(m_configuration != nullptr, "Engine", "There is no configuration set.");
 
     if (!m_running)
         qCDebug(dcEngine()) << "Start server engine";
@@ -43,6 +42,8 @@ void Engine::start(ProxyConfiguration *configuration)
     clean();
 
     m_configuration = configuration;
+    Q_ASSERT_X(configuration != nullptr, "Engine", "There is no configuration set.");
+
     m_proxyServer = new ProxyServer(this);
     m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
 
@@ -50,7 +51,7 @@ void Engine::start(ProxyConfiguration *configuration)
     websocketServerUrl.setScheme("wss");
     websocketServerUrl.setHost(m_configuration->webSocketServerHost().toString());
     websocketServerUrl.setPort(m_configuration->webSocketServerPort());
-    qDebug() << "WSS url is:" << websocketServerUrl;
+
     m_webSocketServer->setServerUrl(websocketServerUrl);
 
     m_proxyServer->registerTransportInterface(m_webSocketServer);

@@ -92,7 +92,7 @@ void BaseTest::startServer()
         QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
         Engine::instance()->setConfiguration(m_configuration);
         Engine::instance()->setDeveloperModeEnabled(true);
-        Engine::instance()->start();
+        Engine::instance()->start(m_configuration);
         runningSpy.wait();
         QVERIFY(runningSpy.count() == 1);
     }
