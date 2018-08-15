@@ -1,0 +1,2 @@
+include(../../nymea-remoteproxy.pri)
+

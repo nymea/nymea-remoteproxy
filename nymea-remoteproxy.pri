@@ -16,9 +16,6 @@ CONFIG += c++11 console
 QMAKE_CXXFLAGS *= -Werror -std=c++11 -g
 QMAKE_LFLAGS *= -std=c++11
 
-INCLUDEPATH += /home/timon/guh/development/cloud/aws-sdk-cpp/build/install/include
-LIBS += -L/home/timon/guh/development/cloud/aws-sdk-cpp/build/install/lib -laws-cpp-sdk-core -laws-cpp-sdk-lambda
-
 top_srcdir=$$PWD
 top_builddir=$$shadowed($$PWD)
 

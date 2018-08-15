@@ -1,20 +1,4 @@
-include(../nymea-remoteproxy.pri)
+TEMPLATE=subdirs
+SUBDIRS += offline
 
-CONFIG += testcase
-QT += testlib
 
-TARGET = nymea-remoteproxy-tests
-
-INCLUDEPATH += ../libnymea-remoteproxy ../libnymea-remoteproxyclient
-LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy \
-        -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient \
-
-RESOURCES += certificate.qrc
-
-HEADERS += nymea-remoteproxy-tests.h \
-    mockauthenticator.h
-SOURCES += nymea-remoteproxy-tests.cpp \
-    mockauthenticator.cpp
-
-target.path = /usr/bin
-INSTALLS += target

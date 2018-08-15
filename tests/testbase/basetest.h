@@ -1,7 +1,7 @@
-#ifndef NYMEA_REMOTEPROXY_TESTS_H
-#define NYMEA_REMOTEPROXY_TESTS_H
+#ifndef BASETEST_H
+#define BASETEST_H
 
-#include <QUrl>
+#include <QObject>
 #include <QtTest>
 #include <QSslKey>
 #include <QObject>
@@ -14,17 +14,18 @@
 #include "mockauthenticator.h"
 #include "proxyconfiguration.h"
 #include "remoteproxyconnection.h"
+#include "authentication/dummyauthenticator.h"
 
 using namespace remoteproxy;
 using namespace remoteproxyclient;
 
-class RemoteProxyTests : public QObject
+class BaseTest : public QObject
 {
     Q_OBJECT
 public:
-    explicit RemoteProxyTests(QObject *parent = nullptr);
+    explicit BaseTest(QObject *parent = nullptr);
 
-private:
+protected:
     ProxyConfiguration *m_configuration = nullptr;
 
     quint16 m_port = 1212;
@@ -48,31 +49,6 @@ private:
 protected slots:
     void initTestCase();
     void cleanupTestCase();
-
-private slots:
-    // Basic stuff
-    void startStopServer();
-
-    // WebSocket connection
-    void webserverConnectionBlocked();
-    void webserverConnection();
-
-    // Api
-    void getIntrospect();
-    void getHello();
-
-    void apiBasicCalls_data();
-    void apiBasicCalls();
-
-    void authenticate_data();
-    void authenticate();
-
-    // Client lib
-    void clientConnection();
-    void remoteConnection();
-    void sslConfigurations();
-    void timeout();
-
 
 
 public slots:
@@ -103,6 +79,7 @@ public slots:
     }
 
 
+
 };
 
-#endif // NYMEA_REMOTEPROXY_TESTS_H
+#endif // BASETEST_H
