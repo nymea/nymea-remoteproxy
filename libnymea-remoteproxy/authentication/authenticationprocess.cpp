@@ -99,7 +99,6 @@ void AuthenticationProcess::onDynamicCredentialsReady()
 void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     qCDebug(dcAuthenticationProcess()) << "Authentication process finished (" << m_processTimer.elapsed() << "[ms] )";;
-
     if (exitStatus == QProcess::CrashExit) {
         qCWarning(dcAuthenticationProcess()) << "Authentication process crashed:" << endl << qUtf8Printable(m_process->readAll());
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
@@ -113,7 +112,6 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
     }
 
     QFile resultFile(m_resultFileName);
-
     if (!resultFile.exists()) {
         qCWarning(dcAuthenticationProcess()) << "The process output file does not exist.";
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
@@ -128,6 +126,8 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
 
     QByteArray resultData = resultFile.readAll();
 
+    qCDebug(dcAuthenticationProcess()) << "Lambda function result ready" << qUtf8Printable(resultData);
+
     resultFile.close();
     if (!resultFile.remove()) {
         qCWarning(dcAuthenticationProcess()) << "Could not clean up result file from process:" << resultFile.errorString();
@@ -136,7 +136,6 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
 
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(resultData, &error);
-
     if(error.error != QJsonParseError::NoError) {
         qCWarning(dcAuthenticationProcess()) << "Failed to parse lambda invoke result data" << resultData << ":" << error.errorString();
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);

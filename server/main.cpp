@@ -92,14 +92,16 @@ int main(int argc, char *argv[])
     application.setOrganizationName("guh");
     application.setApplicationVersion(SERVER_VERSION_STRING);
 
-    s_loggingFilters.insert("Engine", true);
     s_loggingFilters.insert("Application", true);
+    s_loggingFilters.insert("Engine", true);
     s_loggingFilters.insert("JsonRpc", true);
-    s_loggingFilters.insert("JsonRpcTraffic", true);
+    s_loggingFilters.insert("JsonRpcTraffic", false);
     s_loggingFilters.insert("WebSocketServer", true);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
     s_loggingFilters.insert("Authentication", true);
+    s_loggingFilters.insert("AuthenticationProcess", true);
     s_loggingFilters.insert("ProxyServer", true);
+    s_loggingFilters.insert("ProxyServerTraffic", false);
 
     QString configFile = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation).first() + "/nymea/nymea-remoteproxy.conf";
 
@@ -147,9 +149,9 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-
     if (parser.isSet(verboseOption)) {
-        s_loggingFilters["Debug"] = true;
+        s_loggingFilters["JsonRpcTraffic"] = true;
+        s_loggingFilters["ProxyServerTraffic"] = true;
         s_loggingFilters["WebSocketServerTraffic"] = true;
     }
 

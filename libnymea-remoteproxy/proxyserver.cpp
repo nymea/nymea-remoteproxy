@@ -78,7 +78,7 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
     TunnelConnection tunnel(firstClient, secondClient);
     if (!tunnel.isValid()) {
         qCWarning(dcProxyServer()) << "Invalid tunnel. Could not establish connection.";
-        // FIXME
+        //FIXME:
     }
 
     m_tunnels.insert(tunnel.token(), tunnel);
