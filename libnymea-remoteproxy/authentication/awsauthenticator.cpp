@@ -9,7 +9,7 @@ AwsAuthenticator::AwsAuthenticator(QObject *parent) :
     Authenticator(parent),
     m_manager(new QNetworkAccessManager(this))
 {
-
+    // TODO: verify if aws command is installed
 }
 
 AwsAuthenticator::~AwsAuthenticator()

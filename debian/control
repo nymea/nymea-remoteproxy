@@ -10,11 +10,42 @@ Package: nymea-remoteproxy
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
+         awscli,
+         libnymea-remoteproxy (= ${binary:Version}),
 Description: The nymea remote proxy server
   The nymea remote proxy server
 
+
+Package: libnymea-remoteproxy
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy server lib
+  The nymea remote proxy server lib
+
+Package: libnymea-remoteproxy-dev
+Architecture: any
+Section: libdevel
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libnymea-remoteproxy (= ${binary:Version}),
+Description: The nymea remote proxy server lib - development files
+  The nymea remote proxy server lib - development files
+
+Package: libnymea-remoteproxy-dbg
+Architecture: any
+Section: debug
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libnymea-remoteproxy (= ${binary:Version}),
+Description: The nymea remote proxy server lib - debug symbols
+  The nymea remote proxy server lib - debug symbols
+
+
 Package: nymea-remoteproxy-client
 Architecture: any
+Section: libs
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy client for testing
@@ -22,6 +53,7 @@ Description: The nymea remote proxy client for testing
 
 Package: libnymea-remoteproxyclient
 Architecture: any
+Section: libs
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy server client lib
@@ -29,14 +61,26 @@ Description: The nymea remote proxy server client lib
 
 Package: libnymea-remoteproxyclient-dev
 Architecture: any
+Section: libdevel
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-Description: The nymea remote proxy server client lib, development files
-  The nymea remote proxy server client lib, development files
+         libnymea-remoteproxyclient (= ${binary:Version}),
+Description: The nymea remote proxy server client lib - development files
+  The nymea remote proxy server client lib - development files
+
+Package: libnymea-remoteproxyclient-dbg
+Architecture: any
+Section: debug
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libnymea-remoteproxyclient (= ${binary:Version}),
+Description: The nymea remote proxy server client lib - debug symbols
+  The nymea remote proxy server client lib - debug symbols
 
 Package: nymea-remoteproxy-tests
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
+         libnymea-remoteproxy (= ${binary:Version}),
 Description: The nymea remote proxy server tests
   The nymea remote proxy server tests

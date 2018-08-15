@@ -11,5 +11,14 @@ $(PREPROCESS_FILES:.in=): %: %.in
 override_dh_install: $(PREPROCESS_FILES:.in=)
 	dh_install
 
+override_dh_strip:
+	dh_strip --dbg-package=libnymea-remoteproxy-dbg
+	dh_strip --dbg-package=libnymea-remoteproxyclient-dbg
+
+override_dh_auto_clean:
+	dh_auto_clean
+	find . -name *.qm -exec rm {} \;
+	rm -rf $(PREPROCESS_FILES:.in=)
+
 %:
 	dh $@

@@ -24,6 +24,7 @@ void AuthenticationProcess::useDynamicCredentials(bool dynamicCredentials)
 
 void AuthenticationProcess::requestDynamicCredentials()
 {
+    m_requestTimer.start();
     QNetworkReply *reply = m_manager->get(QNetworkRequest(QUrl("http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2-Remote-Connection-Proxy-Role")));
     connect(reply, &QNetworkReply::finished, this, &AuthenticationProcess::onDynamicCredentialsReady);
 }
@@ -52,7 +53,7 @@ void AuthenticationProcess::startVerificationProcess()
     m_resultFileName = "/tmp/" + QUuid::createUuid().toString().remove("{").remove("}").remove("-") + ".json";
 
     qCDebug(dcAuthentication()) << "Start authenticator process and store result in" << m_resultFileName;
-
+    m_processTimer.start();
     m_process->start("aws", { "lambda", "invoke",
                               "--function-name", "system-services-authorizer-dev-checkToken",
                               "--invocation-type", "RequestResponse",
@@ -66,6 +67,7 @@ void AuthenticationProcess::onDynamicCredentialsReady()
     QNetworkReply *reply = static_cast<QNetworkReply *>(sender());
     reply->deleteLater();
 
+    qCDebug(dcAuthenticationProcess()) << "Dynamic credentials request finished (" << m_requestTimer.elapsed() << "[ms] )";
     if (reply->error()) {
         qCWarning(dcAuthenticationProcess()) << "Dynamic credentials reply error: " << reply->errorString();
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
@@ -95,16 +97,20 @@ void AuthenticationProcess::onDynamicCredentialsReady()
 
 void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    qCDebug(dcAuthenticationProcess()) << "Authentication process finished (" << m_processTimer.elapsed() << "[ms] )";;
 
     if (exitStatus == QProcess::CrashExit) {
         qCWarning(dcAuthenticationProcess()) << "Authentication process crashed:" << endl << qUtf8Printable(m_process->readAll());
+        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
+        return;
     }
 
     if (exitCode != 0) {
         qCWarning(dcAuthenticationProcess()) << "The authentication process finished with error" << exitCode << endl << qUtf8Printable(m_process->readAll());
+        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
+        return;
     }
 
-    qCDebug(dcAuthenticationProcess()) << "Finished successfully";
     QFile resultFile(m_resultFileName);
 
     if (!resultFile.exists()) {

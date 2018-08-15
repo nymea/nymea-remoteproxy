@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QProcess>
+#include <QElapsedTimer>
 #include <QNetworkAccessManager>
 
 #include "authenticator.h"
@@ -28,6 +29,8 @@ private:
 
     QNetworkAccessManager *m_manager = nullptr;
     QProcess *m_process = nullptr;
+    QElapsedTimer m_requestTimer;
+    QElapsedTimer m_processTimer;
 
     void requestDynamicCredentials();
     void startVerificationProcess();
