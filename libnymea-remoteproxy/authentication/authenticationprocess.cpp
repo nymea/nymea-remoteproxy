@@ -55,6 +55,7 @@ void AuthenticationProcess::startVerificationProcess()
 
     qCDebug(dcAuthentication()) << "Start authenticator process and store result in" << m_resultFileName;
     m_processTimer.start();
+    m_process->setProcessEnvironment(env);
     m_process->start("aws", { "lambda", "invoke",
                               "--function-name", "system-services-authorizer-dev-checkToken",
                               "--invocation-type", "RequestResponse",
