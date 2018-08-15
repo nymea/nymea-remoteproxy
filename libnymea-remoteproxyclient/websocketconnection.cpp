@@ -47,7 +47,7 @@ void WebSocketConnection::onConnected()
 
 void WebSocketConnection::onDisconnected()
 {
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnected from" << m_webSocket->requestUrl().toString();
+    qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnected from" << m_webSocket->requestUrl().toString() << m_webSocket->closeReason();
     emit connectedChanged(false);
 }
 
