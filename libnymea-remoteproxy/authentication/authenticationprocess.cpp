@@ -44,6 +44,7 @@ void AuthenticationProcess::startVerificationProcess()
     env.insert("AWS_DEFAULT_REGION", "eu-west-1");
 
     if (m_dynamicCredentials) {
+        qCDebug(dcAuthenticationProcess()) << "Using dynamic credentials" << m_awsAccessKeyId << m_awsSecretAccessKey << m_awsSessionToken;
         env.insert("AWS_ACCESS_KEY_ID", m_awsAccessKeyId);
         env.insert("AWS_SECRET_ACCESS_KEY", m_awsSecretAccessKey);
         env.insert("AWS_SESSION_TOKEN", m_awsSessionToken);
