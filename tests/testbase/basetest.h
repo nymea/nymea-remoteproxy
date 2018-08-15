@@ -14,6 +14,7 @@
 #include "mockauthenticator.h"
 #include "proxyconfiguration.h"
 #include "remoteproxyconnection.h"
+#include "authentication/awsauthenticator.h"
 #include "authentication/dummyauthenticator.h"
 
 using namespace remoteproxy;
@@ -32,10 +33,18 @@ protected:
     QHostAddress m_serverAddress = QHostAddress::LocalHost;
 
     QSslConfiguration m_sslConfiguration;
-    MockAuthenticator *m_authenticator = nullptr;
+
+    Authenticator *m_authenticator = nullptr;
+    MockAuthenticator *m_mockAuthenticator = nullptr;
+    DummyAuthenticator *m_dummyAuthenticator  = nullptr;
+    AwsAuthenticator *m_awsAuthenticator  = nullptr;
+
     QString m_testToken;
 
     int m_commandCounter = 0;
+
+    void loadConfiguration(const QString &fileName);
+    void setAuthenticator(Authenticator *authenticator);
 
     void cleanUpEngine();
     void restartEngine();
@@ -49,7 +58,6 @@ protected:
 protected slots:
     void initTestCase();
     void cleanupTestCase();
-
 
 public slots:
     void sslErrors(const QList<QSslError> &) {

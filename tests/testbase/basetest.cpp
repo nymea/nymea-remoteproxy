@@ -14,30 +14,13 @@ BaseTest::BaseTest(QObject *parent) :
     QObject(parent)
 {
     m_configuration = new ProxyConfiguration(this);
+    m_configuration->loadConfiguration(":/test-configuration.conf");
 
-    QFile certificateFile(":/test-certificate.crt");
-    if (!certificateFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "Could not open resource file" << certificateFile.fileName();
-        exit(1);
-    }
+    m_mockAuthenticator = new MockAuthenticator(this);
+    m_dummyAuthenticator = new DummyAuthenticator(this);
+    m_awsAuthenticator = new AwsAuthenticator(this);
 
-    QByteArray certificateData = certificateFile.readAll();
-    //qDebug() << "Certificate:" << endl << qUtf8Printable(certificateData);
-
-    QFile keyFile(":/test-certificate.key");
-    if (!keyFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "Could not open resource file" << keyFile.fileName();
-        exit(1);
-    }
-
-    QByteArray keyData = keyFile.readAll();
-    //qDebug() << "Certificate key:" << endl << qUtf8Printable(keyData);
-    m_authenticator = new MockAuthenticator(this);
-
-    m_sslConfiguration.setPrivateKey(QSslKey(keyData,  QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey));
-    m_sslConfiguration.setLocalCertificate(QSslCertificate(certificateData, QSsl::Pem));
-    m_sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
-    m_sslConfiguration.setProtocol(QSsl::TlsV1_2OrLater);
+    m_authenticator = qobject_cast<Authenticator *>(m_mockAuthenticator);
 
     m_testToken = "eyJraWQiOiJXdnFFT3prVVh5VDlINzFyRUpoNWdxRnkxNFhnR2l3SFAzVEIzUFQ1V3ZrPSIsImFsZyI6IlJT"
                   "MjU2In0.eyJzdWIiOiJmZTJmZDNlNC1hMGJhLTQ1OTUtOWRiZS00ZDkxYjRiMjFlMzUiLCJhdWQiOiI4cmpoZ"
@@ -52,6 +35,13 @@ BaseTest::BaseTest(QObject *parent) :
                   "pQbj58v1vktaAEATdmKmlzmcix-HJK9wWHRSuv3TsNa8DGxvcPOoeTu8Vql7krZ-y7Zu-s2WsgeP4VxyT80VE"
                   "T_xh6pMkOhE6g";
 
+}
+
+void BaseTest::loadConfiguration(const QString &fileName)
+{
+    qDebug() << "Load test configurations" << fileName;
+    m_configuration->loadConfiguration(fileName);
+    restartEngine();
 }
 
 void BaseTest::cleanUpEngine()
@@ -72,15 +62,9 @@ void BaseTest::restartEngine()
 void BaseTest::startEngine()
 {
     if (!Engine::exists()) {
-        QString serverName = "nymea-remoteproxy-testserver";
         Engine::instance()->setAuthenticator(m_authenticator);
-        Engine::instance()->setServerName(serverName);
-        Engine::instance()->setConfiguration(m_configuration);
-        Engine::instance()->setSslConfiguration(m_sslConfiguration);
         Engine::instance()->setDeveloperModeEnabled(true);
-
         QVERIFY(Engine::exists());
-        QVERIFY(Engine::instance()->serverName() == serverName);
     }
 }
 
@@ -90,7 +74,6 @@ void BaseTest::startServer()
 
     if (!Engine::instance()->running()) {
         QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
-        Engine::instance()->setConfiguration(m_configuration);
         Engine::instance()->setDeveloperModeEnabled(true);
         Engine::instance()->start(m_configuration);
         runningSpy.wait();

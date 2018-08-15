@@ -32,7 +32,7 @@ JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QStrin
     params.insert("token", token);
 
     JsonReply *reply = new JsonReply(m_commandId, "Authentication", "Authenticate", params, this);
-    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method()) << params;
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method()) << reply->params();
     sendRequest(reply->requestMap());
     m_replies.insert(m_commandId, reply);
     return reply;
@@ -43,11 +43,6 @@ void JsonRpcClient::sendRequest(const QVariantMap &request)
     QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
     qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << qUtf8Printable(data);
     m_connection->sendData(data);
-}
-
-void JsonRpcClient::onConnectedChanged(bool connected)
-{
-    Q_UNUSED(connected)
 }
 
 void JsonRpcClient::processData(const QByteArray &data)

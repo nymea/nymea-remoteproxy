@@ -1,4 +1,7 @@
-RESOURCES += ../certificate.qrc
+RESOURCES += ../resources/resources.qrc
+
+CONFIG += testcase
+QT += testlib
 
 INCLUDEPATH += $${PWD} $$top_srcdir/libnymea-remoteproxy $$top_srcdir/libnymea-remoteproxyclient
 LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy \

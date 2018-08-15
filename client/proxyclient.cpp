@@ -4,7 +4,7 @@
 ProxyClient::ProxyClient(QObject *parent) :
     QObject(parent)
 {
-    m_connection = new RemoteProxyConnection(QUuid::createUuid(), "nymea-remoteproxy-client", RemoteProxyConnection::ConnectionTypeWebSocket, this);
+    m_connection = new RemoteProxyConnection(QUuid::createUuid(), "nymea-remoteproxy-client", this);
     m_connection->setInsecureConnection(true);
     connect(m_connection, &RemoteProxyConnection::ready, this, &ProxyClient::onClientReady);
     connect(m_connection, &RemoteProxyConnection::authenticated, this, &ProxyClient::onAuthenticationFinished);

@@ -167,37 +167,8 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    // SSL certificate
-    QSslConfiguration sslConfiguration;
-    // Load certificate
-    QFile certFile(configuration->sslCertificateFileName());
-    if (!certFile.open(QIODevice::ReadOnly)) {
-        qCCritical(dcApplication()) << "Could not open certificate file" << configuration->sslCertificateFileName() << certFile.errorString();
-        exit(-1);
-    }
-
-    QSslCertificate certificate(&certFile, QSsl::Pem);
-    qCDebug(dcApplication()) << "Loaded successfully certificate" << configuration->sslCertificateFileName();
-    certFile.close();
-
-    // Create SSL configuration
-    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
-    sslConfiguration.setLocalCertificate(certificate);
-    sslConfiguration.setProtocol(QSsl::TlsV1_2OrLater);
-
-    // SSL key
-    QFile certKeyFile(configuration->sslCertificateKeyFileName());
-    if (!certKeyFile.open(QIODevice::ReadOnly)) {
-        qCCritical(dcApplication()) << "Could not open certificate key file:" << configuration->sslCertificateKeyFileName() << certKeyFile.errorString();
-        exit(-1);
-    }
-
-    QSslKey sslKey(&certKeyFile, QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey);
-    qCDebug(dcApplication()) << "Loaded successfully certificate key" << configuration->sslCertificateKeyFileName();
-    certKeyFile.close();
-    sslConfiguration.setPrivateKey(sslKey);
-
-    if (sslConfiguration.isNull()) {
+    // Verify SSL configuration
+    if (configuration->sslConfiguration().isNull()) {
         qCCritical(dcApplication()) << "No SSL configuration specified. The server does not suppoert insecure connections.";
         exit(-1);
     }
@@ -224,11 +195,8 @@ int main(int argc, char *argv[])
     }
 
     // Configure and start the engines
-    Engine::instance()->setConfiguration(configuration);
-    Engine::instance()->setDeveloperModeEnabled(parser.isSet(developmentOption));
-    Engine::instance()->setSslConfiguration(sslConfiguration);
     Engine::instance()->setAuthenticator(authenticator);
-
+    Engine::instance()->setDeveloperModeEnabled(parser.isSet(developmentOption));
     Engine::instance()->start(configuration);
 
     return application.exec();

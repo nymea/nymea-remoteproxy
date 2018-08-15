@@ -30,7 +30,7 @@ void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::Authentica
     setReplyError(reply, error);
     setReplyFinished(reply);
 
-    qCDebug(dcAuthentication()) << "" << error;
+    qCDebug(dcAuthentication()) << name() << "finished with error" << error;
 }
 
 AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)

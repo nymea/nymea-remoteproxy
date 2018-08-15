@@ -1,16 +1,15 @@
-#include "remoteproxyconnection.h"
-#include "websocketconnection.h"
-#include "proxyjsonrpcclient.h"
 #include "proxyconnection.h"
+#include "proxyjsonrpcclient.h"
+#include "websocketconnection.h"
+#include "remoteproxyconnection.h"
 
 Q_LOGGING_CATEGORY(dcRemoteProxyClientConnection, "RemoteProxyClientConnection")
 Q_LOGGING_CATEGORY(dcRemoteProxyClientConnectionTraffic, "RemoteProxyClientConnectionTraffic")
 
 namespace remoteproxyclient {
 
-RemoteProxyConnection::RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType, QObject *parent) :
+RemoteProxyConnection::RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, QObject *parent) :
     QObject(parent),
-    m_connectionType(connectionType),
     m_clientUuid(clientUuid),
     m_clientName(clientName)
 {
@@ -82,6 +81,11 @@ RemoteProxyConnection::ConnectionType RemoteProxyConnection::connectionType() co
     return m_connectionType;
 }
 
+void RemoteProxyConnection::setConnectionType(RemoteProxyConnection::ConnectionType connectionType)
+{
+    m_connectionType = connectionType;
+}
+
 QHostAddress RemoteProxyConnection::serverAddress() const
 {
     return m_serverAddress;
@@ -150,7 +154,6 @@ void RemoteProxyConnection::cleanUp()
         m_connection = nullptr;
     }
 
-    m_error = ErrorNoError;
     m_serverName = QString();
     m_proxyServerName = QString();
     m_proxyServerVersion = QString();
@@ -164,8 +167,8 @@ void RemoteProxyConnection::setState(RemoteProxyConnection::State state)
     if (m_state == state)
         return;
 
-    qCDebug(dcRemoteProxyClientConnection()) << "State changed" << state;
     m_state = state;
+    qCDebug(dcRemoteProxyClientConnection()) << "State changed" << m_state;
     emit stateChanged(m_state);
 }
 
@@ -174,8 +177,8 @@ void RemoteProxyConnection::setError(RemoteProxyConnection::Error error)
     if (m_error == error)
         return;
 
-    qCDebug(dcRemoteProxyClientConnection()) << "Error occured" << error;
     m_error = error;
+    qCDebug(dcRemoteProxyClientConnection()) << "Error occured" << m_error << errorString();
     emit errorOccured(m_error);
 }
 
@@ -234,7 +237,7 @@ void RemoteProxyConnection::onHelloFinished()
     reply->deleteLater();
 
     QVariantMap response = reply->response();
-    qCDebug(dcRemoteProxyClientConnection()) << "Hello response ready" << response;
+    qCDebug(dcRemoteProxyClientConnectionTraffic()) << "Hello response ready" << reply->commandId() << response;
 
     if (response.value("status").toString() != "success") {
         qCWarning(dcRemoteProxyClientConnection()) << "Could not get initial information from proxy server.";
@@ -258,12 +261,21 @@ void RemoteProxyConnection::onHelloFinished()
 void RemoteProxyConnection::onAuthenticateFinished()
 {
     JsonReply *reply = static_cast<JsonReply *>(sender());
-    QVariantMap response = reply->response();
-    qCDebug(dcRemoteProxyClientConnection()) << "Authentication response ready" << response;
+    reply->deleteLater();
 
-    // TODO: verify success
-    setState(StateWaitTunnel);
-    emit authenticated();
+    QVariantMap response = reply->response();
+    qCDebug(dcRemoteProxyClientConnectionTraffic()) << "Authentication response ready" << reply->commandId() << response;
+
+    QVariantMap responseParams = response.value("params").toMap();
+    if (responseParams.value("authenticationError").toString() != "AuthenticationErrorNoError") {
+        qCWarning(dcRemoteProxyClientConnection()) << "Authentication request finished with error" << responseParams.value("authenticationError").toString();
+        setError(RemoteProxyConnection::ErrorProxyAuthenticationFailed);
+        m_connection->disconnectServer();
+    } else {
+        qCDebug(dcRemoteProxyClientConnection()) << "Successfully authenticated.";
+        setState(StateWaitTunnel);
+        emit authenticated();
+    }
 }
 
 void RemoteProxyConnection::onTunnelEstablished(const QString &clientName, const QString &clientUuid)
@@ -277,6 +289,7 @@ bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, qui
 {    
     m_serverAddress = serverAddress;
     m_serverPort = port;
+    m_error = ErrorNoError;
 
     cleanUp();
 
@@ -295,7 +308,7 @@ bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, qui
     m_jsonClient = new JsonRpcClient(m_connection, this);
     connect(m_jsonClient, &JsonRpcClient::tunnelEstablished, this, &RemoteProxyConnection::onTunnelEstablished);
 
-    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << m_connection->serverUrl().toString();
+    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << QString("%1:%2").arg(serverAddress.toString()).arg(port);
     m_connection->connectServer(serverAddress, port);
 
     setState(StateConnecting);

@@ -52,7 +52,7 @@ void AuthenticationReply::onTimeout()
     m_error = Authenticator::AuthenticationErrorTimeout;
     m_timer->stop();
     m_process->kill();
-    emit finished();
+    QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
 
 void AuthenticationReply::abort()
@@ -60,7 +60,7 @@ void AuthenticationReply::abort()
     m_error = Authenticator::AuthenticationErrorAborted;
     m_timer->stop();
     m_process->kill();
-    emit finished();
+    QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
 
 }

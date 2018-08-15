@@ -29,12 +29,8 @@ public:
     bool developerMode() const;
 
     QString serverName() const;
-    void setServerName(const QString &serverName);
 
-    void setConfiguration(ProxyConfiguration *configuration);
-    void setSslConfiguration(const QSslConfiguration &configuration);
     void setAuthenticator(Authenticator *authenticator);
-
     void setDeveloperModeEnabled(bool enabled);
 
     Authenticator *authenticator() const;
@@ -48,9 +44,7 @@ private:
 
     bool m_running = false;
     bool m_developerMode = false;
-    QString m_serverName;
 
-    QSslConfiguration m_sslConfiguration;
     ProxyConfiguration *m_configuration = nullptr;
     Authenticator *m_authenticator = nullptr;
     ProxyServer *m_proxyServer = nullptr;

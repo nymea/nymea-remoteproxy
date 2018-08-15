@@ -1,5 +1,5 @@
-#ifndef NYMEA_REMOTEPROXY_TESTS_H
-#define NYMEA_REMOTEPROXY_TESTS_H
+#ifndef NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
+#define NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
 
 #include <QUrl>
 #include <QtTest>
@@ -15,11 +15,11 @@
 using namespace remoteproxy;
 using namespace remoteproxyclient;
 
-class RemoteProxyTests : public BaseTest
+class RemoteProxyOfflineTests : public BaseTest
 {
     Q_OBJECT
 public:
-    explicit RemoteProxyTests(QObject *parent = nullptr);
+    explicit RemoteProxyOfflineTests(QObject *parent = nullptr);
 
 private slots:
     // Basic stuff
@@ -28,7 +28,6 @@ private slots:
 
     // WebSocket connection
     void webserverConnectionBlocked();
-    void webserverConnection();
 
     // Api
     void getIntrospect();
@@ -48,4 +47,4 @@ private slots:
 
 };
 
-#endif // NYMEA_REMOTEPROXY_TESTS_H
+#endif // NYMEA_REMOTEPROXY_TESTS_OFFLINE_H

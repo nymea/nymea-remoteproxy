@@ -32,9 +32,6 @@ bool Engine::exists()
 
 void Engine::start(ProxyConfiguration *configuration)
 {
-    // Make sure an authenticator was registered
-    Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
-
     if (!m_running)
         qCDebug(dcEngine()) << "Start server engine";
 
@@ -42,10 +39,13 @@ void Engine::start(ProxyConfiguration *configuration)
     clean();
 
     m_configuration = configuration;
-    Q_ASSERT_X(configuration != nullptr, "Engine", "There is no configuration set.");
+    qCDebug(dcApplication()) << "Using configuration" << m_configuration;
+
+    // Make sure an authenticator was registered
+    Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
 
     m_proxyServer = new ProxyServer(this);
-    m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
+    m_webSocketServer = new WebSocketServer(m_configuration->sslConfiguration(), this);
 
     QUrl websocketServerUrl;
     websocketServerUrl.setScheme("wss");
@@ -84,32 +84,7 @@ bool Engine::developerMode() const
 
 QString Engine::serverName() const
 {
-    return m_serverName;
-}
-
-void Engine::setServerName(const QString &serverName)
-{
-    m_serverName = serverName;
-}
-
-void Engine::setConfiguration(ProxyConfiguration *configuration)
-{
-    m_configuration = configuration;
-    qCDebug(dcApplication()) << "Set configuration" << m_configuration;
-}
-
-void Engine::setSslConfiguration(const QSslConfiguration &configuration)
-{
-    m_sslConfiguration = configuration;
-
-    qCDebug(dcEngine()) << "SSL certificate information:";
-    qCDebug(dcEngine()) << "    Common name:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::CommonName);
-    qCDebug(dcEngine()) << "    Organisation:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::Organization);
-    qCDebug(dcEngine()) << "    Organisation unit name:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::OrganizationalUnitName);
-    qCDebug(dcEngine()) << "    Country name:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::CountryName);
-    qCDebug(dcEngine()) << "    Locality name:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::LocalityName);
-    qCDebug(dcEngine()) << "    State/Province:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::StateOrProvinceName);
-    qCDebug(dcEngine()) << "    Email address:" << m_sslConfiguration.localCertificate().issuerInfo(QSslCertificate::EmailAddress);
+    return m_configuration->serverName();
 }
 
 void Engine::setAuthenticator(Authenticator *authenticator)

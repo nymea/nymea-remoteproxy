@@ -1,4 +1,4 @@
 TEMPLATE=subdirs
-SUBDIRS += offline
+SUBDIRS += test-offline test-online
 
 

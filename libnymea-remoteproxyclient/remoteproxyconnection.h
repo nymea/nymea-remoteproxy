@@ -46,7 +46,7 @@ public:
     };
     Q_ENUM(Error)
 
-    explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType = RemoteProxyConnection::ConnectionTypeWebSocket, QObject *parent = nullptr);
+    explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, QObject *parent = nullptr);
     ~RemoteProxyConnection();
 
     RemoteProxyConnection::State state() const;
@@ -58,6 +58,8 @@ public:
     bool isRemoteConnected() const;
 
     RemoteProxyConnection::ConnectionType connectionType() const;
+    void setConnectionType(RemoteProxyConnection::ConnectionType connectionType);
+
     QHostAddress serverAddress() const;
     quint16 serverPort() const;
 

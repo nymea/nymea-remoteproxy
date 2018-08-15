@@ -36,7 +36,6 @@ signals:
     void tunnelEstablished(const QString clientName, const QString &clientUuid);
 
 public slots:
-    void onConnectedChanged(bool connected);
     void processData(const QByteArray &data);
 
 };

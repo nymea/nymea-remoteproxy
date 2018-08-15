@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSettings>
 #include <QHostAddress>
+#include <QSslConfiguration>
 
 namespace remoteproxy {
 
@@ -16,6 +17,9 @@ public:
     bool loadConfiguration(const QString &fileName);
 
     // General
+    QString serverName() const;
+    void setServerName(const QString &serverName);
+
     bool writeLogFile() const;
     void setWriteLogFile(bool enabled);
 
@@ -27,6 +31,8 @@ public:
 
     QString sslCertificateKeyFileName() const;
     void setSslCertificateKeyFileName(const QString &fileName);
+
+    QSslConfiguration sslConfiguration() const;
 
     // WebSocketServer
     QHostAddress webSocketServerHost() const;
@@ -44,10 +50,12 @@ public:
 
 private:
     // General
+    QString m_serverName;
     bool m_writeLogFile = false;
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
     QString m_sslCertificateKeyFileName = "/etc/ssl/private/ssl-cert-snakeoil.key";
+    QSslConfiguration m_sslConfiguration;
 
     // WebSocketServer
     QHostAddress m_webSocketServerHost = QHostAddress::LocalHost;

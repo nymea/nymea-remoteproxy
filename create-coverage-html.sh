@@ -8,9 +8,28 @@ qmake CONFIG+=coverage
 make -j$(nproc)
 make coverage-html
 
-# Clean up source directory
-rm -v libnymea-remoteproxy/libnymea-remoteproxy.so*
-rm -v libnymea-remoteproxyclient/libnymea-remoteproxyclient.so*
-rm -v server/nymea-remoteproxy
-rm -v tests/nymea-remoteproxy-tests
+# Clean build
 make clean
+
+# Clean source directory
+rm -v Makefile
+
+rm -v libnymea-remoteproxy/libnymea-remoteproxy.so*
+rm -v libnymea-remoteproxy/Makefile
+
+rm -v libnymea-remoteproxyclient/libnymea-remoteproxyclient.so*
+rm -v libnymea-remoteproxyclient/Makefile
+
+rm -v server/nymea-remoteproxy
+rm -v server/Makefile
+
+rm -v tests/Makefile
+
+rm -v tests/test-offline/nymea-remoteproxy-tests-offline
+rm -v tests/test-offline/Makefile
+
+rm -v tests/test-online/nymea-remoteproxy-tests-online
+rm -v tests/test-online/Makefile
+
+rm -v client/nymea-remoteproxy-client
+rm -v client/Makefile
