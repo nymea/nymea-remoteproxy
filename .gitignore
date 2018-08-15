@@ -75,3 +75,5 @@ coverage-html
 client/nymea-remoteproxy-client
 tests/test-offline/nymea-remoteproxy-tests-offline
 tests/test-online/nymea-remoteproxy-tests-online
+.crossbuilder/
+source_repository/

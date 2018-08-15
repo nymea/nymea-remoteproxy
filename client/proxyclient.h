@@ -14,7 +14,7 @@ public:
     explicit ProxyClient(QObject *parent = nullptr);
 
     void setHostAddress(const QHostAddress &hostAddress);
-    void setPort(const int &port);
+    void setPort(int port);
 
 private:
     QString m_token;
@@ -30,6 +30,7 @@ private slots:
     void onErrorOccured(RemoteProxyConnection::Error error);
     void onClientReady();
     void onAuthenticationFinished();
+    void onClientDisconnected();
 
 public slots:
     void start(const QString &token);

@@ -1,0 +1,16 @@
+[Unit]
+Description=nymea-remoteproxy - Proxy server for the nymea remote connection
+Documentation=https://gitlab.nymea.io/cloud/nymea-remoteproxy
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy.conf
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

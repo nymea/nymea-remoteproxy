@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and "
-                                             "registered nymea deamons to establish a tunnel connection.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy server client application. This client allowes to test "
+                                             "a server application as client perspective.\n\n"
                                              "Server version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
@@ -27,8 +27,18 @@ int main(int argc, char *argv[])
                                      .arg(QChar(0xA9)));
 
 
+
+
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
     parser.addOption(tokenOption);
+
+    QCommandLineOption addressOption(QStringList() << "a" << "address", "The proxy server host address. Default 127.0.0.1", "address");
+    addressOption.setDefaultValue("127.0.0.1");
+    parser.addOption(addressOption);
+
+    QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port. Default 1212", "port");
+    portOption.setDefaultValue("1212");
+    parser.addOption(portOption);
 
     parser.process(application);
 
@@ -38,6 +48,8 @@ int main(int argc, char *argv[])
     }
 
     ProxyClient client;
+    client.setHostAddress(QHostAddress(parser.value(addressOption)));
+    client.setPort(parser.value(portOption).toInt());
     client.start(parser.value(tokenOption));
 
     return application.exec();

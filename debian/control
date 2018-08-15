@@ -3,6 +3,7 @@ Section: utils
 Priority: options
 Maintainer: Simon Stürz <simon.stürz@guh.io>
 Build-depends: debhelper (>= 0.0.0),
+    dh-systemd,
     libqt5websockets5-dev,
 Standards-Version: 3.9.3
 
