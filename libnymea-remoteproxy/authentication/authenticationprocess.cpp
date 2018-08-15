@@ -40,22 +40,22 @@ void AuthenticationProcess::startVerificationProcess()
     QVariantMap request;
     request.insert("token", m_token);
 
+    // Set environment
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("AWS_DEFAULT_REGION", "eu-west-1");
-
     if (m_dynamicCredentials) {
         qCDebug(dcAuthenticationProcess()) << "Using dynamic credentials" << m_awsAccessKeyId << m_awsSecretAccessKey << m_awsSessionToken;
         env.insert("AWS_ACCESS_KEY_ID", m_awsAccessKeyId);
         env.insert("AWS_SECRET_ACCESS_KEY", m_awsSecretAccessKey);
         env.insert("AWS_SESSION_TOKEN", m_awsSessionToken);
     }
+    m_process->setProcessEnvironment(env);
 
     // FIXME: check how to clean this up properly
     m_resultFileName = "/tmp/" + QUuid::createUuid().toString().remove("{").remove("}").remove("-") + ".json";
 
     qCDebug(dcAuthentication()) << "Start authenticator process and store result in" << m_resultFileName;
     m_processTimer.start();
-    m_process->setProcessEnvironment(env);
     m_process->start("aws", { "lambda", "invoke",
                               "--function-name", "system-services-authorizer-dev-checkToken",
                               "--invocation-type", "RequestResponse",

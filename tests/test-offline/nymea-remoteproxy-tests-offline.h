@@ -42,6 +42,7 @@ private slots:
     // Client lib
     void clientConnection();
     void remoteConnection();
+    void trippleConnection();
     void sslConfigurations();
     void timeout();
 

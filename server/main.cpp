@@ -95,13 +95,15 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("Application", true);
     s_loggingFilters.insert("Engine", true);
     s_loggingFilters.insert("JsonRpc", true);
-    s_loggingFilters.insert("JsonRpcTraffic", false);
     s_loggingFilters.insert("WebSocketServer", true);
-    s_loggingFilters.insert("WebSocketServerTraffic", false);
     s_loggingFilters.insert("Authentication", true);
-    s_loggingFilters.insert("AuthenticationProcess", true);
     s_loggingFilters.insert("ProxyServer", true);
+
+    // Only with verbose enabled
+    s_loggingFilters.insert("JsonRpcTraffic", false);
     s_loggingFilters.insert("ProxyServerTraffic", false);
+    s_loggingFilters.insert("AuthenticationProcess", false);
+    s_loggingFilters.insert("WebSocketServerTraffic", false);
 
     QString configFile = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation).first() + "/nymea/nymea-remoteproxy.conf";
 
@@ -140,9 +142,9 @@ int main(int argc, char *argv[])
 
     // Create a default configuration
     ProxyConfiguration *configuration = new ProxyConfiguration(nullptr);
-    if (parser.isSet(configOption)) {
+    if (parser.isSet(configOption))
         configFile = parser.value(configOption);
-    }
+
     qCDebug(dcApplication()) << "Loading configuration file from" << configFile;
     if (!configuration->loadConfiguration(parser.value(configOption))) {
         qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
@@ -152,6 +154,7 @@ int main(int argc, char *argv[])
     if (parser.isSet(verboseOption)) {
         s_loggingFilters["JsonRpcTraffic"] = true;
         s_loggingFilters["ProxyServerTraffic"] = true;
+        s_loggingFilters["AuthenticationProcess"] = true;
         s_loggingFilters["WebSocketServerTraffic"] = true;
     }
 

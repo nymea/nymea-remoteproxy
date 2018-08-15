@@ -145,7 +145,7 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
         if (m_tunnels.contains(proxyClient->token())) {
             // There is a tunnel connection for this client, remove the tunnel and disconnect also the other client
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
-            m_tunnels.remove(remoteClient->token());
+            m_tunnels.remove(proxyClient->token());
             if (remoteClient) {
                 remoteClient->interface()->killClientConnection(remoteClient->clientId(), "Tunnel client disconnected");
             }
@@ -212,6 +212,9 @@ void ProxyServer::onProxyClientAuthenticated()
 
     if (m_tunnels.contains(proxyClient->token())) {
         qCWarning(dcProxyServer()) << "There is already a tunnel connection for this token. A third client is not allowed.";
+        // Note: remove the authenticated token, so the current tunnel will not interrupted.
+        proxyClient->setToken(QString());
+        proxyClient->setAuthenticated(false);
         proxyClient->interface()->killClientConnection(proxyClient->clientId(), "There is already an established tunnel with this token.");
         return;
     }
