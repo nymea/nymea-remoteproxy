@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     QCoreApplication application(argc, argv);
     application.setApplicationName(SERVER_NAME_STRING);
-    application.setOrganizationName("guh");
+    application.setOrganizationName("nymea");
     application.setApplicationVersion(SERVER_VERSION_STRING);
 
     s_loggingFilters.insert("Application", true);
@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("WebSocketServer", true);
     s_loggingFilters.insert("Authentication", true);
     s_loggingFilters.insert("ProxyServer", true);
+    s_loggingFilters.insert("MonitorServer", true);
 
     // Only with verbose enabled
     s_loggingFilters.insert("JsonRpcTraffic", false);
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("AuthenticationProcess", false);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
 
-    QString configFile = QStandardPaths::standardLocations(QStandardPaths::ConfigLocation).first() + "/nymea/nymea-remoteproxy.conf";
+    QString configFile = "/etc/nymea/nymea-remoteproxy.conf";
 
     // command line parser
     QCommandLineParser parser;

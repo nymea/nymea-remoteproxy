@@ -7,6 +7,7 @@
 #include <QSslConfiguration>
 
 #include "proxyserver.h"
+#include "monitorserver.h"
 #include "websocketserver.h"
 #include "proxyconfiguration.h"
 #include "authentication/authenticator.h"
@@ -49,6 +50,7 @@ private:
     Authenticator *m_authenticator = nullptr;
     ProxyServer *m_proxyServer = nullptr;
     WebSocketServer *m_webSocketServer = nullptr;
+    MonitorServer *m_monitorServer = nullptr;
 
 signals:
     void runningChanged(bool running);

@@ -59,6 +59,9 @@ void Engine::start(ProxyConfiguration *configuration)
     qCDebug(dcEngine()) << "Starting proxy server";
     m_proxyServer->startServer();
 
+    m_monitorServer = new MonitorServer("/tmp/nymea-remoteproxy-monitor.socket", this);
+    m_monitorServer->startServer();
+
     // Set tunning true in the next event loop
     QMetaObject::invokeMethod(this, QString("setRunning").toLatin1().data(), Qt::QueuedConnection, Q_ARG(bool, true));
 }
@@ -95,12 +98,9 @@ void Engine::setAuthenticator(Authenticator *authenticator)
     if (m_authenticator) {
         qCDebug(dcEngine()) << "There is already an authenticator registered. Unregister default authenticator";
         m_authenticator = nullptr;
-        // FIXME: do unconnect
     }
 
     m_authenticator = authenticator;
-
-    // FIXME: connect
 }
 
 void Engine::setDeveloperModeEnabled(bool enabled)
@@ -136,6 +136,12 @@ Engine::~Engine()
 
 void Engine::clean()
 {
+    if (m_monitorServer) {
+        m_monitorServer->startServer();
+        delete m_monitorServer;
+        m_monitorServer = nullptr;
+    }
+
     if (m_proxyServer) {
         m_proxyServer->stopServer();
         delete m_proxyServer;

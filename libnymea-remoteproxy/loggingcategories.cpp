@@ -10,4 +10,5 @@ Q_LOGGING_CATEGORY(dcAuthentication, "Authentication")
 Q_LOGGING_CATEGORY(dcAuthenticationProcess, "AuthenticationProcess")
 Q_LOGGING_CATEGORY(dcProxyServer, "ProxyServer")
 Q_LOGGING_CATEGORY(dcProxyServerTraffic, "ProxyServerTraffic")
+Q_LOGGING_CATEGORY(dcMonitorServer, "MonitorServer")
 
