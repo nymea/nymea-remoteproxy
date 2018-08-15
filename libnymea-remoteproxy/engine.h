@@ -22,7 +22,7 @@ public:
 
     static bool exists();
 
-    void start();
+    void start(ProxyConfiguration *configuration);
     void stop();
 
     bool running() const;

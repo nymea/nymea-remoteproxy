@@ -30,7 +30,7 @@ bool Engine::exists()
     return s_instance != nullptr;
 }
 
-void Engine::start()
+void Engine::start(ProxyConfiguration *configuration)
 {
     // Make sure an authenticator was registered
     Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
@@ -42,7 +42,7 @@ void Engine::start()
     // Clean up
     clean();
 
-    m_configuration = new ProxyConfiguration(this);
+    m_configuration = configuration;
     m_proxyServer = new ProxyServer(this);
     m_webSocketServer = new WebSocketServer(m_sslConfiguration, this);
 
@@ -50,6 +50,7 @@ void Engine::start()
     websocketServerUrl.setScheme("wss");
     websocketServerUrl.setHost(m_configuration->webSocketServerHost().toString());
     websocketServerUrl.setPort(m_configuration->webSocketServerPort());
+    qDebug() << "WSS url is:" << websocketServerUrl;
     m_webSocketServer->setServerUrl(websocketServerUrl);
 
     m_proxyServer->registerTransportInterface(m_webSocketServer);
