@@ -307,6 +307,12 @@ Once the other client is here and ready, the server will send a notification to 
         "status": "success"
     }
     
+# Server monitor
+
+The server provides a live monitor interface on a local socket server. You can follow the monitor data with:
+
+    $ sudo socat - UNIX-CONNECT:/tmp/nymea-remoteproxy-monitor.sock
+
 # Client usage
 
 The client allowes you to test the proxy server and create a dummy client for testing the connection.
