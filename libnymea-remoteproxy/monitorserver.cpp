@@ -15,6 +15,19 @@ MonitorServer::MonitorServer(const QString &serverName, QObject *parent) :
     connect(m_timer, &QTimer::timeout, this, &MonitorServer::onTimeout);
 }
 
+MonitorServer::~MonitorServer()
+{
+    stopServer();
+}
+
+bool MonitorServer::running() const
+{
+    if (!m_server)
+        return false;
+
+    return m_server->isListening();
+}
+
 QVariantMap MonitorServer::createMonitorData()
 {
     QVariantMap monitorData;
@@ -66,9 +79,10 @@ void MonitorServer::onMonitorDisconnected()
 
 void MonitorServer::startServer()
 {
+    qCDebug(dcMonitorServer()) << "Starting server on" << m_serverName;
     m_server = new QLocalServer(this);
     if (!m_server->listen(m_serverName)) {
-        qCWarning(dcMonitorServer()) << "Could not start local server for monitor on" << m_serverName;
+        qCWarning(dcMonitorServer()) << "Could not start local server for monitor on" << m_serverName << m_server->errorString();
         delete m_server;
         m_server = nullptr;
         return;

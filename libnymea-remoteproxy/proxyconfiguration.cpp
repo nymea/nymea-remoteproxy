@@ -32,6 +32,7 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setServerName(settings.value("name", "nymea-remoteproxy").toString());
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
+    setMonitorSocketFileName(settings.value("monitorSocket", "/tmp/nymea-remoteproxy.monitor").toString());
     setSslCertificateFileName(settings.value("certificate", "/etc/ssl/certs/ssl-cert-snakeoil.pem").toString());
     setSslCertificateKeyFileName(settings.value("certificateKey", "/etc/ssl/private/ssl-cert-snakeoil.key").toString());
     setSslCertificateChainFileName(settings.value("certificateChain", "").toString());
@@ -80,8 +81,10 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
             qCWarning(dcApplication()) << "Could not open certificate chain file:" << sslCertificateChainFileName() << certChainFile.errorString();
             return false;
         }
-        QSslCertificate certificate(&certKeyFile, QSsl::Pem);
-        sslConfiguration.setLocalCertificateChain( { certificate } );
+        QSslCertificate certificate(&certChainFile, QSsl::Pem);
+        sslConfiguration.setCaCertificates( QList<QSslCertificate>() << certificate );
+        certChainFile.close();
+        qCDebug(dcApplication()) << "Loaded successfully certificate chain" << sslCertificateKeyFileName();
     }
 
     m_sslConfiguration = sslConfiguration;
@@ -117,6 +120,16 @@ QString ProxyConfiguration::logFileName() const
 void ProxyConfiguration::setLogFileName(const QString &logFileName)
 {
     m_logFileName = logFileName;
+}
+
+QString ProxyConfiguration::monitorSocketFileName() const
+{
+    return m_monitorSocketFileName;
+}
+
+void ProxyConfiguration::setMonitorSocketFileName(const QString &fileName)
+{
+    m_monitorSocketFileName = fileName;
 }
 
 QString ProxyConfiguration::sslCertificateFileName() const

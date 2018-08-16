@@ -26,6 +26,9 @@ public:
     QString logFileName() const;
     void setLogFileName(const QString &logFileName);
 
+    QString monitorSocketFileName() const;
+    void setMonitorSocketFileName(const QString &fileName);
+
     QString sslCertificateFileName() const;
     void setSslCertificateFileName(const QString &fileName);
 
@@ -56,6 +59,7 @@ private:
     QString m_serverName;
     bool m_writeLogFile = false;
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
+    QString m_monitorSocketFileName;
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
     QString m_sslCertificateKeyFileName = "/etc/ssl/private/ssl-cert-snakeoil.key";
     QString m_sslCertificateChainFileName;

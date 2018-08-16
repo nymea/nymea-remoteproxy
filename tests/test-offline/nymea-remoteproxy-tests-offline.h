@@ -25,6 +25,7 @@ private slots:
     // Basic stuff
     void startStopServer();
     void dummyAuthenticator();
+    void monitorServer();
 
     // WebSocket connection
     void webserverConnectionBlocked();

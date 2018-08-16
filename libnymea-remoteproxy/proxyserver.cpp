@@ -241,6 +241,7 @@ void ProxyServer::startServer()
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->startServer();
     }
+    setRunning(true);
 }
 
 void ProxyServer::stopServer()
@@ -249,6 +250,7 @@ void ProxyServer::stopServer()
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->stopServer();
     }
+    setRunning(false);
 }
 
 }

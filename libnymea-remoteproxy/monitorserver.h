@@ -13,6 +13,9 @@ class MonitorServer : public QObject
     Q_OBJECT
 public:
     explicit MonitorServer(const QString &serverName, QObject *parent = nullptr);
+    ~MonitorServer();
+
+    bool running() const;
 
 private:
     QString m_serverName;

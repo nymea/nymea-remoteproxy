@@ -37,6 +37,7 @@ public:
     Authenticator *authenticator() const;
     ProxyServer *proxyServer() const;
     WebSocketServer *webSocketServer() const;
+    MonitorServer *monitorServer() const;
 
 private:
     explicit Engine(QObject *parent = nullptr);

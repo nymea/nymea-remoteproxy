@@ -73,6 +73,7 @@ Thumbs.db
 
 coverage-html
 client/nymea-remoteproxy-client
+monitor/nymea-remoteproxy-monitor
 tests/test-offline/nymea-remoteproxy-tests-offline
 tests/test-online/nymea-remoteproxy-tests-online
 .crossbuilder/

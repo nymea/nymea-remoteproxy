@@ -34,11 +34,10 @@ void RemoteProxyOfflineTests::dummyAuthenticator()
 
     QVERIFY(runningSpy.count() == 1);
 
-    // Make sure the server is not running
+    // Make sure the server is running
     QVERIFY(Engine::instance()->running());
-
-    // Make sure the websocket server is not running
     QVERIFY(Engine::instance()->webSocketServer()->running());
+    QVERIFY(Engine::instance()->proxyServer()->running());
 
     // Create request
     QVariantMap params;
@@ -51,6 +50,13 @@ void RemoteProxyOfflineTests::dummyAuthenticator()
     verifyAuthenticationError(response);
 
     cleanUpEngine();
+}
+
+void RemoteProxyOfflineTests::monitorServer()
+{
+    startServer();
+    QVERIFY(Engine::instance()->monitorServer()->running());
+
 }
 
 void RemoteProxyOfflineTests::webserverConnectionBlocked()

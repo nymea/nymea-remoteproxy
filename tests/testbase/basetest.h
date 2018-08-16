@@ -85,12 +85,9 @@ public slots:
                  .toLatin1().data());
     }
 
-
     inline void verifyAuthenticationError(const QVariant &response, Authenticator::AuthenticationError error = Authenticator::AuthenticationErrorNoError) {
         verifyError(response, "authenticationError", JsonTypes::authenticationErrorToString(error));
     }
-
-
 
 };
 

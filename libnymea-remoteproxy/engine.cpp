@@ -123,6 +123,11 @@ WebSocketServer *Engine::webSocketServer() const
     return m_webSocketServer;
 }
 
+MonitorServer *Engine::monitorServer() const
+{
+    return m_monitorServer;
+}
+
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
@@ -137,7 +142,7 @@ Engine::~Engine()
 void Engine::clean()
 {
     if (m_monitorServer) {
-        m_monitorServer->startServer();
+        m_monitorServer->stopServer();
         delete m_monitorServer;
         m_monitorServer = nullptr;
     }
