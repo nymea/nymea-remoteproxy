@@ -1,6 +1,5 @@
 #include "authenticationprocess.h"
 #include "loggingcategories.h"
-#include "userinformation.h"
 
 #include <QUrl>
 #include <QFile>
@@ -163,7 +162,7 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
 
         UserInformation userInformation(email, cognitoUsername, vendorId, userPoolId);
 
-        emit authenticationFinished(Authenticator::AuthenticationErrorNoError);
+        emit authenticationFinished(Authenticator::AuthenticationErrorNoError, userInformation);
     } else {
         emit authenticationFinished(Authenticator::AuthenticationErrorAuthenticationFailed);
     }

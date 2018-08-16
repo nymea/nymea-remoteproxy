@@ -24,7 +24,7 @@ private:
     QHash<AuthenticationProcess *, AuthenticationReply *> m_runningProcesses;
 
 private slots:
-    void onAuthenticationProcessFinished(Authenticator::AuthenticationError error);
+    void onAuthenticationProcessFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation);
 
 public slots:
     AuthenticationReply *authenticate(ProxyClient *proxyClient) override;

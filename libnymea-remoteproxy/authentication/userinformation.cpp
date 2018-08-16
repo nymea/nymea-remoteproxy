@@ -39,4 +39,13 @@ bool UserInformation::isValid()
             && !m_userPoolId.isEmpty();
 }
 
+QDebug operator<<(QDebug debug, const UserInformation &userInformation)
+{
+    debug.nospace() << "UserInformation(" << userInformation.email();
+    debug.nospace() << ", cognito:" << userInformation.cognitoUsername() << ") ";
+    debug.nospace() << ", vendor" << userInformation.vendorId() << ") ";
+    debug.nospace() << ", userpool" << userInformation.userPoolId() << ") ";
+    return debug;
+}
+
 }

@@ -22,20 +22,24 @@ QString AwsAuthenticator::name() const
     return "AWS authenticator";
 }
 
-void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::AuthenticationError error)
+void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation)
 {
     AuthenticationProcess *process = static_cast<AuthenticationProcess *>(sender());
     AuthenticationReply *reply = m_runningProcesses.take(process);
 
+    if (error == AuthenticationErrorNoError) {
+        qCDebug(dcAuthentication()) << name() << reply->proxyClient() << "finished successfully." << userInformation;
+    } else {
+        qCDebug(dcAuthentication()) << name() << reply->proxyClient() << "finished with error" << error;
+    }
+
     setReplyError(reply, error);
     setReplyFinished(reply);
-
-    qCDebug(dcAuthentication()) << name() << "finished with error" << error;
 }
 
 AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
 {
-    qCDebug(dcAuthentication()) << name() << "Start authenticating" <<  proxyClient << "using token" << proxyClient->token();
+    qCDebug(dcAuthentication()) << name() << "Start authenticating" << proxyClient;
     AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
 
     AuthenticationProcess *process = new AuthenticationProcess(m_manager, this);

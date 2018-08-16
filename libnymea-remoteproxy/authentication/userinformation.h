@@ -1,6 +1,7 @@
 #ifndef USERINFORMATION_H
 #define USERINFORMATION_H
 
+#include <QDebug>
 #include <QString>
 
 namespace remoteproxy {
@@ -24,6 +25,8 @@ private:
     QString m_vendorId;
     QString m_userPoolId;
 };
+
+QDebug operator<<(QDebug debug, const UserInformation &userInformation);
 
 }
 

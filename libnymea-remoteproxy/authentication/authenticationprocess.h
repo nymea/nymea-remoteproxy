@@ -7,6 +7,7 @@
 #include <QNetworkAccessManager>
 
 #include "authenticator.h"
+#include "userinformation.h"
 
 namespace remoteproxy {
 
@@ -37,7 +38,7 @@ private:
     void cleanUp();
 
 signals:
-    void authenticationFinished(Authenticator::AuthenticationError error);
+    void authenticationFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation = UserInformation());
 
 private slots:
     void onDynamicCredentialsReady();
