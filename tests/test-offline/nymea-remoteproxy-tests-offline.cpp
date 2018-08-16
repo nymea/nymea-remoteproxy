@@ -55,12 +55,16 @@ void RemoteProxyOfflineTests::dummyAuthenticator()
 void RemoteProxyOfflineTests::monitorServer()
 {
     startServer();
-    QVERIFY(Engine::instance()->monitorServer()->running());
 
+
+
+    stopServer();
 }
 
 void RemoteProxyOfflineTests::webserverConnectionBlocked()
 {
+    cleanUpEngine();
+
     // Create a dummy server which blocks the port
     QWebSocketServer dummyServer("dummy-server", QWebSocketServer::NonSecureMode);
     dummyServer.listen(QHostAddress::LocalHost, 1212);
@@ -70,7 +74,7 @@ void RemoteProxyOfflineTests::webserverConnectionBlocked()
     Engine::instance()->setAuthenticator(m_authenticator);
     Engine::instance()->start(m_configuration);
     runningSpy.wait();
-
+    qDebug() << runningSpy.count();
     QVERIFY(runningSpy.count() == 1);
 
     // Make sure the server is not running

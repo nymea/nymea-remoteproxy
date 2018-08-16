@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
 
 
-    QCommandLineOption tokenOption(QStringList() << "s" << "socket", "The AWS token for authentication.", "socket");
+    QCommandLineOption tokenOption(QStringList() << "s" << "socket", "The AWS token for authentication. Default /tmp/", "socket");
     parser.addOption(tokenOption);
 
     parser.process(application);

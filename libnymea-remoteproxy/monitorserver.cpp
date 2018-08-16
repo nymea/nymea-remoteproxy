@@ -103,7 +103,7 @@ void MonitorServer::stopServer()
     }
 
     m_server->close();
-    m_server->deleteLater();
+    delete m_server;
     m_server = nullptr;
 }
 

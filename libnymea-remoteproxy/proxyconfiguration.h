@@ -16,7 +16,9 @@ public:
 
     bool loadConfiguration(const QString &fileName);
 
-    // General
+    QString fileName() const;
+
+    // ProxyServer
     QString serverName() const;
     void setServerName(const QString &serverName);
 
@@ -29,6 +31,7 @@ public:
     QString monitorSocketFileName() const;
     void setMonitorSocketFileName(const QString &fileName);
 
+    // Ssl
     QString sslCertificateFileName() const;
     void setSslCertificateFileName(const QString &fileName);
 
@@ -55,11 +58,14 @@ public:
     void setTcpServerPort(quint16 port);
 
 private:
-    // General
+    // ProxyServer
+    QString m_fileName;
     QString m_serverName;
     bool m_writeLogFile = false;
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
     QString m_monitorSocketFileName;
+
+    // Ssl
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
     QString m_sslCertificateKeyFileName = "/etc/ssl/private/ssl-cert-snakeoil.key";
     QString m_sslCertificateChainFileName;

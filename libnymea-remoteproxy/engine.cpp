@@ -59,7 +59,7 @@ void Engine::start(ProxyConfiguration *configuration)
     qCDebug(dcEngine()) << "Starting proxy server";
     m_proxyServer->startServer();
 
-    m_monitorServer = new MonitorServer("/tmp/nymea-remoteproxy-monitor.socket", this);
+    m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
     m_monitorServer->startServer();
 
     // Set tunning true in the next event loop
@@ -169,7 +169,9 @@ void Engine::setRunning(bool running)
     if (m_running == running)
         return;
 
+    qCDebug(dcEngine()) << "----------------------------------------------------------";
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
+    qCDebug(dcEngine()) << "----------------------------------------------------------";
     m_running = running;
     emit runningChanged(m_running);
 }
