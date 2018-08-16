@@ -57,7 +57,7 @@ void RemoteProxyOfflineTests::webserverConnectionBlocked()
 {
     // Create a dummy server which blocks the port
     QWebSocketServer dummyServer("dummy-server", QWebSocketServer::NonSecureMode);
-    dummyServer.listen(QHostAddress::LocalHost, m_port);
+    dummyServer.listen(QHostAddress::LocalHost, 1212);
 
     // Start proxy webserver
     QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
@@ -208,21 +208,19 @@ void RemoteProxyOfflineTests::clientConnection()
 
     // Connect to the server (insecure disabled)
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
-    connection->setInsecureConnection(true);
+    connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect to server (insecue enabled for testing)
     QSignalSpy readySpy(connection, &RemoteProxyConnection::ready);
-    QVERIFY(connection->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connection->connectServer(m_serverUrl));
     readySpy.wait();
     QVERIFY(readySpy.count() == 1);
     QVERIFY(connection->isConnected());
     QVERIFY(!connection->isRemoteConnected());
     QVERIFY(connection->state() == RemoteProxyConnection::StateReady);
     QVERIFY(connection->error() == RemoteProxyConnection::ErrorNoError);
-    QVERIFY(connection->serverAddress() == QHostAddress::LocalHost);
-    QVERIFY(connection->serverPort() == m_port);
+    QVERIFY(connection->serverUrl() == m_serverUrl);
     QVERIFY(connection->connectionType() == RemoteProxyConnection::ConnectionTypeWebSocket);
-    QVERIFY(connection->insecureConnection() == true);
     QVERIFY(connection->serverName() == SERVER_NAME_STRING);
     QVERIFY(connection->proxyServerName() == Engine::instance()->serverName());
     QVERIFY(connection->proxyServerVersion() == SERVER_VERSION_STRING);
@@ -241,6 +239,7 @@ void RemoteProxyOfflineTests::clientConnection()
     connection->disconnectServer();
     // FIXME: check why it waits the full time here
     spyDisconnected.wait(100);
+
     QVERIFY(spyDisconnected.count() == 1);
     QVERIFY(!connection->isConnected());
 
@@ -259,21 +258,21 @@ void RemoteProxyOfflineTests::remoteConnection()
 
     // Create two connection
     RemoteProxyConnection *connectionOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
-    connectionOne->setInsecureConnection(true);
+    connect(connectionOne, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(QUuid::createUuid(), "Test client two", this);
-    connectionTwo->setInsecureConnection(true);
+    connect(connectionTwo, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
-    QVERIFY(connectionOne->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connectionOne->connectServer(m_serverUrl));
     connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
-    QVERIFY(connectionTwo->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connectionTwo->connectServer(m_serverUrl));
     connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
@@ -345,31 +344,31 @@ void RemoteProxyOfflineTests::trippleConnection()
 
     // Create two connection
     RemoteProxyConnection *connectionOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
-    connectionOne->setInsecureConnection(true);
+    connect(connectionOne, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(QUuid::createUuid(), "Test client two", this);
-    connectionTwo->setInsecureConnection(true);
+    connect(connectionTwo, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     RemoteProxyConnection *connectionThree = new RemoteProxyConnection(QUuid::createUuid(), "Token thief ^w^", this);
-    connectionThree->setInsecureConnection(true);
+    connect(connectionThree, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
-    QVERIFY(connectionOne->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connectionOne->connectServer(m_serverUrl));
     connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
-    QVERIFY(connectionTwo->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connectionTwo->connectServer(m_serverUrl));
     connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
 
     // Connect two
     QSignalSpy connectionThreeReadySpy(connectionThree, &RemoteProxyConnection::ready);
-    QVERIFY(connectionThree->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connectionThree->connectServer(m_serverUrl));
     connectionThreeReadySpy.wait();
     QVERIFY(connectionThreeReadySpy.count() == 1);
     QVERIFY(connectionThree->isConnected());
@@ -422,16 +421,16 @@ void RemoteProxyOfflineTests::sslConfigurations()
     // Connect to the server (insecure disabled)
     RemoteProxyConnection *connector = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
     QSignalSpy spyError(connector, &RemoteProxyConnection::errorOccured);
-    QVERIFY(connector->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connector->connectServer(m_serverUrl));
     spyError.wait();
-    QVERIFY(spyError.count() == 2);
+    QVERIFY(spyError.count() == 1);
     QVERIFY(connector->error() == RemoteProxyConnection::ErrorSocketError);
     QVERIFY(connector->state() == RemoteProxyConnection::StateDisconnected);
 
     // Connect to server (insecue enabled)
     QSignalSpy spyConnected(connector, &RemoteProxyConnection::connected);
-    connector->setInsecureConnection(true);
-    connector->connectServer(QHostAddress::LocalHost, m_port);
+    connect(connector, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
+    connector->connectServer(m_serverUrl);
     spyConnected.wait();
 
     QVERIFY(connector->isConnected());

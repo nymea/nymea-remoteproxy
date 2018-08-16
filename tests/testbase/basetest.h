@@ -29,8 +29,7 @@ public:
 protected:
     ProxyConfiguration *m_configuration = nullptr;
 
-    quint16 m_port = 1212;
-    QHostAddress m_serverAddress = QHostAddress::LocalHost;
+    QUrl m_serverUrl = QUrl("wss://127.0.0.1:1212");
 
     QSslConfiguration m_sslConfiguration;
 
@@ -63,6 +62,11 @@ public slots:
     void sslErrors(const QList<QSslError> &) {
         QWebSocket *socket = static_cast<QWebSocket*>(sender());
         socket->ignoreSslErrors();
+    }
+
+    void ignoreConnectionSslError(const QList<QSslError> &) {
+        RemoteProxyConnection *connection = static_cast<RemoteProxyConnection *>(sender());
+        connection->ignoreSslErrors();
     }
 
     inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error)

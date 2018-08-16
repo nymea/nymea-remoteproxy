@@ -7,19 +7,23 @@ ProxyConnection::ProxyConnection(QObject *parent) : QObject(parent)
 
 }
 
+bool ProxyConnection::connected()
+{
+    return m_connected;
+}
+
+void ProxyConnection::setConnected(bool connected)
+{
+    if (m_connected == connected)
+        return;
+
+    m_connected = connected;
+    emit connectedChanged(m_connected);
+}
+
 ProxyConnection::~ProxyConnection()
 {
 
-}
-
-bool ProxyConnection::allowSslErrors() const
-{
-    return m_allowSslErrors;
-}
-
-void ProxyConnection::setAllowSslErrors(bool allowSslErrors)
-{
-    m_allowSslErrors = allowSslErrors;
 }
 
 }

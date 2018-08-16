@@ -22,21 +22,19 @@ void RemoteProxyOnlineTests::awsStaticCredentials()
 
     // Connect to the server (insecure disabled)
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
-    connection->setInsecureConnection(true);
+    connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect to server (insecue enabled for testing)
     QSignalSpy readySpy(connection, &RemoteProxyConnection::ready);
-    QVERIFY(connection->connectServer(QHostAddress::LocalHost, m_port));
+    QVERIFY(connection->connectServer(m_serverUrl));
     readySpy.wait();
     QVERIFY(readySpy.count() == 1);
     QVERIFY(connection->isConnected());
     QVERIFY(!connection->isRemoteConnected());
     QVERIFY(connection->state() == RemoteProxyConnection::StateReady);
     QVERIFY(connection->error() == RemoteProxyConnection::ErrorNoError);
-    QVERIFY(connection->serverAddress() == QHostAddress::LocalHost);
-    QVERIFY(connection->serverPort() == m_port);
+    QVERIFY(connection->serverUrl() == m_serverUrl);
     QVERIFY(connection->connectionType() == RemoteProxyConnection::ConnectionTypeWebSocket);
-    QVERIFY(connection->insecureConnection() == true);
     QVERIFY(connection->serverName() == SERVER_NAME_STRING);
     QVERIFY(connection->proxyServerName() == Engine::instance()->serverName());
     QVERIFY(connection->proxyServerVersion() == SERVER_VERSION_STRING);

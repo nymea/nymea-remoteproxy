@@ -22,23 +22,23 @@ public:
     QUrl serverUrl() const override;
 
     void sendData(const QByteArray &data) override;
-    bool isConnected() override;
+
+    void ignoreSslErrors() override;
+    void ignoreSslErrors(const QList<QSslError> &errors) override;
 
 private:
     QUrl m_serverUrl;
     QWebSocket *m_webSocket = nullptr;
 
 private slots:
-    void onConnected();
     void onDisconnected();
     void onError(QAbstractSocket::SocketError error);
-    void onSslError(const QList<QSslError> &errors);
     void onStateChanged(QAbstractSocket::SocketState state);
     void onTextMessageReceived(const QString &message);
     void onBinaryMessageReceived(const QByteArray &message);
 
 public slots:
-    void connectServer(const QHostAddress &address, quint16 port) override;
+    void connectServer(const QUrl &serverUrl) override;
     void disconnectServer() override;
 };
 

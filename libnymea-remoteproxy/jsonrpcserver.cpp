@@ -166,7 +166,8 @@ void JsonRpcServer::asyncReplyFinished()
 
     if (!reply->timedOut()) {
         Q_ASSERT_X(reply->handler()->validateReturns(reply->method(), reply->data()).first
-                   ,"validating return value", formatAssertion(reply->handler()->name(), reply->method(), reply->handler(), reply->data()).toLatin1().data());
+                   ,"validating return value", formatAssertion(reply->handler()->name(),
+                                                               reply->method(), reply->handler(), reply->data()).toLatin1().data());
         sendResponse(proxyClient, reply->commandId(), reply->data());
         if (!reply->success()) {
             // Disconnect this client since the request was not successfully

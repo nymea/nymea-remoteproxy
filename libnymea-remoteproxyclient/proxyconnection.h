@@ -2,6 +2,7 @@
 #define SOCKETCONNECTOR_H
 
 #include <QObject>
+#include <QSslError>
 #include <QHostAddress>
 
 namespace remoteproxyclient {
@@ -14,24 +15,28 @@ public:
     virtual ~ProxyConnection() = 0;
 
     virtual void sendData(const QByteArray &data) = 0;
-    virtual bool isConnected() = 0;
 
     virtual QUrl serverUrl() const = 0;
 
-    bool allowSslErrors() const;
-    void setAllowSslErrors(bool allowSslErrors);
+    virtual void ignoreSslErrors() = 0;
+    virtual void ignoreSslErrors(const QList<QSslError> &errors) = 0;
+
+    bool connected();
 
 private:
-    bool m_allowSslErrors = false;
+    bool m_connected = false;
+
+protected:
+    void setConnected(bool connected);
 
 signals:
     void connectedChanged(bool connected);
     void dataReceived(const QByteArray &data);
     void errorOccured();
-    void sslErrorOccured();
+    void sslErrors(const QList<QSslError> &errors);
 
 public slots:
-    virtual void connectServer(const QHostAddress &address, quint16 port) = 0;
+    virtual void connectServer(const QUrl &serverUrl) = 0;
     virtual void disconnectServer() = 0;
 
 };

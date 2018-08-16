@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and "
                                              "registered nymea deamons to establish a tunnel connection.\n\n"
-                                             "Server version: %1\n"
+                                             "Version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
                                      .arg(SERVER_VERSION_STRING)
@@ -202,7 +202,6 @@ int main(int argc, char *argv[])
     qCDebug(dcApplication()) << "==========================================================";
     qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
     qCDebug(dcApplication()) << "==========================================================";
-
     if (parser.isSet(developmentOption)) {
         qCWarning(dcApplication()) << "##########################################################";
         qCWarning(dcApplication()) << "#                   DEVELOPMENT MODE                     #";
@@ -211,6 +210,8 @@ int main(int argc, char *argv[])
 
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
+
+    qCDebug(dcApplication()) << "Using ssl version:" << QSslSocket::sslLibraryVersionString();
 
     Authenticator *authenticator = nullptr;
     if (parser.isSet(mockAuthenticatorOption)) {

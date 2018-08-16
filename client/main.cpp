@@ -1,4 +1,5 @@
 #include <QUrl>
+#include <QHash>
 #include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QCommandLineParser>
@@ -6,51 +7,133 @@
 
 #include "proxyclient.h"
 
+static QHash<QString, bool> s_loggingFilters;
+static const char *const normal = "\033[0m";
+static const char *const warning = "\e[33m";
+static const char *const error = "\e[31m";
+
+static void loggingCategoryFilter(QLoggingCategory *category)
+{    
+    if (s_loggingFilters.contains(category->categoryName())) {
+        bool debugEnabled = s_loggingFilters.value(category->categoryName());
+        category->setEnabled(QtDebugMsg, debugEnabled);
+        category->setEnabled(QtWarningMsg, debugEnabled || s_loggingFilters.value("Warnings"));
+    } else {
+        // Enable default debug output
+        category->setEnabled(QtDebugMsg, true);
+        category->setEnabled(QtWarningMsg, s_loggingFilters.value("qml") || s_loggingFilters.value("Warnings"));
+    }
+}
+
+static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
+{
+    switch (type) {
+    case QtInfoMsg:
+        fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        break;
+    case QtDebugMsg:
+        fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        break;
+    case QtWarningMsg:
+        fprintf(stdout, "%s%s: %s%s\n", warning, context.category, message.toUtf8().data(), normal);
+        break;
+    case QtCriticalMsg:
+        fprintf(stdout, "%s%s: %s%s\n", error, context.category, message.toUtf8().data(), normal);
+        break;
+    case QtFatalMsg:
+        fprintf(stdout, "%s%s: %s%s\n", error, context.category, message.toUtf8().data(), normal);
+        break;
+    }
+    fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
+    qInstallMessageHandler(consoleLogHandler);
 
     QCoreApplication application(argc, argv);
     application.setApplicationName(SERVER_NAME_STRING);
-    application.setOrganizationName("guh");
+    application.setOrganizationName("nymea");
     application.setApplicationVersion(SERVER_VERSION_STRING);
+
+    // Default debug categories
+    s_loggingFilters.insert("ProxyClient", true);
+    s_loggingFilters.insert("RemoteProxyClientJsonRpc", false);
+    s_loggingFilters.insert("RemoteProxyClientWebSocket", false);
+    s_loggingFilters.insert("RemoteProxyClientConnection", false);
+    s_loggingFilters.insert("RemoteProxyClientJsonRpcTraffic", false);
+    s_loggingFilters.insert("RemoteProxyClientConnectionTraffic", false);
 
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server client application. This client allowes to test "
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy client application. This client allowes to test "
                                              "a server application as client perspective.\n\n"
-                                             "Server version: %1\n"
+                                             "Version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
 
-
-
+    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default wss://dev-remoteproxy.nymea.io:443", "url");
+    urlOption.setDefaultValue("wss://dev-remoteproxy.nymea.io:443");
+    parser.addOption(urlOption);
 
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
     parser.addOption(tokenOption);
 
-    QCommandLineOption addressOption(QStringList() << "a" << "address", "The proxy server host address. Default 127.0.0.1", "address");
-    addressOption.setDefaultValue("127.0.0.1");
-    parser.addOption(addressOption);
+    QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
+    parser.addOption(insecureOption);
 
-    QCommandLineOption portOption(QStringList() << "p" << "port", "The proxy server port. Default 1212", "port");
-    portOption.setDefaultValue("1212");
-    parser.addOption(portOption);
+    QCommandLineOption nameOption(QStringList() << "name", "The name of the client. Default nymea-remoteproxyclient", "name");
+    nameOption.setDefaultValue("nymea-remoteproxyclient");
+    parser.addOption(nameOption);
+
+    QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the client. If not specified, a new one will be created", "uuid");
+    parser.addOption(uuidOption);
+
+    QCommandLineOption verboseOption(QStringList() << "verbose", "Print more information about the connection.");
+    parser.addOption(verboseOption);
+
+    QCommandLineOption veryVerboseOption(QStringList() << "very-verbose", "Print the complete traffic information from the connection.");
+    parser.addOption(veryVerboseOption);
 
     parser.process(application);
 
+    // Enable verbose
+    if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
+        s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
+        s_loggingFilters["RemoteProxyClientWebSocket"] = true;
+        s_loggingFilters["RemoteProxyClientConnection"] = true;
+    }
+
+    // Enable very verbose
+    if (parser.isSet(veryVerboseOption)) {
+        s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
+        s_loggingFilters["RemoteProxyClientConnectionTraffic"] = true;
+    }
+    QLoggingCategory::installFilter(loggingCategoryFilter);
+
     if (!parser.isSet(tokenOption)) {
-        qWarning() << "Please specify the token for authentication." << endl;
+        qCCritical(dcProxyClient()) << "Please specify the token for authentication using -t <token> or --token <token>." << endl << endl;
+        parser.showHelp(-1);
+    }
+
+    QUrl serverUrl(parser.value(urlOption));
+    if (!serverUrl.isValid()) {
+        qCCritical(dcProxyClient()) << "Invalid proxy server url passed." << parser.value(urlOption);
         exit(-1);
     }
 
-    ProxyClient client;
-    client.setHostAddress(QHostAddress(parser.value(addressOption)));
-    client.setPort(parser.value(portOption).toInt());
-    client.start(parser.value(tokenOption));
+    QUuid uuid(parser.value(uuidOption));
+    if (uuid.isNull()) {
+        uuid = QUuid::createUuid();
+    }
+
+    ProxyClient client(parser.value(nameOption), uuid);
+    client.setInsecure(parser.isSet(insecureOption));
+    client.start(serverUrl, parser.value(tokenOption));
 
     return application.exec();
 }

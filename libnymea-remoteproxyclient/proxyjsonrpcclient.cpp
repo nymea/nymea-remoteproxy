@@ -32,7 +32,7 @@ JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QStrin
     params.insert("token", token);
 
     JsonReply *reply = new JsonReply(m_commandId, "Authentication", "Authenticate", params, this);
-    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method()) << reply->params();
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
     sendRequest(reply->requestMap());
     m_replies.insert(m_commandId, reply);
     return reply;
@@ -66,6 +66,7 @@ void JsonRpcClient::processData(const QByteArray &data)
 
         if (dataMap.value("status").toString() == "error") {
             qCWarning(dcRemoteProxyClientJsonRpc()) << "Api error happend" << dataMap.value("error").toString();
+            // FIMXME: handle json layer errors
         }
 
         reply->setResponse(dataMap);

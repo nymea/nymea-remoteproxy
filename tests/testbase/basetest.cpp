@@ -146,6 +146,7 @@ QVariant BaseTest::injectSocketData(const QByteArray &data)
 {
     QWebSocket *socket = new QWebSocket("proxy-testclient", QWebSocketProtocol::Version13);
     connect(socket, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+
     QSignalSpy spyConnection(socket, SIGNAL(connected()));
     socket->open(Engine::instance()->webSocketServer()->serverUrl());
     spyConnection.wait();

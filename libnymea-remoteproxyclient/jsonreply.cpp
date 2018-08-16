@@ -35,10 +35,10 @@ QVariantMap JsonReply::params() const
 QVariantMap JsonReply::requestMap()
 {
     QVariantMap request;
-    request.insert("id", m_commandId);
-    request.insert("method", m_nameSpace + "." + m_method);
+    request.insert("id", commandId());
+    request.insert("method", nameSpace() + "." + method());
     if (!m_params.isEmpty())
-        request.insert("params", m_params);
+        request.insert("params", params());
 
     m_commandId++;
     return request;

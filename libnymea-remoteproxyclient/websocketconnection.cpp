@@ -9,14 +9,13 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
 {
     m_webSocket = new QWebSocket("libnymea-remoteproxyclient", QWebSocketProtocol::Version13, this);
 
-    connect(m_webSocket, &QWebSocket::connected, this, &WebSocketConnection::onConnected);
     connect(m_webSocket, &QWebSocket::disconnected, this, &WebSocketConnection::onDisconnected);
     connect(m_webSocket, &QWebSocket::textMessageReceived, this, &WebSocketConnection::onTextMessageReceived);
     connect(m_webSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketConnection::onBinaryMessageReceived);
 
     connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
-    connect(m_webSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SLOT(onSslError(QList<QSslError>)));
     connect(m_webSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
+    connect(m_webSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SIGNAL(sslErrors(QList<QSslError>)));
 }
 
 WebSocketConnection::~WebSocketConnection()
@@ -34,15 +33,14 @@ void WebSocketConnection::sendData(const QByteArray &data)
     m_webSocket->sendTextMessage(QString::fromUtf8(data));
 }
 
-bool WebSocketConnection::isConnected()
+void WebSocketConnection::ignoreSslErrors()
 {
-    return m_webSocket->state() == QAbstractSocket::ConnectedState;
+    m_webSocket->ignoreSslErrors();
 }
 
-void WebSocketConnection::onConnected()
+void WebSocketConnection::ignoreSslErrors(const QList<QSslError> &errors)
 {
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Connected with" << m_webSocket->requestUrl().toString();
-    emit connectedChanged(true);
+    m_webSocket->ignoreSslErrors(errors);
 }
 
 void WebSocketConnection::onDisconnected()
@@ -57,23 +55,19 @@ void WebSocketConnection::onError(QAbstractSocket::SocketError error)
     emit errorOccured();
 }
 
-void WebSocketConnection::onSslError(const QList<QSslError> &errors)
-{
-    if (allowSslErrors()) {
-        qCDebug(dcRemoteProxyClientWebSocket()) << "Ignore ssl errors because the developer explicitly allowed to use an insecure connection.";
-        m_webSocket->ignoreSslErrors();
-    } else {
-        qCWarning(dcRemoteProxyClientWebSocket()) << "SSL errors occured:";
-        foreach (const QSslError sslError, errors) {
-            qCWarning(dcRemoteProxyClientWebSocket()) << "    -->" << static_cast<int>(sslError.error()) << sslError.errorString();
-        }
-        emit sslErrorOccured();
-    }
-}
-
 void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state)
 {
     qCDebug(dcRemoteProxyClientWebSocket()) << "Socket state changed" << state;
+
+    switch (state) {
+    case QAbstractSocket::ConnectedState:
+        qCDebug(dcRemoteProxyClientWebSocket()) << "Connected with" << m_webSocket->requestUrl().toString();
+        setConnected(true);
+        break;
+    default:
+        setConnected(false);
+        break;
+    }
 }
 
 void WebSocketConnection::onTextMessageReceived(const QString &message)
@@ -86,28 +80,19 @@ void WebSocketConnection::onBinaryMessageReceived(const QByteArray &message)
     Q_UNUSED(message)
 }
 
-void WebSocketConnection::connectServer(const QHostAddress &address, quint16 port)
+void WebSocketConnection::connectServer(const QUrl &serverUrl)
 {
-    if (isConnected()) {
+    if (connected()) {
         m_webSocket->close();
     }
 
-    QUrl url;
-    url.setScheme("wss");
-    url.setHost(address.toString());
-    url.setPort(port);
-
-    m_serverUrl = url;
-
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Connecting to" << serverUrl().toString();
+    m_serverUrl = serverUrl;
+    qCDebug(dcRemoteProxyClientWebSocket()) << "Connecting to" << m_serverUrl.toString();
     m_webSocket->open(m_serverUrl);
 }
 
 void WebSocketConnection::disconnectServer()
 {
-    if (!isConnected())
-        return;
-
     qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnecting from" << serverUrl().toString();
     m_webSocket->close();
 }

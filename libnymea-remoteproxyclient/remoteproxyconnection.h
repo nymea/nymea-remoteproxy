@@ -4,6 +4,7 @@
 #include <QUuid>
 #include <QDebug>
 #include <QObject>
+#include <QHostInfo>
 #include <QWebSocket>
 #include <QHostAddress>
 #include <QLoggingCategory>
@@ -21,11 +22,13 @@ class RemoteProxyConnection : public QObject
     Q_OBJECT
 public:
     enum ConnectionType {
-        ConnectionTypeWebSocket
+        ConnectionTypeWebSocket,
+        ConnectionTypeTcpSocket
     };
     Q_ENUM(ConnectionType)
 
     enum State {
+        StateHostLookup,
         StateConnecting,
         StateConnected,
         StateInitializing,
@@ -39,6 +42,7 @@ public:
 
     enum Error {
         ErrorNoError,
+        ErrorHostNotFound,
         ErrorSocketError,
         ErrorSslError,
         ErrorProxyNotResponding,
@@ -53,23 +57,24 @@ public:
     RemoteProxyConnection::Error error() const;
     QString errorString() const;
 
+    void ignoreSslErrors();
+    void ignoreSslErrors(const QList<QSslError> &errors);
+
     bool isConnected() const;
     bool isAuthenticated() const;
     bool isRemoteConnected() const;
 
     RemoteProxyConnection::ConnectionType connectionType() const;
-    void setConnectionType(RemoteProxyConnection::ConnectionType connectionType);
 
-    QHostAddress serverAddress() const;
-    quint16 serverPort() const;
+    QUrl serverUrl() const;
 
     QString serverName() const;
     QString proxyServerName() const;
     QString proxyServerVersion() const;
     QString proxyServerApiVersion() const;
 
-    bool insecureConnection() const;
-    void setInsecureConnection(bool insecureConnection);
+    QString tunnelPartnerName() const;
+    QString tunnelPartnerUuid() const;
 
     bool sendData(const QByteArray &data);
 
@@ -78,8 +83,7 @@ private:
     QUuid m_clientUuid;
     QString m_clientName;
 
-    QHostAddress m_serverAddress;
-    quint16 m_serverPort = 443;
+    QUrl m_serverUrl;
 
     State m_state = StateDisconnected;
     Error m_error = ErrorNoError;
@@ -96,6 +100,10 @@ private:
     QString m_proxyServerVersion;
     QString m_proxyServerApiVersion;
 
+    // Tunnel
+    QString m_tunnelPartnerName;
+    QString m_tunnelPartnerUuid;
+
     void cleanUp();
 
     void setState(State state);
@@ -110,6 +118,7 @@ signals:
 
     void stateChanged(RemoteProxyConnection::State state);
     void errorOccured(RemoteProxyConnection::Error error);
+    void sslErrors(const QList<QSslError> &errors);
 
     void dataReady(const QByteArray &data);
 
@@ -117,14 +126,13 @@ private slots:
     void onConnectionChanged(bool isConnected);
     void onConnectionDataAvailable(const QByteArray &data);
     void onConnectionSocketError();
-    void onConnectionSslError();
 
     void onHelloFinished();
     void onAuthenticateFinished();
     void onTunnelEstablished(const QString &clientName, const QString &clientUuid);
 
 public slots:
-    bool connectServer(const QHostAddress &serverAddress, quint16 port);
+    bool connectServer(const QUrl &url);
     bool authenticate(const QString &token);
     void disconnectServer();
 

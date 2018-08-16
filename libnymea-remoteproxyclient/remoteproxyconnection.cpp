@@ -38,6 +38,9 @@ QString RemoteProxyConnection::errorString() const
     case ErrorNoError:
         errorString = "";
         break;
+    case ErrorHostNotFound:
+        errorString = "The proxy host url could not be resolved.";
+        break;
     case ErrorSocketError:
         errorString = "Socket connection error occured.";
         break;
@@ -55,6 +58,16 @@ QString RemoteProxyConnection::errorString() const
     return errorString;
 }
 
+void RemoteProxyConnection::ignoreSslErrors()
+{
+    m_connection->ignoreSslErrors();
+}
+
+void RemoteProxyConnection::ignoreSslErrors(const QList<QSslError> &errors)
+{
+    m_connection->ignoreSslErrors(errors);
+}
+
 bool RemoteProxyConnection::isConnected() const
 {
     return m_state == StateConnected
@@ -67,8 +80,7 @@ bool RemoteProxyConnection::isConnected() const
 
 bool RemoteProxyConnection::isAuthenticated() const
 {
-    return m_state == StateWaitTunnel
-            || m_state == StateRemoteConnected;
+    return m_state == StateWaitTunnel || m_state == StateRemoteConnected;
 }
 
 bool RemoteProxyConnection::isRemoteConnected() const
@@ -81,19 +93,9 @@ RemoteProxyConnection::ConnectionType RemoteProxyConnection::connectionType() co
     return m_connectionType;
 }
 
-void RemoteProxyConnection::setConnectionType(RemoteProxyConnection::ConnectionType connectionType)
+QUrl RemoteProxyConnection::serverUrl() const
 {
-    m_connectionType = connectionType;
-}
-
-QHostAddress RemoteProxyConnection::serverAddress() const
-{
-    return m_serverAddress;
-}
-
-quint16 RemoteProxyConnection::serverPort() const
-{
-    return m_serverPort;
+    return m_serverUrl;
 }
 
 QString RemoteProxyConnection::serverName() const
@@ -116,14 +118,14 @@ QString RemoteProxyConnection::proxyServerApiVersion() const
     return m_proxyServerApiVersion;
 }
 
-bool RemoteProxyConnection::insecureConnection() const
+QString RemoteProxyConnection::tunnelPartnerName() const
 {
-    return m_insecureConnection;
+    return m_tunnelPartnerName;
 }
 
-void RemoteProxyConnection::setInsecureConnection(bool insecureConnection)
+QString RemoteProxyConnection::tunnelPartnerUuid() const
 {
-    m_insecureConnection = insecureConnection;
+    return m_tunnelPartnerUuid;
 }
 
 bool RemoteProxyConnection::sendData(const QByteArray &data)
@@ -170,6 +172,24 @@ void RemoteProxyConnection::setState(RemoteProxyConnection::State state)
     m_state = state;
     qCDebug(dcRemoteProxyClientConnection()) << "State changed" << m_state;
     emit stateChanged(m_state);
+
+    switch (m_state) {
+    case StateConnected:
+        emit connected();
+        break;
+    case StateDisconnected:
+        emit disconnected();
+        break;
+    case StateReady:
+        emit ready();
+        break;
+    case StateRemoteConnected:
+        emit remoteConnectionEstablished();
+        break;
+    default:
+        break;
+    }
+
 }
 
 void RemoteProxyConnection::setError(RemoteProxyConnection::Error error)
@@ -185,16 +205,14 @@ void RemoteProxyConnection::setError(RemoteProxyConnection::Error error)
 void RemoteProxyConnection::onConnectionChanged(bool isConnected)
 {
     if (isConnected) {
-        qCDebug(dcRemoteProxyClientConnection()) << "Connected from proxy server.";
+        qCDebug(dcRemoteProxyClientConnection()) << "Connected to proxy server.";
         setState(StateConnected);
-        emit connected();
 
         setState(StateInitializing);
         JsonReply *reply = m_jsonClient->callHello();
         connect(reply, &JsonReply::finished, this, &RemoteProxyConnection::onHelloFinished);
     } else {
         qCDebug(dcRemoteProxyClientConnection()) << "Disconnected from proxy server.";
-        emit disconnected();
         setState(StateDisconnected);
         cleanUp();
     }
@@ -226,11 +244,6 @@ void RemoteProxyConnection::onConnectionSocketError()
     setError(ErrorSocketError);
 }
 
-void RemoteProxyConnection::onConnectionSslError()
-{
-    setError(ErrorSslError);
-}
-
 void RemoteProxyConnection::onHelloFinished()
 {
     JsonReply *reply = static_cast<JsonReply *>(sender());
@@ -255,7 +268,6 @@ void RemoteProxyConnection::onHelloFinished()
     m_proxyServerApiVersion = responseParams.value("apiVersion").toString();
 
     setState(StateReady);
-    emit ready();
 }
 
 void RemoteProxyConnection::onAuthenticateFinished()
@@ -280,15 +292,23 @@ void RemoteProxyConnection::onAuthenticateFinished()
 
 void RemoteProxyConnection::onTunnelEstablished(const QString &clientName, const QString &clientUuid)
 {
-    qCDebug(dcRemoteProxyClientConnection()) << "####### Remote connection established with" << clientName << clientUuid;
+    qCDebug(dcRemoteProxyClientConnection()) << "Remote connection established successfully with" << clientName << clientUuid;
+    m_tunnelPartnerName = clientName;
+    m_tunnelPartnerUuid = clientUuid;
     setState(StateRemoteConnected);
-    emit remoteConnectionEstablished();
 }
 
-bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, quint16 port)
-{    
-    m_serverAddress = serverAddress;
-    m_serverPort = port;
+bool RemoteProxyConnection::connectServer(const QUrl &url)
+{
+    // Verify url
+    // FIXME: support also tcp
+    if (url.scheme() != "wss") {
+        qCWarning(dcRemoteProxyClientConnection()) << "Unsupported connection type" << url.scheme() << "Default to wss";
+        m_serverUrl.setScheme("wss");
+    }
+
+    m_serverUrl = url;
+    m_connectionType = ConnectionTypeWebSocket;
     m_error = ErrorNoError;
 
     cleanUp();
@@ -296,22 +316,23 @@ bool RemoteProxyConnection::connectServer(const QHostAddress &serverAddress, qui
     switch (m_connectionType) {
     case ConnectionTypeWebSocket:
         m_connection = qobject_cast<ProxyConnection *>(new WebSocketConnection(this));
+        break;
+    case ConnectionTypeTcpSocket:
+        // FIXME:
+        m_connection = qobject_cast<ProxyConnection *>(new WebSocketConnection(this));
+        break;
     }
-
-    m_connection->setAllowSslErrors(m_insecureConnection);
 
     connect(m_connection, &ProxyConnection::connectedChanged, this, &RemoteProxyConnection::onConnectionChanged);
     connect(m_connection, &ProxyConnection::dataReceived, this, &RemoteProxyConnection::onConnectionDataAvailable);
     connect(m_connection, &ProxyConnection::errorOccured, this, &RemoteProxyConnection::onConnectionSocketError);
-    connect(m_connection, &ProxyConnection::sslErrorOccured, this, &RemoteProxyConnection::onConnectionSslError);
+    connect(m_connection, &ProxyConnection::sslErrors, this, &RemoteProxyConnection::sslErrors);
 
     m_jsonClient = new JsonRpcClient(m_connection, this);
     connect(m_jsonClient, &JsonRpcClient::tunnelEstablished, this, &RemoteProxyConnection::onTunnelEstablished);
 
-    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << QString("%1:%2").arg(serverAddress.toString()).arg(port);
-    m_connection->connectServer(serverAddress, port);
-
-    setState(StateConnecting);
+    qCDebug(dcRemoteProxyClientConnection()) << "Connecting to" << m_serverUrl.toString();
+    m_connection->connectServer(m_serverUrl);
 
     return true;
 }

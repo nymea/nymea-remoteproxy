@@ -32,6 +32,9 @@ public:
     QString sslCertificateKeyFileName() const;
     void setSslCertificateKeyFileName(const QString &fileName);
 
+    QString sslCertificateChainFileName() const;
+    void setSslCertificateChainFileName(const QString &fileName);
+
     QSslConfiguration sslConfiguration() const;
 
     // WebSocketServer
@@ -55,6 +58,7 @@ private:
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
     QString m_sslCertificateKeyFileName = "/etc/ssl/private/ssl-cert-snakeoil.key";
+    QString m_sslCertificateChainFileName;
     QSslConfiguration m_sslConfiguration;
 
     // WebSocketServer
