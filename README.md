@@ -48,25 +48,29 @@ Simply run following command in the build dir:
 
     $ sudo make install
 
-
 # Configure
 
-The package will deliver a default configuration file with following content:
+The package will deliver a default configuration file with following content (`/etc/nymea/nymea-remoteproxy.conf`):
 
+    [ProxyServer]
     name=nymea-remoteproxy
     writeLogs=false
     logFile=/var/log/nymea-remoteproxy.log
+    monitorSocket=/tmp/nymea-remoteproxy-monitor.sock
+    
+    [SSL]
     certificate=/etc/ssl/certs/ssl-cert-snakeoil.pem
     certificateKey=/etc/ssl/private/ssl-cert-snakeoil.key
+    certificateChain=
     
     [WebSocketServer]
-    host=0.0.0.0
+    host=127.0.0.1
     port=443
     
     [TcpServer]
-    host=0.0.0.0
+    host=127.0.0.1
     port=80
-
+    
 
 # Test
 
@@ -96,7 +100,7 @@ In order to get information about the server you can start the command with the 
     
     The nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.
     
-    Server version: 0.0.1
+    Version: 0.1.0
     API version: 0.1
     
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
@@ -165,9 +169,9 @@ Once a client connects to the proxy server, he must authenticate him self by pas
         "id": 0,
         "params": {
             "apiVersion": "0.1",
-            "name": "nymea-remoteproxy-testserver",
+            "name": "community-server",
             "server": "nymea-remoteproxy",
-            "version": "0.0.1"
+            "version": "0.1.0"
         },
         "status": "success"
     }
@@ -233,7 +237,6 @@ Once the other client is here and ready, the server will send a notification to 
 
 #### Response
 
-    
     {
         "id": 0,
         "params": {
@@ -309,27 +312,35 @@ Once the other client is here and ready, the server will send a notification to 
 The client allowes you to test the proxy server and create a dummy client for testing the connection.
 
 
-    nymea-remoteproxy-client --help
+    $ nymea-remoteproxy-client --help
+    
     Usage: nymea-remoteproxy-client [options]
+
+    The nymea remote proxy client application. This client allowes to test a server application as client perspective.
     
-    The nymea remote proxy server client application. This client allowes to test a server application as client perspective.
-    
-    Server version: 0.0.1
+    Version: 0.1.0
     API version: 0.1
     
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
     
     
     Options:
-      -h, --help               Displays this help.
-      -v, --version            Displays version information.
-      -t, --token <token>      The AWS token for authentication.
-      -a, --address <address>  The proxy server host address. Default 127.0.0.1
-      -p, --port <port>        The proxy server port. Default 1212
-    
+      -h, --help           Displays this help.
+      -v, --version        Displays version information.
+      -u, --url <url>      The proxy server url. Default
+                           wss://dev-remoteproxy.nymea.io:443
+      -t, --token <token>  The AWS token for authentication.
+      -i, --igore-ssl      Ignore SSL certificate errors.
+      --name <name>        The name of the client. Default nymea-remoteproxyclient
+      --uuid <uuid>        The uuid of the client. If not specified, a new one will
+                           be created
+      --verbose            Print more information about the connection.
+      --very-verbose       Print the complete traffic information from the
+                           connection.
 
 # Testing a local server
 
+With following steps you can test a local instance with a self signed certificate.
 
 ## Start the server
 
@@ -346,7 +357,7 @@ The only thing you need is a certificate, which can be loaded from the server. T
 > *Note:* you can enter whatever you like for the certificate.
 
     $ cd /tmp/
-    $ openssl req -x509 -nodes -days 36500 -newkey rsa:2048 -keyout test-proxy-certificate.key -out test-proxy-certificate.crt
+    $ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout test-proxy-certificate.key -out test-proxy-certificate.crt
 
 Now place the certificate and the key where they belong:
 
@@ -354,7 +365,6 @@ Now place the certificate and the key where they belong:
     $ sudo cp /tmp/test-proxy-certificate.key /etc/ssl/private/
 
 Change following configuration in the `/etc/nymea/nymea-remoteproxy.conf`:
-
 
     ...
     certificate=/etc/ssl/certs/test-proxy-certificate.crt
@@ -367,18 +377,23 @@ Now stop the proxy server and start it manually:
 
 > *Note*: the `-m` starts the proxy with a dummy authenticator, which allowes to use any token, it will always be authenticated and should be used only on localhost running servers.
 
-    $ sudo nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy -m
+    $ sudo nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy -m --verbose
 
 ## Connect two clients
 
-Once the server is up and running with the dummy authenticator, you can try to connect to the service using the `nymea-remoteproxy-client` in a different terminal.
+Once the server is up and running with the dummy authenticator, you can try to connect to the service using the `nymea-remoteproxy-client` in a new terminal.
 
 > *Note:* assuming you are starting the client on the same system as the server:
 
-    $ nymea-remoteproxy-client -a 127.0.0.1 -p 443 -t "dummytoken1"
+    $ nymea-remoteproxy-client -u wss://127.0.0.1:443 -t "dummytoken"
 
 Open a second terminal and start the same command again.
 
+> *Note:* assuming you are starting the client on the same system as the server:
+
+    $ nymea-remoteproxy-client -u wss://127.0.0.1:443 -t "dummytoken"
+
+You can follow the connection flow on all parts using the `--very-verbose` option.
 
 # License
 
