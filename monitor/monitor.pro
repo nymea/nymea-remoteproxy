@@ -9,4 +9,3 @@ target.path = /usr/bin
 INSTALLS += target
 
 HEADERS += \
-    proxyclient.h

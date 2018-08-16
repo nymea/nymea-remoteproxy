@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy.conf --verbose
+ExecStart=/usr/bin/nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy.conf
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure

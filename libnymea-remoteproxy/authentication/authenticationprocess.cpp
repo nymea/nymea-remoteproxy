@@ -1,5 +1,6 @@
 #include "authenticationprocess.h"
 #include "loggingcategories.h"
+#include "userinformation.h"
 
 #include <QUrl>
 #include <QFile>
@@ -152,8 +153,16 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
     }
 
     bool isValid = response.value("isValid").toBool();
-
     if (isValid) {
+        QVariantMap verifiedDataMap = response.value("verifiedData").toMap();
+        QString vendorId = verifiedDataMap.value("vendorId").toString();
+        QString userPoolId = verifiedDataMap.value("userPoolId").toString();
+        QVariantMap verifiedParsedTokenMap = verifiedDataMap.value("verifiedParsedToken").toMap();
+        QString email = verifiedParsedTokenMap.value("email").toString();
+        QString cognitoUsername = verifiedParsedTokenMap.value("cognito:username").toString();
+
+        UserInformation userInformation(email, cognitoUsername, vendorId, userPoolId);
+
         emit authenticationFinished(Authenticator::AuthenticationErrorNoError);
     } else {
         emit authenticationFinished(Authenticator::AuthenticationErrorAuthenticationFailed);

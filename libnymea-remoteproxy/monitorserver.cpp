@@ -94,10 +94,11 @@ void MonitorServer::startServer()
 
 void MonitorServer::stopServer()
 {
+    m_timer->stop();
     if (!m_server)
         return;
 
-    qCDebug(dcMonitorServer()) << "Stopping server" << m_serverName;
+    qCDebug(dcMonitorServer()) << "Stop server" << m_serverName;
     foreach (QLocalSocket *clientConnection, m_clients) {
         clientConnection->close();
     }

@@ -169,9 +169,9 @@ void Engine::setRunning(bool running)
     if (m_running == running)
         return;
 
-    qCDebug(dcEngine()) << "----------------------------------------------------------";
+    //qCDebug(dcEngine()) << "----------------------------------------------------------";
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
-    qCDebug(dcEngine()) << "----------------------------------------------------------";
+    //qCDebug(dcEngine()) << "----------------------------------------------------------";
     m_running = running;
     emit runningChanged(m_running);
 }

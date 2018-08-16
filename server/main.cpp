@@ -8,7 +8,6 @@
 #include <QMessageLogger>
 #include <QSslCertificate>
 #include <QCoreApplication>
-#include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QSslConfiguration>
 #include <QCommandLineParser>
@@ -21,6 +20,7 @@
 #include "engine.h"
 #include "loggingcategories.h"
 #include "proxyconfiguration.h"
+#include "remoteproxyserverapplication.h"
 #include "authentication/awsauthenticator.h"
 #include "authentication/dummyauthenticator.h"
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 {
     qInstallMessageHandler(consoleLogHandler);
 
-    QCoreApplication application(argc, argv);
+    RemoteProxyServerApplication application(argc, argv);
     application.setApplicationName(SERVER_NAME_STRING);
     application.setOrganizationName("nymea");
     application.setApplicationVersion(SERVER_VERSION_STRING);

@@ -3,12 +3,6 @@ include(../nymea-remoteproxy.pri)
 TEMPLATE = lib
 TARGET = nymea-remoteproxy
 
-# -L/home/timon/guh/development/cloud/aws-sdk-cpp/build/install/lib
-#        -laws-cpp-sdk-access-management \
-#        -laws-cpp-sdk-cognito-identity \
-#        -laws-cpp-sdk-iam \
-#        -laws-cpp-sdk-kinesis\
-
 HEADERS += \
     engine.h \
     loggingcategories.h \
@@ -16,6 +10,9 @@ HEADERS += \
     websocketserver.h \
     proxyclient.h \
     proxyserver.h \
+    monitorserver.h \
+    proxyconfiguration.h \
+    tunnelconnection.h \
     jsonrpcserver.h \
     jsonrpc/jsonhandler.h \
     jsonrpc/jsonreply.h \
@@ -24,11 +21,9 @@ HEADERS += \
     authentication/authenticator.h \
     authentication/awsauthenticator.h \
     authentication/authenticationreply.h \
-    proxyconfiguration.h \
-    tunnelconnection.h \
+    authentication/userinformation.h \
     authentication/authenticationprocess.h \
     authentication/dummyauthenticator.h \
-    monitorserver.h
 
 SOURCES += \
     engine.cpp \
@@ -37,6 +32,9 @@ SOURCES += \
     websocketserver.cpp \
     proxyclient.cpp \
     proxyserver.cpp \
+    monitorserver.cpp \
+    proxyconfiguration.cpp \
+    tunnelconnection.cpp \
     jsonrpcserver.cpp \
     jsonrpc/jsonhandler.cpp \
     jsonrpc/jsonreply.cpp \
@@ -45,11 +43,9 @@ SOURCES += \
     authentication/authenticator.cpp \
     authentication/awsauthenticator.cpp \
     authentication/authenticationreply.cpp \
-    proxyconfiguration.cpp \
-    tunnelconnection.cpp \
+    authentication/userinformation.cpp \
     authentication/authenticationprocess.cpp \
     authentication/dummyauthenticator.cpp \
-    monitorserver.cpp
 
 
 # install header file with relative subdirectory
