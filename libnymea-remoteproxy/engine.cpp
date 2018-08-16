@@ -129,6 +129,11 @@ void Engine::setDeveloperModeEnabled(bool enabled)
     m_developerMode = enabled;
 }
 
+ProxyConfiguration *Engine::configuration() const
+{
+    return m_configuration;
+}
+
 Authenticator *Engine::authenticator() const
 {
     return m_authenticator;

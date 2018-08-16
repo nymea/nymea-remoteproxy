@@ -43,6 +43,8 @@ public:
     bool running() const;
     void registerTransportInterface(TransportInterface *interface);
 
+    QVariantMap currentStatistics();
+
 private:
     JsonRpcServer *m_jsonRpcServer = nullptr;
     QList<TransportInterface *> m_transportInterfaces;

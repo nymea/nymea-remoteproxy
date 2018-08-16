@@ -55,6 +55,7 @@ public:
     void setAuthenticator(Authenticator *authenticator);
     void setDeveloperModeEnabled(bool enabled);
 
+    ProxyConfiguration *configuration() const;
     Authenticator *authenticator() const;
     ProxyServer *proxyServer() const;
     WebSocketServer *webSocketServer() const;

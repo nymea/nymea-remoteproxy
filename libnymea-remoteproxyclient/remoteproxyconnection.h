@@ -97,8 +97,6 @@ public:
     QString tunnelPartnerName() const;
     QString tunnelPartnerUuid() const;
 
-    bool sendData(const QByteArray &data);
-
 private:
     ConnectionType m_connectionType = ConnectionTypeWebSocket;
     QUuid m_clientUuid;
@@ -156,6 +154,7 @@ public slots:
     bool connectServer(const QUrl &url);
     bool authenticate(const QString &token);
     void disconnectServer();
+    bool sendData(const QByteArray &data);
 
 };
 

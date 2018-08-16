@@ -2,7 +2,7 @@
  *                                                                               *
  * Copyright (C) 2018 Simon Stürz <simon.stuerz@guh.io>                          *
  *                                                                               *
- * This file is part of guh-cloudproxy.                                          *
+ * This file is part of nymea-remoteproxy.                                       *
  *                                                                               *
  * This program is free software: you can redistribute it and/or modify          *
  * it under the terms of the GNU General Public License as published by          *

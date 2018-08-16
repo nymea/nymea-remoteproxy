@@ -149,22 +149,6 @@ QString RemoteProxyConnection::tunnelPartnerUuid() const
     return m_tunnelPartnerUuid;
 }
 
-bool RemoteProxyConnection::sendData(const QByteArray &data)
-{
-    if (!isConnected()) {
-        qCWarning(dcRemoteProxyClientConnection()) << "Could not send data. Not connected.";
-        return false;
-    }
-
-    if (!isRemoteConnected()) {
-        qCWarning(dcRemoteProxyClientConnection()) << "Could not send data. The remote client is not connected yet.";
-        return false;
-    }
-
-    m_connection->sendData(data);
-    return true;
-}
-
 void RemoteProxyConnection::cleanUp()
 {
     if (m_jsonClient) {
@@ -380,5 +364,22 @@ void RemoteProxyConnection::disconnectServer()
         m_connection->disconnectServer();
     }
 }
+
+bool RemoteProxyConnection::sendData(const QByteArray &data)
+{
+    if (!isConnected()) {
+        qCWarning(dcRemoteProxyClientConnection()) << "Could not send data. Not connected.";
+        return false;
+    }
+
+    if (!isRemoteConnected()) {
+        qCWarning(dcRemoteProxyClientConnection()) << "Could not send data. The remote client is not connected yet.";
+        return false;
+    }
+
+    m_connection->sendData(data);
+    return true;
+}
+
 
 }

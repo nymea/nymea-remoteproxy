@@ -59,6 +59,14 @@ void ProxyServer::registerTransportInterface(TransportInterface *interface)
     m_transportInterfaces.append(interface);
 }
 
+QVariantMap ProxyServer::currentStatistics()
+{
+    QVariantMap statisticsMap;
+    statisticsMap.insert("clientCount", m_proxyClients.count());
+    statisticsMap.insert("tunnelCount", m_tunnels.count());
+    return statisticsMap;
+}
+
 void ProxyServer::setRunning(bool running)
 {
     if (m_running == running)

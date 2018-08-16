@@ -21,6 +21,8 @@
 
 #include "proxyclient.h"
 
+#include <QTimer>
+
 Q_LOGGING_CATEGORY(dcProxyClient, "ProxyClient")
 
 ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, QObject *parent) :
@@ -33,6 +35,7 @@ ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, QObject *parent
     connect(m_connection, &RemoteProxyConnection::ready, this, &ProxyClient::onClientReady);
     connect(m_connection, &RemoteProxyConnection::authenticated, this, &ProxyClient::onAuthenticationFinished);
     connect(m_connection, &RemoteProxyConnection::remoteConnectionEstablished, this, &ProxyClient::onRemoteConnectionEstablished);
+    connect(m_connection, &RemoteProxyConnection::dataReady, this, &ProxyClient::onDataReady);
     connect(m_connection, &RemoteProxyConnection::errorOccured, this, &ProxyClient::onErrorOccured);
     connect(m_connection, &RemoteProxyConnection::disconnected, this, &ProxyClient::onClientDisconnected);
     connect(m_connection, &RemoteProxyConnection::sslErrors, this, &ProxyClient::onSslErrors);
@@ -41,6 +44,11 @@ ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, QObject *parent
 void ProxyClient::setInsecure(bool insecure)
 {
     m_insecure = insecure;
+}
+
+void ProxyClient::setPingpong(bool enable)
+{
+    m_pingpong = enable;
 }
 
 void ProxyClient::onErrorOccured(RemoteProxyConnection::Error error)
@@ -66,6 +74,16 @@ void ProxyClient::onRemoteConnectionEstablished()
     qCDebug(dcProxyClient()) << "----------------------------------------------------------------------------------";
     qCDebug(dcProxyClient()) << "Remote connection established with" << m_connection->tunnelPartnerName() << m_connection->tunnelPartnerUuid();
     qCDebug(dcProxyClient()) << "----------------------------------------------------------------------------------";
+    if (m_pingpong) sendPing();
+}
+
+void ProxyClient::onDataReady(const QByteArray &data)
+{
+    qCDebug(dcProxyClient()) << "<--" << qUtf8Printable(data);
+
+    if (m_pingpong) {
+        QTimer::singleShot(1000, this, &ProxyClient::sendPing);
+    }
 }
 
 void ProxyClient::onClientDisconnected()
@@ -85,6 +103,13 @@ void ProxyClient::onSslErrors(const QList<QSslError> errors)
             qCWarning(dcProxyClient()) << "  --> " << sslError.errorString();
         }
     }
+}
+
+void ProxyClient::sendPing()
+{
+    QByteArray data(QString("Ping from " + m_name + "!").toUtf8());
+    qCDebug(dcProxyClient()) << "-->" << qUtf8Printable(data);
+    m_connection->sendData(data);
 }
 
 void ProxyClient::start(const QUrl &url, const QString &token)

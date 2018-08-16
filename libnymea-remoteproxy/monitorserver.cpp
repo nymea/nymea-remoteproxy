@@ -19,6 +19,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "engine.h"
 #include "monitorserver.h"
 #include "loggingcategories.h"
 
@@ -52,7 +53,10 @@ bool MonitorServer::running() const
 QVariantMap MonitorServer::createMonitorData()
 {
     QVariantMap monitorData;
-
+    monitorData.insert("serverName", Engine::instance()->configuration()->serverName());
+    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
+    monitorData.insert("apiVersion", API_VERSION_STRING);
+    monitorData.insert("proxyStatistic", Engine::instance()->proxyServer()->currentStatistics());
     return monitorData;
 }
 

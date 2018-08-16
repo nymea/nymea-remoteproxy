@@ -107,6 +107,10 @@ int main(int argc, char *argv[])
     QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
+    QCommandLineOption pingPongOption(QStringList() << "p" << "pingpong", "Start a ping pong traffic trough the remote connection.");
+    parser.addOption(pingPongOption);
+
+
     QCommandLineOption nameOption(QStringList() << "name", "The name of the client. Default nymea-remoteproxyclient", "name");
     nameOption.setDefaultValue("nymea-remoteproxyclient");
     parser.addOption(nameOption);
@@ -154,6 +158,7 @@ int main(int argc, char *argv[])
 
     ProxyClient client(parser.value(nameOption), uuid);
     client.setInsecure(parser.isSet(insecureOption));
+    client.setPingpong(parser.isSet(pingPongOption));
     client.start(serverUrl, parser.value(tokenOption));
 
     return application.exec();
