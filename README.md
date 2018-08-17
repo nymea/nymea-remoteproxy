@@ -391,15 +391,15 @@ Once the server is up and running with the dummy authenticator, you can try to c
 
 > *Note:* assuming you are starting the client on the same system as the server:
 
-    $ nymea-remoteproxy-client -u wss://127.0.0.1:443 -t "dummytoken"
+    $ nymea-remoteproxy-client -i -u wss://127.0.0.1:443 -t "dummytoken"
 
 Open a second terminal and start the same command again.
 
 > *Note:* assuming you are starting the client on the same system as the server:
 
-    $ nymea-remoteproxy-client -u wss://127.0.0.1:443 -t "dummytoken"
+    $ nymea-remoteproxy-client -i -u wss://127.0.0.1:443 -t "dummytoken"
 
-You can follow the connection flow on all parts using the `--very-verbose` option.
+You can follow the connection flow on both sides using the `--very-verbose` option.
 
 # License
 

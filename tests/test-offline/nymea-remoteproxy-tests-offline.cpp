@@ -287,11 +287,21 @@ void RemoteProxyOfflineTests::remoteConnection()
     m_mockAuthenticator->setTimeoutDuration(100);
     m_mockAuthenticator->setExpectedAuthenticationError();
 
+    QString nameConnectionOne = "Test client one";
+    QUuid uuidConnectionOne = QUuid::createUuid();
+
+    QString nameConnectionTwo = "Test client two";
+    QUuid uuidConnectionTwo = QUuid::createUuid();
+
+    QByteArray dataOne = "Hello from client one :-)";
+    QByteArray dataTwo = "Hello from client two :-)";
+
+
     // Create two connection
-    RemoteProxyConnection *connectionOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
+    RemoteProxyConnection *connectionOne = new RemoteProxyConnection(uuidConnectionOne, nameConnectionOne, this);
     connect(connectionOne, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
-    RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(QUuid::createUuid(), "Test client two", this);
+    RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(uuidConnectionTwo, nameConnectionTwo, this);
     connect(connectionTwo, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect one
@@ -336,26 +346,24 @@ void RemoteProxyOfflineTests::remoteConnection()
     QVERIFY(connectionOne->state() == RemoteProxyConnection::StateRemoteConnected);
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
+    QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
+    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
+    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+
     // Pipe data trought the tunnel
     QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
-
-    QByteArray dataOne = "Hello from client one :-)";
-    QByteArray dataTwo = "Hello from client two :-)";
 
     connectionOne->sendData(dataOne);
     remoteConnectionDataTwo.wait(500);
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray(), dataOne);
 
-    // verify if data is the same
-
     connectionTwo->sendData(dataTwo);
     remoteConnectionDataOne.wait(500);
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray(), dataTwo);
-
-    // verify if data is the same
 
     connectionOne->deleteLater();
     connectionTwo->deleteLater();
@@ -380,7 +388,7 @@ void RemoteProxyOfflineTests::trippleConnection()
     RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(QUuid::createUuid(), "Test client two", this);
     connect(connectionTwo, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
-    RemoteProxyConnection *connectionThree = new RemoteProxyConnection(QUuid::createUuid(), "Token thief ^w^", this);
+    RemoteProxyConnection *connectionThree = new RemoteProxyConnection(QUuid::createUuid(), "Token thief ^v^", this);
     connect(connectionThree, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
     // Connect one
@@ -480,10 +488,6 @@ void RemoteProxyOfflineTests::timeout()
     startServer();
 
     // Configure result
-    // Start the server
-    startServer();
-
-    // Configure result
     m_mockAuthenticator->setExpectedAuthenticationError();
     m_mockAuthenticator->setTimeoutDuration(6000);
 
@@ -495,6 +499,7 @@ void RemoteProxyOfflineTests::timeout()
 
     QVariant response = invokeApiCall("Authentication.Authenticate", params);
     qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+
     // Clean up
     stopServer();
 }

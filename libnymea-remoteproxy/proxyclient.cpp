@@ -21,19 +21,37 @@
 
 #include "proxyclient.h"
 
+#include <QDateTime>
+
 namespace remoteproxy {
 
-ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, QObject *parent) :
+ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent) :
     QObject(parent),
     m_interface(interface),
-    m_clientId(clientId)
+    m_clientId(clientId),
+    m_peerAddress(address)
 {
-
+    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
 }
 
 QUuid ProxyClient::clientId() const
 {
     return m_clientId;
+}
+
+QHostAddress ProxyClient::peerAddress() const
+{
+    return m_peerAddress;
+}
+
+uint ProxyClient::creationTime() const
+{
+    return m_creationTimeStamp;
+}
+
+QString ProxyClient::creationTimeString() const
+{
+    return QDateTime::fromTime_t(creationTime()).toString("dd.MM.yyyy hh:mm:ss");
 }
 
 bool ProxyClient::isAuthenticated() const
@@ -102,7 +120,9 @@ void ProxyClient::setToken(const QString &token)
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
     debug.nospace() << "ProxyClient(" << proxyClient->interface()->serverName();
-    debug.nospace() << ", " << proxyClient->clientId().toString() << ") ";
+    debug.nospace() << ", " << proxyClient->clientId().toString();
+    debug.nospace() << ", " << proxyClient->peerAddress().toString() << ") ";
+    debug.nospace() << ", " << proxyClient->creationTimeString() << ") ";
     return debug;
 }
 

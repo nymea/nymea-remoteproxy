@@ -116,7 +116,7 @@ void WebSocketServer::onClientConnected()
     connect(client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
     connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
 
-    emit clientConnected(clientId);
+    emit clientConnected(clientId, client->peerAddress());
 }
 
 void WebSocketServer::onClientDisconnected()

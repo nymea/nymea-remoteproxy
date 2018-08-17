@@ -103,7 +103,7 @@ void MonitorServer::onMonitorDisconnected()
 }
 
 void MonitorServer::startServer()
-{
+{    
     qCDebug(dcMonitorServer()) << "Starting server on" << m_serverName;
     m_server = new QLocalServer(this);
     if (!m_server->listen(m_serverName)) {

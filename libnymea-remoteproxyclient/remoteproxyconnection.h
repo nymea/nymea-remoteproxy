@@ -49,7 +49,6 @@ public:
     Q_ENUM(ConnectionType)
 
     enum State {
-        StateHostLookup,
         StateConnecting,
         StateConnected,
         StateInitializing,
@@ -137,6 +136,7 @@ signals:
 
     void stateChanged(RemoteProxyConnection::State state);
     void errorOccured(RemoteProxyConnection::Error error);
+    void socketErrorOccured(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
     void dataReady(const QByteArray &data);
@@ -144,7 +144,7 @@ signals:
 private slots:
     void onConnectionChanged(bool isConnected);
     void onConnectionDataAvailable(const QByteArray &data);
-    void onConnectionSocketError();
+    void onConnectionSocketError(QAbstractSocket::SocketError error);
 
     void onHelloFinished();
     void onAuthenticateFinished();

@@ -41,6 +41,7 @@ class RemoteProxyOnlineTests : public BaseTest
     Q_OBJECT
 public:
     explicit RemoteProxyOnlineTests(QObject *parent = nullptr);
+    ~RemoteProxyOnlineTests() = default;
 
 private slots:
     void awsStaticCredentials();

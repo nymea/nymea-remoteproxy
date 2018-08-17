@@ -244,8 +244,9 @@ void RemoteProxyConnection::onConnectionDataAvailable(const QByteArray &data)
     }
 }
 
-void RemoteProxyConnection::onConnectionSocketError()
+void RemoteProxyConnection::onConnectionSocketError(QAbstractSocket::SocketError error)
 {
+    emit socketErrorOccured(error);
     setError(ErrorSocketError);
 }
 
@@ -305,9 +306,8 @@ void RemoteProxyConnection::onTunnelEstablished(const QString &clientName, const
 
 bool RemoteProxyConnection::connectServer(const QUrl &url)
 {
-    // Verify url
-    // FIXME: support also tcp
     if (url.scheme() != "wss") {
+        // FIXME: support also tcp
         qCWarning(dcRemoteProxyClientConnection()) << "Unsupported connection type" << url.scheme() << "Default to wss";
         m_serverUrl.setScheme("wss");
     }

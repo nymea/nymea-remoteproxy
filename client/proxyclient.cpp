@@ -80,7 +80,6 @@ void ProxyClient::onRemoteConnectionEstablished()
 void ProxyClient::onDataReady(const QByteArray &data)
 {
     qCDebug(dcProxyClient()) << "<--" << qUtf8Printable(data);
-
     if (m_pingpong) {
         QTimer::singleShot(1000, this, &ProxyClient::sendPing);
     }

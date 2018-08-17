@@ -61,6 +61,7 @@ private slots:
 public slots:
     void connectServer(const QUrl &serverUrl) override;
     void disconnectServer() override;
+
 };
 
 }

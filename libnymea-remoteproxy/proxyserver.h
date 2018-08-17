@@ -71,7 +71,7 @@ signals:
     void runningChanged();
 
 private slots:
-    void onClientConnected(const QUuid &clientId);
+    void onClientConnected(const QUuid &clientId, const QHostAddress &address);
     void onClientDisconnected(const QUuid &clientId);
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
 

@@ -25,6 +25,7 @@
 #include <QUuid>
 #include <QDebug>
 #include <QObject>
+#include <QHostAddress>
 
 #include "transportinterface.h"
 
@@ -35,9 +36,13 @@ class ProxyClient : public QObject
     Q_OBJECT
 
 public:
-    explicit ProxyClient(TransportInterface *interface, const QUuid &clientId, QObject *parent = nullptr);
+    explicit ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
 
     QUuid clientId() const;
+    QHostAddress peerAddress() const;
+
+    uint creationTime() const;
+    QString creationTimeString() const;
 
     bool isAuthenticated() const;
     void setAuthenticated(bool isAuthenticated);
@@ -60,8 +65,13 @@ public:
 private:
     TransportInterface *m_interface = nullptr;
     QUuid m_clientId;
+    QHostAddress m_peerAddress;
+
+    uint m_creationTimeStamp = 0;
+
     bool m_authenticated = false;
     bool m_tunnelConnected = false;
+
     QString m_uuid;
     QString m_name;
     QString m_token;

@@ -140,13 +140,13 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(ProxyClient *, tunnel.clientTwo()));
 }
 
-void ProxyServer::onClientConnected(const QUuid &clientId)
+void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
 {
     TransportInterface *interface = static_cast<TransportInterface *>(sender());
 
-    qCDebug(dcProxyServer()) << "New client connected"  << interface->serverName() << clientId.toString();
+    qCDebug(dcProxyServer()) << "New client connected"  << interface->serverName() << clientId.toString() << address.toString();
 
-    ProxyClient *proxyClient = new ProxyClient(interface, clientId, this);
+    ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
     connect(proxyClient, &ProxyClient::tunnelConnected, this, &ProxyServer::onProxyClientTunnelConnected);
 

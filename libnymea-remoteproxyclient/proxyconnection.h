@@ -53,7 +53,7 @@ protected:
 signals:
     void connectedChanged(bool connected);
     void dataReceived(const QByteArray &data);
-    void errorOccured();
+    void errorOccured(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
 public slots:

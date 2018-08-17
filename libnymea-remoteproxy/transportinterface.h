@@ -23,6 +23,7 @@
 #define TRANSPORTINTERFACE_H
 
 #include <QObject>
+#include <QHostAddress>
 
 namespace remoteproxy {
 
@@ -41,7 +42,7 @@ public:
     virtual void killClientConnection(const QUuid &clientId, const QString &killReason) = 0;
 
 signals:
-    void clientConnected(const QUuid &clientId);
+    void clientConnected(const QUuid &clientId, const QHostAddress &address);
     void clientDisconnected(const QUuid &clientId);
     void dataAvailable(const QUuid &clientId, const QByteArray &data);
 
