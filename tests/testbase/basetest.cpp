@@ -97,12 +97,13 @@ void BaseTest::startServer()
         QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
         Engine::instance()->setDeveloperModeEnabled(true);
         Engine::instance()->start(m_configuration);
-        runningSpy.wait();
+        runningSpy.wait(100);
         QVERIFY(runningSpy.count() == 1);
     }
 
     QVERIFY(Engine::instance()->running());
     QVERIFY(Engine::instance()->webSocketServer()->running());
+    QVERIFY(Engine::instance()->monitorServer()->running());
 }
 
 void BaseTest::stopServer()
@@ -198,7 +199,6 @@ QVariant BaseTest::injectSocketData(const QByteArray &data)
 
 void BaseTest::initTestCase()
 {
-    qRegisterMetaType<RemoteProxyConnection::Error>();
     qRegisterMetaType<RemoteProxyConnection::State>();
     qRegisterMetaType<RemoteProxyConnection::ConnectionType>();
 

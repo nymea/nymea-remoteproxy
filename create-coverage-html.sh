@@ -4,8 +4,9 @@
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/libnymea-remoteproxy:$(pwd)/libnymea-remoteproxyclient
 
 # Build
-qmake CONFIG+=coverage
+qmake CONFIG+=coverage CONFIG+=ccache
 make -j$(nproc)
+#make check
 make coverage-html
 
 # Clean build
@@ -28,8 +29,8 @@ rm -v tests/Makefile
 rm -v tests/test-offline/nymea-remoteproxy-tests-offline
 rm -v tests/test-offline/Makefile
 
-rm -v tests/test-online/nymea-remoteproxy-tests-online
-rm -v tests/test-online/Makefile
+#rm -v tests/test-online/nymea-remoteproxy-tests-online
+#rm -v tests/test-online/Makefile
 
 rm -v client/nymea-remoteproxy-client
 rm -v client/Makefile

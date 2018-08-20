@@ -40,8 +40,13 @@ private slots:
     void dummyAuthenticator();
     void monitorServer();
 
+    void configuration_data();
+    void configuration();
+
     // WebSocket connection
-    void webserverConnectionBlocked();
+    void serverPortBlocked();
+    void websocketBinaryData();
+    void websocketPing();
 
     // Api
     void getIntrospect();
@@ -58,7 +63,11 @@ private slots:
     void remoteConnection();
     void trippleConnection();
     void sslConfigurations();
-    void timeout();
+
+    void jsonRpcTimeout();
+    void inactiveTimeout();
+    void authenticationReplyTimeout();
+    void authenticationReplyConnection();
 
 };
 

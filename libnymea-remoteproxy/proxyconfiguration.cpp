@@ -44,11 +44,6 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
         return false;
     }
 
-    if (!fileInfo.isReadable()) {
-        qCWarning(dcApplication()) << "Configuration: Cannot read configuration file" << m_fileName;
-        return false;
-    }
-
     QSettings settings(m_fileName, QSettings::IniFormat);
 
     settings.beginGroup("ProxyServer");
@@ -56,6 +51,12 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
     setMonitorSocketFileName(settings.value("monitorSocket", "/tmp/nymea-remoteproxy.monitor").toString());
+
+    setJsonRpcTimeout(settings.value("jsonRpcTimeout", 10000).toInt());
+    setAuthenticationTimeout(settings.value("authenticationTimeout", 5000).toInt());
+    setInactiveTimeout(settings.value("inactiveTimeout", 5000).toInt());
+    setAloneTimeout(settings.value("aloneTimeout", 5000).toInt());
+
     settings.endGroup();
 
     settings.beginGroup("SSL");
@@ -164,6 +165,46 @@ void ProxyConfiguration::setMonitorSocketFileName(const QString &fileName)
     m_monitorSocketFileName = fileName;
 }
 
+int ProxyConfiguration::jsonRpcTimeout() const
+{
+    return m_jsonRpcTimeout;
+}
+
+void ProxyConfiguration::setJsonRpcTimeout(int timeout)
+{
+    m_jsonRpcTimeout = timeout;
+}
+
+int ProxyConfiguration::authenticationTimeout() const
+{
+    return m_authenticationTimeout;
+}
+
+void ProxyConfiguration::setAuthenticationTimeout(int timeout)
+{
+    m_authenticationTimeout = timeout;
+}
+
+int ProxyConfiguration::inactiveTimeout() const
+{
+    return m_inactiveTimeout;
+}
+
+void ProxyConfiguration::setInactiveTimeout(int timeout)
+{
+    m_inactiveTimeout = timeout;
+}
+
+int ProxyConfiguration::aloneTimeout() const
+{
+    return m_aloneTimeout;
+}
+
+void ProxyConfiguration::setAloneTimeout(int timeout)
+{
+    m_aloneTimeout = timeout;
+}
+
 QString ProxyConfiguration::sslCertificateFileName() const
 {
     return m_sslCertificateFileName;
@@ -247,6 +288,10 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Server name:" << configuration->serverName() << endl;
     debug.nospace() << "  - Write logfile:" << configuration->writeLogFile() << endl;
     debug.nospace() << "  - Logfile:" << configuration->logFileName() << endl;
+    debug.nospace() << "  - JSON RPC timeout:" << configuration->jsonRpcTimeout() << " [ms]" << endl;
+    debug.nospace() << "  - Authentication timeout:" << configuration->authenticationTimeout() << " [ms]" << endl;
+    debug.nospace() << "  - Inactive timeout:" << configuration->inactiveTimeout() << " [ms]" << endl;
+    debug.nospace() << "  - Alone timeout:" << configuration->aloneTimeout() << " [ms]" << endl;
     debug.nospace() << "SSL configuration" << endl;
     debug.nospace() << "  - Certificate:" << configuration->sslCertificateFileName() << endl;
     debug.nospace() << "  - Certificate key:" << configuration->sslCertificateKeyFileName() << endl;

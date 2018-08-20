@@ -19,6 +19,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "engine.h"
 #include "proxyclient.h"
 
 #include <QDateTime>
@@ -32,6 +33,10 @@ ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, c
     m_peerAddress(address)
 {
     m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
+
+    connect(&m_timer, &QTimer::timeout, this, &ProxyClient::timeoutOccured);
+    m_timer.setSingleShot(true);
+    m_timer.start(Engine::instance()->configuration()->inactiveTimeout());
 }
 
 QUuid ProxyClient::clientId() const
@@ -61,9 +66,10 @@ bool ProxyClient::isAuthenticated() const
 
 void ProxyClient::setAuthenticated(bool isAuthenticated)
 {
-    // TODO: start the timeout counter and disconnect if no tunnel established
     m_authenticated = isAuthenticated;
-    if (m_authenticated){
+    if (m_authenticated) {
+        m_timer.stop();
+        m_timer.start(Engine::instance()->configuration()->aloneTimeout());
         emit authenticated();
     }
 }
@@ -75,9 +81,9 @@ bool ProxyClient::isTunnelConnected() const
 
 void ProxyClient::setTunnelConnected(bool isTunnelConnected)
 {
-    // TODO: reset the timeout counter and disconnect if no tunnel established
     m_tunnelConnected = isTunnelConnected;
-    if (m_tunnelConnected){
+    if (m_tunnelConnected) {
+        m_timer.stop();
         emit tunnelConnected();
     }
 }
@@ -115,6 +121,22 @@ QString ProxyClient::token() const
 void ProxyClient::setToken(const QString &token)
 {
     m_token = token;
+}
+
+void ProxyClient::sendData(const QByteArray &data)
+{
+    if (!m_interface)
+        return;
+
+    m_interface->sendData(m_clientId, data);
+}
+
+void ProxyClient::killConnection(const QString &reason)
+{
+    if (!m_interface)
+        return;
+
+    m_interface->killClientConnection(m_clientId, reason);
 }
 
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)

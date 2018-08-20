@@ -3,5 +3,9 @@
     <file>test-certificate.crt</file>
     <file>test-certificate.key</file>
     <file>test-configuration.conf</file>
+    <file>test-configuration-chain.conf</file>
+    <file>test-configuration-faulty-certificate.conf</file>
+    <file>test-configuration-faulty-key.conf</file>
+    <file>test-configuration-faulty-chain.conf</file>
 </qresource>
 </RCC>

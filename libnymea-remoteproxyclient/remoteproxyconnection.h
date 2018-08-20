@@ -49,33 +49,24 @@ public:
     Q_ENUM(ConnectionType)
 
     enum State {
+        StateHostLookup,
         StateConnecting,
         StateConnected,
         StateInitializing,
         StateReady,
         StateAuthenticating,
-        StateWaitTunnel,
+        StateAuthenticated,
         StateRemoteConnected,
-        StateDisconnected
+        StateDiconnecting,
+        StateDisconnected,
     };
     Q_ENUM(State)
-
-    enum Error {
-        ErrorNoError,
-        ErrorHostNotFound,
-        ErrorSocketError,
-        ErrorSslError,
-        ErrorProxyNotResponding,
-        ErrorProxyAuthenticationFailed
-    };
-    Q_ENUM(Error)
 
     explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, QObject *parent = nullptr);
     ~RemoteProxyConnection();
 
     RemoteProxyConnection::State state() const;
-    RemoteProxyConnection::Error error() const;
-    QString errorString() const;
+    QAbstractSocket::SocketError error() const;
 
     void ignoreSslErrors();
     void ignoreSslErrors(const QList<QSslError> &errors);
@@ -104,7 +95,7 @@ private:
     QUrl m_serverUrl;
 
     State m_state = StateDisconnected;
-    Error m_error = ErrorNoError;
+    QAbstractSocket::SocketError m_error = QAbstractSocket::UnknownSocketError;
 
     bool m_insecureConnection = false;
     bool m_remoteConnected = false;
@@ -125,7 +116,7 @@ private:
     void cleanUp();
 
     void setState(State state);
-    void setError(Error error);
+    void setError(QAbstractSocket::SocketError error);
 
 signals:
     void connected();
@@ -135,8 +126,7 @@ signals:
     void disconnected();
 
     void stateChanged(RemoteProxyConnection::State state);
-    void errorOccured(RemoteProxyConnection::Error error);
-    void socketErrorOccured(QAbstractSocket::SocketError error);
+    void errorOccured(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
     void dataReady(const QByteArray &data);
@@ -145,6 +135,7 @@ private slots:
     void onConnectionChanged(bool isConnected);
     void onConnectionDataAvailable(const QByteArray &data);
     void onConnectionSocketError(QAbstractSocket::SocketError error);
+    void onConnectionStateChanged(QAbstractSocket::SocketState state);
 
     void onHelloFinished();
     void onAuthenticateFinished();
@@ -155,12 +146,10 @@ public slots:
     bool authenticate(const QString &token);
     void disconnectServer();
     bool sendData(const QByteArray &data);
-
 };
 
 }
 
-Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::Error);
 Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::State);
 Q_DECLARE_METATYPE(remoteproxyclient::RemoteProxyConnection::ConnectionType);
 

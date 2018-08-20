@@ -25,6 +25,7 @@
 #include <QUuid>
 #include <QDebug>
 #include <QObject>
+#include <QTimer>
 #include <QHostAddress>
 
 #include "transportinterface.h"
@@ -62,11 +63,16 @@ public:
     QString token() const;
     void setToken(const QString &token);
 
+    // Actions for this client
+    void sendData(const QByteArray &data);
+    void killConnection(const QString &reason);
+
 private:
     TransportInterface *m_interface = nullptr;
+    QTimer m_timer;
+
     QUuid m_clientId;
     QHostAddress m_peerAddress;
-
     uint m_creationTimeStamp = 0;
 
     bool m_authenticated = false;
@@ -79,6 +85,7 @@ private:
 signals:
     void authenticated();
     void tunnelConnected();
+    void timeoutOccured();
 
 };
 

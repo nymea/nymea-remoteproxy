@@ -19,6 +19,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "engine.h"
 #include "authenticationreply.h"
 #include "authentication/authenticator.h"
 
@@ -28,11 +29,12 @@ AuthenticationReply::AuthenticationReply(ProxyClient *proxyClient, QObject *pare
     QObject(parent),
     m_proxyClient(proxyClient)
 {
-    m_timer = new QTimer(this);
-    m_timer->setInterval(10000);
-    m_timer->setSingleShot(true);
+    m_timer.setSingleShot(true);
+    connect(&m_timer, &QTimer::timeout, this, &AuthenticationReply::onTimeout);
 
     m_process = new QProcess(this);
+
+    m_timer.start(Engine::instance()->configuration()->authenticationTimeout());
 }
 
 ProxyClient *AuthenticationReply::proxyClient() const
@@ -62,7 +64,7 @@ void AuthenticationReply::setError(Authenticator::AuthenticationError error)
 
 void AuthenticationReply::setFinished()
 {
-    m_timer->stop();
+    m_timer.stop();
     // emit in next event loop
     QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
@@ -71,7 +73,7 @@ void AuthenticationReply::onTimeout()
 {
     m_timedOut = true;
     m_error = Authenticator::AuthenticationErrorTimeout;
-    m_timer->stop();
+    m_timer.stop();
     m_process->kill();
     QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
@@ -79,7 +81,7 @@ void AuthenticationReply::onTimeout()
 void AuthenticationReply::abort()
 {
     m_error = Authenticator::AuthenticationErrorAborted;
-    m_timer->stop();
+    m_timer.stop();
     m_process->kill();
     QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }

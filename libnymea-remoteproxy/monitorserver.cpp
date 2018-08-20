@@ -23,6 +23,7 @@
 #include "monitorserver.h"
 #include "loggingcategories.h"
 
+#include <QFile>
 #include <QJsonDocument>
 
 namespace remoteproxy {
@@ -87,6 +88,8 @@ void MonitorServer::onMonitorConnected()
     connect(clientConnection, &QLocalSocket::readyRead, this, &MonitorServer::onMonitorDisconnected);
     m_clients.append(clientConnection);
 
+    qCDebug(dcMonitorServer()) << "New monitor connected.";
+
     if (!m_timer->isActive()) {
         // Send the data right the way
         onTimeout();
@@ -105,6 +108,13 @@ void MonitorServer::onMonitorDisconnected()
 void MonitorServer::startServer()
 {    
     qCDebug(dcMonitorServer()) << "Starting server on" << m_serverName;
+
+    // Make sure the monitor can be created
+    if (QFile::exists(m_serverName)) {
+        qCDebug(dcMonitorServer()) << "Clean up old monitor socket";
+        QFile::remove(m_serverName);
+    }
+
     m_server = new QLocalServer(this);
     if (!m_server->listen(m_serverName)) {
         qCWarning(dcMonitorServer()) << "Could not start local server for monitor on" << m_serverName << m_server->errorString();

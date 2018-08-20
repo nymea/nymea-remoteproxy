@@ -130,7 +130,7 @@ void JsonRpcServer::sendResponse(ProxyClient *client, int commandId, const QVari
 
     QByteArray data = QJsonDocument::fromVariant(response).toJson(QJsonDocument::Compact);
     qCDebug(dcJsonRpcTraffic()) << "Sending data:" << data;
-    client->interface()->sendData(client->clientId(), data);
+    client->sendData(data);
 }
 
 void JsonRpcServer::sendErrorResponse(ProxyClient *client, int commandId, const QString &error)
@@ -176,9 +176,10 @@ void JsonRpcServer::setup()
 void JsonRpcServer::asyncReplyFinished()
 {
     JsonReply *reply = static_cast<JsonReply *>(sender());
-    ProxyClient *proxyClient = m_asyncReplies.take(reply);
-
     reply->deleteLater();
+
+    ProxyClient *proxyClient = m_asyncReplies.take(reply);
+    qCDebug(dcJsonRpc()) << "Async reply finished" << reply->handler()->name() << reply->method() << reply->clientId().toString();
 
     if (!proxyClient) {
         qCWarning(dcJsonRpc()) << "Got an async reply but the client does not exist any more";
@@ -197,7 +198,7 @@ void JsonRpcServer::asyncReplyFinished()
     } else {
         sendErrorResponse(proxyClient, reply->commandId(), "Command timed out");
         // Disconnect this client since he requested something that created a timeout
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "API call timeouted.");
+        proxyClient->killConnection("API call timeouted.");
     }
 }
 
@@ -235,7 +236,7 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
     if(error.error != QJsonParseError::NoError) {
         qCWarning(dcJsonRpc) << "Failed to parse JSON data" << data << ":" << error.errorString();
         sendErrorResponse(proxyClient, -1, QString("Failed to parse JSON data: %1").arg(error.errorString()));
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "Invalid JSON data received.");
+        proxyClient->killConnection("Invalid JSON data received.");
         return;
     }
 
@@ -246,7 +247,7 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
     if (!success) {
         qCWarning(dcJsonRpc()) << "Error parsing command. Missing \"id\":" << message;
         sendErrorResponse(proxyClient, -1, "Error parsing command. Missing 'id'");
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "The id property is missing in the request.");
+        proxyClient->killConnection("The id property is missing in the request.");
         return;
     }
 
@@ -254,7 +255,7 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
     if (commandList.count() != 2) {
         qCWarning(dcJsonRpc) << "Error parsing method.\nGot:" << message.value("method").toString() << "\nExpected: \"Namespace.method\"";
         sendErrorResponse(proxyClient, commandId, QString("Error parsing method. Got: '%1'', Expected: 'Namespace.method'").arg(message.value("method").toString()));
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "Invalid method passed.");
+        proxyClient->killConnection("Invalid method passed.");
         return;
     }
 
@@ -264,22 +265,21 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
     JsonHandler *handler = m_handlers.value(targetNamespace);
     if (!handler) {
         sendErrorResponse(proxyClient, commandId, "No such namespace");
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "No such namespace.");
+        proxyClient->killConnection("No such namespace.");
         return;
     }
 
     if (!handler->hasMethod(method)) {
         sendErrorResponse(proxyClient, commandId, "No such method");
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "No such method.");
+        proxyClient->killConnection("No such method.");
         return;
     }
 
     QVariantMap params = message.value("params").toMap();
-
     QPair<bool, QString> validationResult = handler->validateParams(method, params);
     if (!validationResult.first) {
         sendErrorResponse(proxyClient, commandId,  "Invalid params: " + validationResult.second);
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "Invalid params passed.");
+        proxyClient->killConnection("Invalid params passed.");
         return;
     }
 
@@ -297,6 +297,7 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
         reply->setClientId(proxyClient->clientId());
         reply->setCommandId(commandId);
         sendResponse(proxyClient, commandId, reply->data());
+        reply->deleteLater();
     }
 }
 

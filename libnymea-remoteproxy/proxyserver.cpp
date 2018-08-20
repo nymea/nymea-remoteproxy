@@ -149,6 +149,7 @@ void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &a
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
     connect(proxyClient, &ProxyClient::tunnelConnected, this, &ProxyServer::onProxyClientTunnelConnected);
+    connect(proxyClient, &ProxyClient::timeoutOccured, this, &ProxyServer::onProxyClientTimeoutOccured);
 
     m_proxyClients.insert(clientId, proxyClient);
     m_jsonRpcServer->registerClient(proxyClient);
@@ -176,7 +177,7 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
             m_tunnels.remove(proxyClient->token());
             if (remoteClient) {
-                remoteClient->interface()->killClientConnection(remoteClient->clientId(), "Tunnel client disconnected");
+                remoteClient->killConnection("Tunnel client disconnected");
             }
         }
 
@@ -207,27 +208,21 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         qCWarning(dcProxyServer()) << "An authenticated client sent data without tunnel connection. This is not allowed.";
         m_jsonRpcServer->unregisterClient(proxyClient);
         // The client is authenticated and tries to send data, this is not allowed.
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "Data received while authenticated but not remote connected.");
+        proxyClient->killConnection("Data received while authenticated but not remote connected.");
         return;
     }
 
     if (proxyClient->isAuthenticated() && proxyClient->isTunnelConnected()) {
-        // Check if there is realy a tunnel for this client
-        if (!m_tunnels.contains(proxyClient->token())) {
-            // FIXME: kill all clients, something went wrong
-        }
-
         ProxyClient *remoteClient = getRemoteClient(proxyClient);
-        if (!remoteClient) {
-            // FIXME: kill all clients, something went wrong
-        }
+        Q_ASSERT_X(remoteClient, "ProxyServer", "Tunnel existing but not tunnel client available");
+        Q_ASSERT_X(m_tunnels.contains(proxyClient->token()), "ProxyServer", "Tunnel connect but not existing");
 
         qCDebug(dcProxyServerTraffic()) << "Pipe data:";
         qCDebug(dcProxyServerTraffic()) << "    --> from" << proxyClient;
         qCDebug(dcProxyServerTraffic()) << "    --> to" << remoteClient;
         qCDebug(dcProxyServerTraffic()) << "    --> data:" << qUtf8Printable(data);
 
-        remoteClient->interface()->sendData(remoteClient->clientId(), data);
+        remoteClient->sendData(data);
     }
 }
 
@@ -244,7 +239,7 @@ void ProxyServer::onProxyClientAuthenticated()
         // Note: remove the authenticated token, so the current tunnel will not interrupted.
         proxyClient->setToken(QString());
         proxyClient->setAuthenticated(false);
-        proxyClient->interface()->killClientConnection(proxyClient->clientId(), "There is already an established tunnel with this token.");
+        proxyClient->killConnection("There is already an established tunnel with this token.");
         return;
     }
 
@@ -262,6 +257,13 @@ void ProxyServer::onProxyClientAuthenticated()
 void ProxyServer::onProxyClientTunnelConnected()
 {
 
+}
+
+void ProxyServer::onProxyClientTimeoutOccured()
+{
+    ProxyClient *proxyClient = static_cast<ProxyClient *>(sender());
+    qCDebug(dcProxyServer()) << "Timeout occured for" << proxyClient;
+    proxyClient->killConnection("Proxy timeout occuret");
 }
 
 void ProxyServer::startServer()

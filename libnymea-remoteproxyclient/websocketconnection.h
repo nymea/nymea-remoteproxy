@@ -56,7 +56,6 @@ private slots:
     void onError(QAbstractSocket::SocketError error);
     void onStateChanged(QAbstractSocket::SocketState state);
     void onTextMessageReceived(const QString &message);
-    void onBinaryMessageReceived(const QByteArray &message);
 
 public slots:
     void connectServer(const QUrl &serverUrl) override;

@@ -80,13 +80,14 @@ protected slots:
     void cleanupTestCase();
 
 public slots:
-    void sslErrors(const QList<QSslError> &) {
+    inline void sslErrors(const QList<QSslError> &) {
         QWebSocket *socket = static_cast<QWebSocket*>(sender());
         socket->ignoreSslErrors();
     }
 
-    void ignoreConnectionSslError(const QList<QSslError> &) {
+    inline void ignoreConnectionSslError(const QList<QSslError> &errors) {
         RemoteProxyConnection *connection = static_cast<RemoteProxyConnection *>(sender());
+        connection->ignoreSslErrors(errors);
         connection->ignoreSslErrors();
     }
 

@@ -19,6 +19,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "engine.h"
 #include "jsonreply.h"
 
 namespace remoteproxy {
@@ -95,7 +96,7 @@ bool JsonReply::timedOut() const
 
 void JsonReply::startWait()
 {
-    m_timeout.start(5000);
+    m_timeout.start(Engine::instance()->configuration()->jsonRpcTimeout());
 }
 
 void JsonReply::timeout()

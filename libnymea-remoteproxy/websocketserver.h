@@ -48,8 +48,6 @@ public:
     QSslConfiguration sslConfiguration() const;
 
     void sendData(const QUuid &clientId, const QByteArray &data) override;
-    void sendData(const QList<QUuid> &clients, const QByteArray &data) override;
-
     void killClientConnection(const QUuid &clientId, const QString &killReason) override;
 
 private:
@@ -63,11 +61,10 @@ private:
 private slots:
     void onClientConnected();
     void onClientDisconnected();
-    void onBinaryMessageReceived(const QByteArray &data);
     void onTextMessageReceived(const QString &message);
+    void onBinaryMessageReceived(const QByteArray &data);
     void onClientError(QAbstractSocket::SocketError error);
     void onServerError(QAbstractSocket::SocketError error);
-    void onPing(quint64 elapsedTime, const QByteArray & payload);
 
 public slots:
     bool startServer() override;

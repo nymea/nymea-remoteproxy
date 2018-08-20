@@ -73,20 +73,13 @@ void WebSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
     }
 }
 
-void WebSocketServer::sendData(const QList<QUuid> &clients, const QByteArray &data)
-{
-    foreach (const QUuid &client, clients) {
-        sendData(client, data);
-    }
-}
-
 void WebSocketServer::killClientConnection(const QUuid &clientId, const QString &killReason)
 {
     QWebSocket *client = m_clientList.value(clientId);
     if (!client)
         return;
 
-    qCWarning(dcWebSocketServer()) << "Kill client connection" << clientId.toString() << "Reason:" << killReason;
+    qCWarning(dcWebSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
     client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
 }
 
@@ -110,7 +103,6 @@ void WebSocketServer::onClientConnected()
     // Append the new client to the client list
     m_clientList.insert(clientId, client);
 
-    connect(client, SIGNAL(pong(quint64,QByteArray)), this, SLOT(onPing(quint64,QByteArray)));
     connect(client, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
     connect(client, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
     connect(client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
@@ -130,17 +122,19 @@ void WebSocketServer::onClientDisconnected()
     emit clientDisconnected(clientId);
 }
 
-void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
-{
-    QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCDebug(dcWebSocketServerTraffic()) << "<-- Binary message from" << client->peerAddress().toString() << ":" << data;
-}
-
 void WebSocketServer::onTextMessageReceived(const QString &message)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
     qCDebug(dcWebSocketServerTraffic()) << "Text message from" << client->peerAddress().toString() << ":" << message;
     emit dataAvailable(m_clientList.key(client), message.toUtf8());
+}
+
+void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
+{
+    QWebSocket *client = static_cast<QWebSocket *>(sender());
+    qCWarning(dcWebSocketServerTraffic()) << "<-- Binary message from" << client->peerAddress().toString() << ":" << data;
+    // Note: this is not expected, so close this client connection.
+    client->close(QWebSocketProtocol::CloseCodeBadOperation, "Binary message not expected.");
 }
 
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
@@ -152,12 +146,6 @@ void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
 void WebSocketServer::onServerError(QAbstractSocket::SocketError error)
 {
     qCWarning(dcWebSocketServer()) << "Server error occured:" << error << m_server->errorString();
-}
-
-void WebSocketServer::onPing(quint64 elapsedTime, const QByteArray &payload)
-{
-    QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCDebug(dcWebSocketServer) << "ping response" << client->peerAddress() << elapsedTime << payload;
 }
 
 bool WebSocketServer::startServer()

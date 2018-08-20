@@ -77,6 +77,7 @@ private slots:
 
     void onProxyClientAuthenticated();
     void onProxyClientTunnelConnected();
+    void onProxyClientTimeoutOccured();
 
 public slots:
     void startServer();

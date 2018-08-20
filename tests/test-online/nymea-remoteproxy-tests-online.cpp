@@ -34,7 +34,6 @@ RemoteProxyOnlineTests::RemoteProxyOnlineTests(QObject *parent) :
     BaseTest(parent)
 {
     m_authenticator = qobject_cast<Authenticator *>(m_awsAuthenticator);
-
 }
 
 void RemoteProxyOnlineTests::awsStaticCredentials()
@@ -53,7 +52,6 @@ void RemoteProxyOnlineTests::awsStaticCredentials()
     QVERIFY(connection->isConnected());
     QVERIFY(!connection->isRemoteConnected());
     QVERIFY(connection->state() == RemoteProxyConnection::StateReady);
-    QVERIFY(connection->error() == RemoteProxyConnection::ErrorNoError);
     QVERIFY(connection->serverUrl() == m_serverUrl);
     QVERIFY(connection->connectionType() == RemoteProxyConnection::ConnectionTypeWebSocket);
     QVERIFY(connection->serverName() == SERVER_NAME_STRING);
@@ -67,7 +65,7 @@ void RemoteProxyOnlineTests::awsStaticCredentials()
     QVERIFY(connection->authenticate("foobar"));
     errorSpy.wait();
     QVERIFY(errorSpy.count() == 1);
-    QVERIFY(connection->error() == RemoteProxyConnection::ErrorProxyAuthenticationFailed);
+    QVERIFY(connection->error() == QAbstractSocket::ProxyAuthenticationRequiredError);
 
     // Disconnect and clean up
     connection->disconnectServer();

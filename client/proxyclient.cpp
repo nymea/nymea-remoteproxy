@@ -51,9 +51,9 @@ void ProxyClient::setPingpong(bool enable)
     m_pingpong = enable;
 }
 
-void ProxyClient::onErrorOccured(RemoteProxyConnection::Error error)
+void ProxyClient::onErrorOccured(QAbstractSocket::SocketError error)
 {
-    qCWarning(dcProxyClient()) << "Error occured" << error << m_connection->errorString();
+    qCWarning(dcProxyClient()) << "Error occured" << error;
     exit(-1);
 }
 

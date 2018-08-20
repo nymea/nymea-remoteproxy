@@ -78,11 +78,9 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyC
 void AuthenticationHandler::onAuthenticationFinished()
 {
     AuthenticationReply *authenticationReply = static_cast<AuthenticationReply *>(sender());
-    JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
-
-    authenticationReply->deleteLater();
 
     qCDebug(dcJsonRpc()) << "Authentication respons ready for" << authenticationReply->proxyClient() << authenticationReply->error();
+    JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
 
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
         qCWarning(dcJsonRpc()) << "Authentication error occured" << authenticationReply->error();
@@ -91,12 +89,13 @@ void AuthenticationHandler::onAuthenticationFinished()
         // Successfully authenticated
         jsonReply->setSuccess(true);
     }
-    
-    jsonReply->setData(errorToReply(authenticationReply->error()));
-    jsonReply->finished();
 
     // Set client authenticated
     authenticationReply->proxyClient()->setAuthenticated(authenticationReply->error() == Authenticator::AuthenticationErrorNoError);
+    authenticationReply->deleteLater();
+
+    jsonReply->setData(errorToReply(authenticationReply->error()));
+    jsonReply->finished();
 }
 
 }

@@ -32,7 +32,6 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
 
     connect(m_webSocket, &QWebSocket::disconnected, this, &WebSocketConnection::onDisconnected);
     connect(m_webSocket, &QWebSocket::textMessageReceived, this, &WebSocketConnection::onTextMessageReceived);
-    connect(m_webSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketConnection::onBinaryMessageReceived);
 
     connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
     connect(m_webSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
@@ -41,7 +40,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
 
 WebSocketConnection::~WebSocketConnection()
 {
-
+    m_webSocket->close();
 }
 
 QUrl WebSocketConnection::serverUrl() const
@@ -67,7 +66,7 @@ void WebSocketConnection::ignoreSslErrors(const QList<QSslError> &errors)
 void WebSocketConnection::onDisconnected()
 {
     qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnected from" << m_webSocket->requestUrl().toString() << m_webSocket->closeReason();
-    emit connectedChanged(false);
+    setConnected(false);
 }
 
 void WebSocketConnection::onError(QAbstractSocket::SocketError error)
@@ -89,16 +88,13 @@ void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state)
         setConnected(false);
         break;
     }
+
+    emit stateChanged(state);
 }
 
 void WebSocketConnection::onTextMessageReceived(const QString &message)
 {
     emit dataReceived(message.toUtf8());
-}
-
-void WebSocketConnection::onBinaryMessageReceived(const QByteArray &message)
-{
-    Q_UNUSED(message)
 }
 
 void WebSocketConnection::connectServer(const QUrl &serverUrl)

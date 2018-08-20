@@ -52,6 +52,18 @@ public:
     QString monitorSocketFileName() const;
     void setMonitorSocketFileName(const QString &fileName);
 
+    int jsonRpcTimeout() const;
+    void setJsonRpcTimeout(int timeout);
+
+    int authenticationTimeout() const;
+    void setAuthenticationTimeout(int timeout);
+
+    int inactiveTimeout() const;
+    void setInactiveTimeout(int timeout);
+
+    int aloneTimeout() const;
+    void setAloneTimeout(int timeout);
+
     // Ssl
     QString sslCertificateFileName() const;
     void setSslCertificateFileName(const QString &fileName);
@@ -85,6 +97,11 @@ private:
     bool m_writeLogFile = false;
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
     QString m_monitorSocketFileName;
+
+    int m_jsonRpcTimeout = 10000;
+    int m_authenticationTimeout = 5000;
+    int m_inactiveTimeout = 5000;
+    int m_aloneTimeout = 5000;
 
     // Ssl
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
