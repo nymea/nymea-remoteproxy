@@ -1,3 +1,7 @@
+#ifndef TERMINALWINDOW_H
+#define TERMINALWINDOW_H
+
+#include <QObject>
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                               *
  * Copyright (C) 2018 Simon Stürz <simon.stuerz@guh.io>                          *
@@ -19,70 +23,54 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "tunnelconnection.h"
+#include <QVariantMap>
 
-#include <QDateTime>
+#include <ncurses.h>
 
-namespace remoteproxy {
-
-TunnelConnection::TunnelConnection(ProxyClient *clientOne, ProxyClient *clientTwo):
-    m_clientOne(clientOne),
-    m_clientTwo(clientTwo)
+class TerminalWindow : public QObject
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
-}
+    Q_OBJECT
+public:
 
-QString TunnelConnection::token() const
-{
-    if (!isValid())
-        return QString();
+    enum View {
+        ViewClients,
+        ViewTunnels
+    };
+    Q_ENUM(View)
 
-    return m_clientOne->token();
-}
+    explicit TerminalWindow(QObject *parent = nullptr);
+    ~TerminalWindow();
 
-uint TunnelConnection::creationTime() const
-{
-    return m_creationTimeStamp;
-}
+private:
+    WINDOW *m_mainWindow = nullptr;
+    WINDOW *m_headerWindow = nullptr;
+    WINDOW *m_contentWindow = nullptr;
 
-QString TunnelConnection::creationTimeString() const
-{
-    return QDateTime::fromTime_t(creationTime()).toString("dd.MM.yyyy hh:mm:ss");
-}
+    int m_headerHeight = 3;
+    int m_terminalSizeX = 0;
+    int m_terminalSizeY = 0;
 
-ProxyClient *TunnelConnection::clientOne() const
-{
-    return m_clientOne;
-}
+    View m_view = ViewClients;
 
-ProxyClient *TunnelConnection::clientTwo() const
-{
-    return m_clientTwo;
-}
+    QVariantMap m_dataMap;
+    QHash<QString, QVariantMap> m_clientHash;
 
-bool TunnelConnection::isValid() const
-{
-    // Both clients have to be valid
-    if (!m_clientOne || !m_clientTwo)
-        return false;
+    const char *convertString(const QString &string);
 
-    // Both clients need the same token
-    if (m_clientOne->token() != m_clientTwo->token())
-        return false;
+    // content paint methods
+    void resizeWindow();
+    void paintHeader();
+    void paintContentClients();
+    void paintContentTunnels();
 
-    // The clients need to be different
-    if (m_clientOne == m_clientTwo)
-        return false;
+signals:
 
-    return true;
-}
+private slots:
+    void eventLoop();
 
-QDebug operator<<(QDebug debug, const TunnelConnection &tunnel)
-{
-    debug.nospace() << "TunnelConnection(" << tunnel.creationTimeString() << ")" << endl;
-    debug.nospace() << "    client:" << tunnel.clientOne() << endl;
-    debug.nospace() << "    client:" << tunnel.clientTwo() << endl;
-    return debug;
-}
+public slots:
+    void refreshWindow(const QVariantMap &dataMap);
 
-}
+};
+
+#endif // TERMINALWINDOW_H

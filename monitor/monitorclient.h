@@ -19,70 +19,35 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "tunnelconnection.h"
+#ifndef MONITORCLIENT_H
+#define MONITORCLIENT_H
 
-#include <QDateTime>
+#include <QObject>
+#include <QLocalSocket>
 
-namespace remoteproxy {
+#include "terminalwindow.h"
 
-TunnelConnection::TunnelConnection(ProxyClient *clientOne, ProxyClient *clientTwo):
-    m_clientOne(clientOne),
-    m_clientTwo(clientTwo)
+class MonitorClient : public QObject
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
-}
+    Q_OBJECT
+public:
+    explicit MonitorClient(const QString &serverName, QObject *parent = nullptr);
 
-QString TunnelConnection::token() const
-{
-    if (!isValid())
-        return QString();
+private:
+    QString m_serverName;
+    QLocalSocket *m_socket = nullptr;
+signals:
+    void dataReady(const QVariantMap &data);
 
-    return m_clientOne->token();
-}
+private slots:
+    void onConnected();
+    void onDisconnected();
+    void onReadyRead();
 
-uint TunnelConnection::creationTime() const
-{
-    return m_creationTimeStamp;
-}
+public slots:
+    void connectMonitor();
+    void disconnectMonitor();
 
-QString TunnelConnection::creationTimeString() const
-{
-    return QDateTime::fromTime_t(creationTime()).toString("dd.MM.yyyy hh:mm:ss");
-}
+};
 
-ProxyClient *TunnelConnection::clientOne() const
-{
-    return m_clientOne;
-}
-
-ProxyClient *TunnelConnection::clientTwo() const
-{
-    return m_clientTwo;
-}
-
-bool TunnelConnection::isValid() const
-{
-    // Both clients have to be valid
-    if (!m_clientOne || !m_clientTwo)
-        return false;
-
-    // Both clients need the same token
-    if (m_clientOne->token() != m_clientTwo->token())
-        return false;
-
-    // The clients need to be different
-    if (m_clientOne == m_clientTwo)
-        return false;
-
-    return true;
-}
-
-QDebug operator<<(QDebug debug, const TunnelConnection &tunnel)
-{
-    debug.nospace() << "TunnelConnection(" << tunnel.creationTimeString() << ")" << endl;
-    debug.nospace() << "    client:" << tunnel.clientOne() << endl;
-    debug.nospace() << "    client:" << tunnel.clientTwo() << endl;
-    return debug;
-}
-
-}
+#endif // MONITORCLIENT_H

@@ -23,6 +23,7 @@
 #include "loggingcategories.h"
 
 #include <QMetaObject>
+#include <QVariantList>
 #include <QJsonDocument>
 
 namespace remoteproxy {
@@ -64,6 +65,33 @@ QVariantMap ProxyServer::currentStatistics()
     QVariantMap statisticsMap;
     statisticsMap.insert("clientCount", m_proxyClients.count());
     statisticsMap.insert("tunnelCount", m_tunnels.count());
+
+    // Create client list
+    QVariantList clientList;
+    foreach (ProxyClient *client, m_proxyClients) {
+        QVariantMap clientMap;
+        clientMap.insert("id", client->clientId().toString());
+        clientMap.insert("address", client->peerAddress().toString());
+        clientMap.insert("timestamp", client->creationTime());
+        clientMap.insert("authenticated", client->isAuthenticated());
+        clientMap.insert("tunnelConnected", client->isTunnelConnected());
+        clientMap.insert("name", client->name());
+        clientMap.insert("uuid", client->uuid());
+        clientList.append(clientMap);
+    }
+    statisticsMap.insert("clients", clientList);
+
+    // Create tunnel list
+    QVariantList tunnelList;
+    foreach (const TunnelConnection &tunnel, m_tunnels) {
+        QVariantMap tunnelMap;
+        tunnelMap.insert("clientOne", tunnel.clientOne()->clientId().toString());
+        tunnelMap.insert("clientTwo", tunnel.clientTwo()->clientId().toString());
+        tunnelMap.insert("timestamp", tunnel.creationTime());
+        tunnelList.append(tunnelMap);
+    }
+    statisticsMap.insert("tunnels", tunnelList);
+
     return statisticsMap;
 }
 

@@ -19,70 +19,55 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "tunnelconnection.h"
+#include "monitorclient.h"
 
-#include <QDateTime>
+#include <QJsonDocument>
 
-namespace remoteproxy {
-
-TunnelConnection::TunnelConnection(ProxyClient *clientOne, ProxyClient *clientTwo):
-    m_clientOne(clientOne),
-    m_clientTwo(clientTwo)
+MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
+    QObject(parent),
+    m_serverName(serverName)
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
+    m_socket = new QLocalSocket(this);
+
+    connect(m_socket, &QLocalSocket::connected, this, &MonitorClient::onConnected);
+    connect(m_socket, &QLocalSocket::disconnected, this, &MonitorClient::onDisconnected);
+    connect(m_socket, &QLocalSocket::readyRead, this, &MonitorClient::onReadyRead);
 }
 
-QString TunnelConnection::token() const
+void MonitorClient::onConnected()
 {
-    if (!isValid())
-        return QString();
-
-    return m_clientOne->token();
+    qDebug() << "Monitor connected to" << m_serverName;
 }
 
-uint TunnelConnection::creationTime() const
+void MonitorClient::onDisconnected()
 {
-    return m_creationTimeStamp;
+    qDebug() << "Monitor disconnected from" << m_serverName;
 }
 
-QString TunnelConnection::creationTimeString() const
+void MonitorClient::onReadyRead()
 {
-    return QDateTime::fromTime_t(creationTime()).toString("dd.MM.yyyy hh:mm:ss");
+    QByteArray data = m_socket->readAll();
+
+    QJsonParseError error;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
+
+    if(error.error != QJsonParseError::NoError) {
+        qWarning() << "Failed to parse JSON data" << data << ":" << error.errorString();
+        return;
+    }
+
+    //qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
+
+    QVariantMap dataMap = jsonDoc.toVariant().toMap();
+    emit dataReady(dataMap);
 }
 
-ProxyClient *TunnelConnection::clientOne() const
-{
-    return m_clientOne;
+void MonitorClient::connectMonitor()
+{    
+    m_socket->connectToServer(m_serverName, QLocalSocket::ReadOnly);
 }
 
-ProxyClient *TunnelConnection::clientTwo() const
+void MonitorClient::disconnectMonitor()
 {
-    return m_clientTwo;
-}
-
-bool TunnelConnection::isValid() const
-{
-    // Both clients have to be valid
-    if (!m_clientOne || !m_clientTwo)
-        return false;
-
-    // Both clients need the same token
-    if (m_clientOne->token() != m_clientTwo->token())
-        return false;
-
-    // The clients need to be different
-    if (m_clientOne == m_clientTwo)
-        return false;
-
-    return true;
-}
-
-QDebug operator<<(QDebug debug, const TunnelConnection &tunnel)
-{
-    debug.nospace() << "TunnelConnection(" << tunnel.creationTimeString() << ")" << endl;
-    debug.nospace() << "    client:" << tunnel.clientOne() << endl;
-    debug.nospace() << "    client:" << tunnel.clientTwo() << endl;
-    return debug;
-}
-
+    m_socket->close();
 }

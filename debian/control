@@ -5,6 +5,7 @@ Maintainer: Simon Stürz <simon.stürz@guh.io>
 Build-depends: debhelper (>= 0.0.0),
     dh-systemd,
     libqt5websockets5-dev,
+    libncurses5-dev,
 Standards-Version: 3.9.3
 
 Package: nymea-remoteproxy
@@ -13,9 +14,9 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          awscli,
          libnymea-remoteproxy (= ${binary:Version}),
+Suggests: nymea-remoteproxy-monitor (= ${binary:Version})
 Description: The nymea remote proxy server
   The nymea remote proxy server
-
 
 Package: libnymea-remoteproxy
 Architecture: any
@@ -84,4 +85,12 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          libnymea-remoteproxy (= ${binary:Version}),
 Description: The nymea remote proxy server tests
+  The nymea remote proxy server tests
+
+Package: nymea-remoteproxy-monitor
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libncurses5,
+Description: The nymea remote proxy monitor tool
   The nymea remote proxy server tests

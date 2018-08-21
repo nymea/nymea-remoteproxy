@@ -53,9 +53,9 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setMonitorSocketFileName(settings.value("monitorSocket", "/tmp/nymea-remoteproxy.monitor").toString());
 
     setJsonRpcTimeout(settings.value("jsonRpcTimeout", 10000).toInt());
-    setAuthenticationTimeout(settings.value("authenticationTimeout", 5000).toInt());
-    setInactiveTimeout(settings.value("inactiveTimeout", 5000).toInt());
-    setAloneTimeout(settings.value("aloneTimeout", 5000).toInt());
+    setAuthenticationTimeout(settings.value("authenticationTimeout", 8000).toInt());
+    setInactiveTimeout(settings.value("inactiveTimeout", 8000).toInt());
+    setAloneTimeout(settings.value("aloneTimeout", 8000).toInt());
 
     settings.endGroup();
 

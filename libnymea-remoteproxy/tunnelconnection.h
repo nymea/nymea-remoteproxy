@@ -33,16 +33,23 @@ public:
 
     QString token() const;
 
+    uint creationTime() const;
+    QString creationTimeString() const;
+
     ProxyClient *clientOne() const;
     ProxyClient *clientTwo() const;
 
     bool isValid() const;
 
 private:
+    uint m_creationTimeStamp = 0;
+
     ProxyClient *m_clientOne = nullptr;
     ProxyClient *m_clientTwo = nullptr;
 
 };
+
+QDebug operator<< (QDebug debug, const TunnelConnection &tunnel);
 
 }
 

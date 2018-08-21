@@ -25,6 +25,8 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 
+#include "monitor.h"
+
 int main(int argc, char *argv[])
 {
 
@@ -36,8 +38,7 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server client application. This client allowes to test "
-                                             "a server application as client perspective.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy monitor allowes to monitor the live server activity on the a local instance.\n\n"
                                              "Server version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
@@ -46,10 +47,13 @@ int main(int argc, char *argv[])
                                      .arg(QChar(0xA9)));
 
 
-    QCommandLineOption tokenOption(QStringList() << "s" << "socket", "The AWS token for authentication. Default /tmp/", "socket");
-    parser.addOption(tokenOption);
+    QCommandLineOption socketOption(QStringList() << "s" << "socket", "The socket descriptor for the nymea-remoteproxy monitor socket. Default is /tmp/nymea-remoteproxy-monitor.sock", "socket");
+    socketOption.setDefaultValue("/tmp/nymea-remoteproxy-monitor.sock");
+    parser.addOption(socketOption);
 
     parser.process(application);
+
+    Monitor monitor(parser.value(socketOption));
 
     return application.exec();
 }
