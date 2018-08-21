@@ -1,7 +1,11 @@
 include(nymea-remoteproxy.pri)
 
 TEMPLATE=subdirs
-SUBDIRS += server client monitor libnymea-remoteproxy libnymea-remoteproxyclient tests
+SUBDIRS += server client libnymea-remoteproxy libnymea-remoteproxyclient tests
+
+!disablemonitor {
+    SUBDIRS+=monitor
+}
 
 server.depends = libnymea-remoteproxy
 client.depends = libnymea-remoteproxyclient
@@ -15,3 +19,6 @@ message("Qt version:" $$[QT_VERSION])
 
 coverage { message("Building with coverage report") }
 ccache { message("Building with ccache support") }
+disablemonitor {
+    message("Building without the monitor")
+}
