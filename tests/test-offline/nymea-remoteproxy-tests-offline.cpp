@@ -459,12 +459,12 @@ void RemoteProxyOfflineTests::remoteConnection()
     connectionOne->sendData(dataOne);
     remoteConnectionDataTwo.wait(500);
     QVERIFY(remoteConnectionDataTwo.count() == 1);
-    QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray(), dataOne);
+    QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
     remoteConnectionDataOne.wait(500);
     QVERIFY(remoteConnectionDataOne.count() == 1);
-    QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray(), dataTwo);
+    QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 
     connectionOne->deleteLater();
     connectionTwo->deleteLater();

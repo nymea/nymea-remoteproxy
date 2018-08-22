@@ -50,7 +50,7 @@ QUrl WebSocketConnection::serverUrl() const
 
 void WebSocketConnection::sendData(const QByteArray &data)
 {
-    m_webSocket->sendTextMessage(QString::fromUtf8(data));
+    m_webSocket->sendTextMessage(QString::fromUtf8(data + '\n'));
 }
 
 void WebSocketConnection::ignoreSslErrors()

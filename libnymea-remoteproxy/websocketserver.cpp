@@ -67,7 +67,7 @@ void WebSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
     client = m_clientList.value(clientId);
     if (client) {
         qCDebug(dcWebSocketServerTraffic()) << "--> Sending data to client:" << data;
-        client->sendTextMessage(data);
+        client->sendTextMessage(data + '\n');
     } else {
         qCWarning(dcWebSocketServer()) << "Client" << clientId << "unknown to this transport";
     }
