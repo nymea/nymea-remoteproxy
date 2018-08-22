@@ -57,6 +57,10 @@ The package will deliver a default configuration file with following content (`/
     writeLogs=false
     logFile=/var/log/nymea-remoteproxy.log
     monitorSocket=/tmp/nymea-remoteproxy-monitor.sock
+    jsonRpcTimeout=10000
+    authenticationTimeout=8000
+    inactiveTimeout=8000
+    aloneTimeout=8000
     
     [SSL]
     certificate=/etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -84,7 +88,6 @@ In order to run the test, you can call `make check` in the build directory or ru
 
 If you want to create a line coverage report from the tests simply run following command in the source directory:
 
-
     $ apt install lcov gcovr
     $ ./create-coverage-html.sh
 
@@ -100,8 +103,8 @@ In order to get information about the server you can start the command with the 
     
     The nymea remote proxy server. This server allowes nymea-cloud users and registered nymea deamons to establish a tunnel connection.
     
-    Version: 0.1.0
-    API version: 0.1
+    Version: 0.1.2
+    API version: 0.2
     
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
     
@@ -125,6 +128,29 @@ In order to get information about the server you can start the command with the 
 # Server API
 
 Once a client connects to the proxy server, he must authenticate him self by passing the token received from the nymea-cloud mqtt connection request.
+
+## Basic flow
+
+#### First client
+
+1. Connect to the proxy server
+2. Say hello, in order to know the version, name and API version of the server
+3. Authenticate with a token
+4. Wait for the tunnel established notification
+
+#### Second client
+
+1. Connect to the proxy server
+2. Say hello, in order to know the version, name and API version of the server
+3. Authenticate with a token (this has to be the same token as the first client showed)
+4. Wait for the tunnel established notification
+
+
+Once both clients are authenticated, the proxy server will send the `RemoteProxy.TunnelEstablished` notification containing the information of the other tunnel participent. Any traffic coming from he socket is from the remote partner, and any messge sent to the socket will go to the remote partner.
+
+If anything goes wrong, or the tunnel partner disconnects from the proxy, the server will close the other client connection. If any data will be sent between `Authenticate` method and `TunnelEstablished` notification, the server will close the socket.
+
+
 
 ## Message format
 
@@ -168,10 +194,10 @@ Once a client connects to the proxy server, he must authenticate him self by pas
     {
         "id": 0,
         "params": {
-            "apiVersion": "0.1",
+            "apiVersion": "0.2",
             "name": "community-server",
             "server": "nymea-remoteproxy",
-            "version": "0.1.0"
+            "version": "0.1.2"
         },
         "status": "success"
     }
@@ -186,7 +212,7 @@ The first data a client **must** send to the proxy server is the authentication 
         "id": 1,
         "method": "Authentication.Authenticate",
         "params": {
-            "id": "string",
+            "uuid": "string",
             "name": "string",
             "token": "tokenstring"
         }
@@ -313,6 +339,30 @@ The server provides a live monitor interface on a local socket server. You can f
 
     $ sudo socat - UNIX-CONNECT:/tmp/nymea-remoteproxy-monitor.sock
 
+There is also the package `nymea-remoteproxy-monitor` package and application which gives you a nice overview about whats going on on the proxy server.
+
+
+    $ nymea-remoteproxy-monitor --help
+    
+    Usage: nymea-remoteproxy-monitor [options]
+    
+    The nymea remote proxy monitor allowes to monitor the live server activity on the a local instance.
+    
+    Server version: 0.1.2
+    API version: 0.2
+    
+    Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
+    
+    
+    Options:
+      -h, --help             Displays this help.
+      -v, --version          Displays version information.
+      -s, --socket <socket>  The socket descriptor for the nymea-remoteproxy
+                             monitor socket. Default is
+                             /tmp/nymea-remoteproxy-monitor.sock
+    
+    
+
 # Client usage
 
 The client allowes you to test the proxy server and create a dummy client for testing the connection.
@@ -324,8 +374,8 @@ The client allowes you to test the proxy server and create a dummy client for te
 
     The nymea remote proxy client application. This client allowes to test a server application as client perspective.
     
-    Version: 0.1.0
-    API version: 0.1
+    Version: 0.1.2
+    API version: 0.2
     
     Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
     
@@ -391,13 +441,13 @@ Once the server is up and running with the dummy authenticator, you can try to c
 
 > *Note:* assuming you are starting the client on the same system as the server:
 
-    $ nymea-remoteproxy-client -i -u wss://127.0.0.1:443 -t "dummytoken"
+    $ nymea-remoteproxy-client -i -u wss://localhost -t "blubtoken"
 
 Open a second terminal and start the same command again.
 
 > *Note:* assuming you are starting the client on the same system as the server:
 
-    $ nymea-remoteproxy-client -i -u wss://127.0.0.1:443 -t "dummytoken"
+    $ nymea-remoteproxy-client -i -u wss://localhost -t "blubtoken"
 
 You can follow the connection flow on both sides using the `--very-verbose` option.
 

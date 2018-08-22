@@ -48,12 +48,12 @@ void MockAuthenticator::setExpectedAuthenticationError(Authenticator::Authentica
 void MockAuthenticator::replyFinished()
 {
     MockAuthenticationReply *reply = static_cast<MockAuthenticationReply *>(sender());
-    reply->deleteLater();
 
     qCDebug(dcAuthentication()) << name() << "Authentication finished.";
 
     setReplyError(reply->authenticationReply(), reply->error());
     setReplyFinished(reply->authenticationReply());
+    delete reply;
 }
 
 AuthenticationReply *MockAuthenticator::authenticate(ProxyClient *proxyClient)

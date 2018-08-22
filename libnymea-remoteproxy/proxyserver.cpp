@@ -155,14 +155,14 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
 
     // Notify the clients in the next event loop
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
-                              Q_ARG(QString, "ProxyServer"),
+                              Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsFirst),
                               Q_ARG(ProxyClient *, tunnel.clientOne()));
 
 
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
-                              Q_ARG(QString, "ProxyServer"),
+                              Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsSecond),
                               Q_ARG(ProxyClient *, tunnel.clientTwo()));

@@ -104,7 +104,7 @@ void JsonRpcClient::processData(const QByteArray &data)
 
         qCDebug(dcRemoteProxyClientJsonRpc()) << "Notification received" << nameSpace << notificationName;
 
-        if (nameSpace == "ProxyServer" && notificationName == "TunnelEstablished") {
+        if (nameSpace == "RemoteProxy" && notificationName == "TunnelEstablished") {
             QString clientName = notificationParams.value("name").toString();
             QString clientUuid = notificationParams.value("uuid").toString();
             emit tunnelEstablished(clientName, clientUuid);
