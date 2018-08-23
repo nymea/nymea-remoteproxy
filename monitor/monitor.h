@@ -37,6 +37,10 @@ private:
     TerminalWindow *m_terminal = nullptr;
     MonitorClient *m_monitorClient = nullptr;
 
+private slots:
+    void onConnected();
+    void onDisconnected();
+
 };
 
 #endif // MONITOR_H

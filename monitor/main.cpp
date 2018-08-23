@@ -20,6 +20,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include <QUrl>
+#include <QFileInfo>
 #include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QCommandLineParser>
@@ -50,8 +51,19 @@ int main(int argc, char *argv[])
     QCommandLineOption socketOption(QStringList() << "s" << "socket", "The socket descriptor for the nymea-remoteproxy monitor socket. Default is /tmp/nymea-remoteproxy-monitor.sock", "socket");
     socketOption.setDefaultValue("/tmp/nymea-remoteproxy-monitor.sock");
     parser.addOption(socketOption);
-
     parser.process(application);
+
+    // Check socket file
+    QFileInfo fileInfo(parser.value(socketOption));
+    if (!fileInfo.exists()) {
+        qWarning() << "Could not find socket descriptor" << fileInfo.canonicalFilePath();
+        exit(1);
+    }
+
+    if (!fileInfo.isReadable()) {
+        qWarning() << "Could not open socket descriptor" << fileInfo.canonicalFilePath();
+        exit(1);
+    }
 
     Monitor monitor(parser.value(socketOption));
 

@@ -36,13 +36,17 @@ public:
 private:
     QString m_serverName;
     QLocalSocket *m_socket = nullptr;
+
 signals:
+    void connected();
+    void disconnected();
     void dataReady(const QVariantMap &data);
 
 private slots:
     void onConnected();
     void onDisconnected();
     void onReadyRead();
+    void onErrorOccured(QLocalSocket::LocalSocketError socketError);
 
 public slots:
     void connectMonitor();

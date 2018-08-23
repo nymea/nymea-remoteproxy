@@ -21,6 +21,7 @@
 
 #include "terminalwindow.h"
 
+#include <QTime>
 #include <QDebug>
 #include <QDateTime>
 #include <QMetaObject>
@@ -30,40 +31,48 @@ TerminalWindow::TerminalWindow(QObject *parent) :
 {
     // Create main window
     m_mainWindow = initscr();
-    start_color();
 
-    init_pair(1, COLOR_BLACK, COLOR_GREEN);
-    init_pair(2, COLOR_BLACK, COLOR_RED);
+    // Enable colors if available
+    if (has_colors()) {
+        start_color();
+        init_pair(1, COLOR_BLACK, COLOR_GREEN);
+        init_pair(2, COLOR_BLACK, COLOR_RED);
+    }
 
     // Configure behaviour
     cbreak();
     noecho();
+    nonl();;
+    nodelay(stdscr, TRUE);
     curs_set(FALSE);
 
-    //clear();
+    clear();
 
     keypad(m_mainWindow, true);
     nodelay(m_mainWindow, true);
-    getmaxyx(stdscr, m_terminalSizeY, m_terminalSizeX);
+    getmaxyx(m_mainWindow, m_terminalSizeY, m_terminalSizeX);
+    wrefresh(m_mainWindow);
 
     // Create header and content window
     m_headerWindow = newwin(m_headerHeight, m_terminalSizeX, 0, 0);
     m_contentWindow = newwin(m_terminalSizeY - m_headerHeight, m_terminalSizeX, m_headerHeight, 0);
 
     // Draw borders
-    wclear(m_headerWindow);
-    wclear(m_contentWindow);
+    werase(m_headerWindow);
+    werase(m_contentWindow);
+    drawWindowBorder(m_headerWindow);
+    drawWindowBorder(m_contentWindow);
 
-    mvwprintw(m_headerWindow, 1, 2, convertString("Connecting..."));
-
-    box(m_headerWindow, 0 , 0);
-    box(m_contentWindow, 0 , 0);
+    //box(m_headerWindow, 0 , 0);
+    //box(m_contentWindow, 0 , 0);
 
     // Refresh windows
     wrefresh(m_headerWindow);
     wrefresh(m_contentWindow);
 
     refresh();
+
+    eventLoop();
 }
 
 TerminalWindow::~TerminalWindow()
@@ -80,6 +89,18 @@ const char *TerminalWindow::convertString(const QString &string)
     return reinterpret_cast<const char *>(string.toLatin1().data());
 }
 
+QString TerminalWindow::getDurationString(uint timestamp)
+{
+    uint duration = QDateTime::currentDateTime().toTime_t() - timestamp;
+    QString res;
+    int seconds = static_cast<int>(duration % 60);
+    duration /= 60;
+    int minutes = static_cast<int>(duration % 60);
+    duration /= 60;
+    int hours = static_cast<int>(duration % 24);
+    return res.sprintf("%02d:%02d:%02d", hours, minutes, seconds);
+}
+
 void TerminalWindow::resizeWindow()
 {
     int terminalSizeX;
@@ -93,30 +114,61 @@ void TerminalWindow::resizeWindow()
     }
 }
 
+void TerminalWindow::drawWindowBorder(WINDOW *window)
+{
+    int x, y, i;
+    getmaxyx(window, y, x);
+
+    // corners
+    mvwprintw(window, 0, 0, "+");
+    mvwprintw(window, y - 1, 0, "+");
+    mvwprintw(window, 0, x - 1, "+");
+    mvwprintw(window, y - 1, x - 1, "+");
+
+    // sides
+    for (i = 1; i < (y - 1); i++) {
+        mvwprintw(window, i, 0, "|");
+        mvwprintw(window, i, x - 1, "|");
+    }
+
+    // top and bottom
+    for (i = 1; i < (x - 1); i++) {
+        mvwprintw(window, 0, i, "-");
+        mvwprintw(window, y - 1, i, "-");
+    }
+}
+
 void TerminalWindow::paintHeader()
 {
-    QString headerString = QString(" Server: %1 %2 | API version %3 | Clients: %4 | Tunnels %5 | %6 %7")
-            .arg(m_dataMap.value("serverName").toString())
-            .arg(m_dataMap.value("serverVersion").toString())
-            .arg(m_dataMap.value("apiVersion").toString())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount").toInt())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount").toInt())
-            .arg((m_view == ViewClients ? "Clients" : "Tunnels"))
-            .arg("", m_terminalSizeX, ' ');
+    QString headerString = QString(" Server: %1 %2 | API version %3 | Clients: %4 | Tunnels %5 | %6 ")
+            .arg(m_dataMap.value("serverName", "-").toString())
+            .arg(m_dataMap.value("serverVersion", "-").toString())
+            .arg(m_dataMap.value("apiVersion", "-").toString())
+            .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
+            .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
+            .arg((m_view == ViewClients ? "-- Clients --" : "-- Tunnels --"));
+
+    int delta = m_terminalSizeX - headerString.count();
+
+    // Fill string for background color
+    for (int i = 0; i < delta; i++)
+        headerString.append(" ");
 
 
     wclear(m_headerWindow);
     wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
     mvwprintw(m_headerWindow, 1, 2, convertString(headerString));
     wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
-    box(m_headerWindow, 0 , 0);
+    drawWindowBorder(m_headerWindow);
     wrefresh(m_headerWindow);
 }
 
 void TerminalWindow::paintContentClients()
 {
-    int i = 1;
+    if (m_clientHash.isEmpty())
+        return;
 
+    int i = 1;
     wclear(m_contentWindow);
     foreach (const QVariant &clientVariant, m_clientHash.values()) {
         QVariantMap clientMap = clientVariant.toMap();
@@ -124,20 +176,21 @@ void TerminalWindow::paintContentClients()
         uint timeStamp = clientMap.value("timestamp").toUInt();
         QString clientConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
 
-        QString clientPrint = QString("%1 | %2 | %3 | %4 | %5 | %6 |")
+        QString clientPrint = QString("%1 | %2 | %3 | %4 | %5 | %6 | %7")
                 .arg(clientConnectionTime)
+                .arg(clientMap.value("duration").toString())
                 .arg(clientMap.value("address").toString())
                 .arg(clientMap.value("uuid").toString())
-                .arg(clientMap.value("name").toString(), -30)
-                .arg((clientMap.value("authenticated").toBool() ? "auth" : "no auth"), -9)
-                .arg((clientMap.value("tunnelConnected").toBool() ? "<--->" : "  |  "));
+                .arg((clientMap.value("authenticated").toBool() ? "A" : "-"))
+                .arg((clientMap.value("tunnelConnected").toBool() ? "T" : "-"))
+                .arg(clientMap.value("name").toString(), -30);
 
-        mvwprintw(m_contentWindow, i, 2, convertString(clientPrint));
+        mvwprintw(m_contentWindow, i, 2, convertString(clientPrint.trimmed()));
         i++;
     }
 
     // Draw borders
-    box(m_contentWindow, 0 , 0);
+    drawWindowBorder(m_contentWindow);
     wrefresh(m_contentWindow);
 }
 
@@ -159,7 +212,7 @@ void TerminalWindow::paintContentTunnels()
                 .arg(tunnelConnectionTime)
                 .arg(clientOne.value("address").toString())
                 .arg(clientOne.value("name").toString())
-                .arg("<--->", 10)
+                .arg("   <--->   ")
                 .arg(clientTwo.value("address").toString())
                 .arg(clientTwo.value("name").toString())
                 ;
@@ -169,7 +222,7 @@ void TerminalWindow::paintContentTunnels()
     }
 
     // Draw borders
-    box(m_contentWindow, 0 , 0);
+    drawWindowBorder(m_contentWindow);
     wrefresh(m_contentWindow);
 }
 
@@ -191,6 +244,7 @@ void TerminalWindow::eventLoop()
         delwin(m_contentWindow);
         delwin(m_mainWindow);
         endwin();
+        qDebug() << "Closing window monitor. Have a nice day!";
         exit(0);
         break;
     default:
@@ -213,9 +267,9 @@ void TerminalWindow::eventLoop()
     refresh();
 
     // Reinvoke the method for the next event loop run
-    QMetaObject::invokeMethod(this, "eventLoop", Qt::QueuedConnection);
+    //QMetaObject::invokeMethod(this, "eventLoop", Qt::QueuedConnection);
+    QTimer::singleShot(50, this, &TerminalWindow::eventLoop);
 }
-
 
 void TerminalWindow::refreshWindow(const QVariantMap &dataMap)
 {
@@ -224,11 +278,11 @@ void TerminalWindow::refreshWindow(const QVariantMap &dataMap)
     QVariantMap statisticMap = m_dataMap.value("proxyStatistic").toMap();
 
     m_clientHash.clear();
+
     foreach (const QVariant &clientVariant, statisticMap.value("clients").toList()) {
         QVariantMap clientMap = clientVariant.toMap();
+        clientMap.insert("duration", getDurationString(clientMap.value("timestamp").toUInt()));
         m_clientHash.insert(clientMap.value("id").toString(), clientMap);
     }
-
-    eventLoop();
 }
 

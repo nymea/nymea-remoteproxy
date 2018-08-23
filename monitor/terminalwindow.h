@@ -23,6 +23,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include <QTimer>
 #include <QVariantMap>
 
 #include <ncurses.h>
@@ -56,9 +57,11 @@ private:
     QHash<QString, QVariantMap> m_clientHash;
 
     const char *convertString(const QString &string);
+    QString getDurationString(uint timestamp);
 
     // content paint methods
     void resizeWindow();
+    void drawWindowBorder(WINDOW *window);
     void paintHeader();
     void paintContentClients();
     void paintContentTunnels();

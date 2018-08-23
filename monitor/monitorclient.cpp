@@ -32,16 +32,19 @@ MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
     connect(m_socket, &QLocalSocket::connected, this, &MonitorClient::onConnected);
     connect(m_socket, &QLocalSocket::disconnected, this, &MonitorClient::onDisconnected);
     connect(m_socket, &QLocalSocket::readyRead, this, &MonitorClient::onReadyRead);
+    connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccured(QLocalSocket::LocalSocketError)));
 }
 
 void MonitorClient::onConnected()
 {
     qDebug() << "Monitor connected to" << m_serverName;
+    emit connected();
 }
 
 void MonitorClient::onDisconnected()
 {
     qDebug() << "Monitor disconnected from" << m_serverName;
+    emit disconnected();
 }
 
 void MonitorClient::onReadyRead()
@@ -60,6 +63,13 @@ void MonitorClient::onReadyRead()
 
     QVariantMap dataMap = jsonDoc.toVariant().toMap();
     emit dataReady(dataMap);
+}
+
+void MonitorClient::onErrorOccured(QLocalSocket::LocalSocketError socketError)
+{
+    Q_UNUSED(socketError)
+    qWarning() << "Local socket error occured" << m_socket->errorString();
+    exit(1);
 }
 
 void MonitorClient::connectMonitor()

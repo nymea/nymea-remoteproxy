@@ -23,10 +23,24 @@
 
 Monitor::Monitor(const QString &serverName, QObject *parent) : QObject(parent)
 {
-    m_terminal = new TerminalWindow(this);
     m_monitorClient = new MonitorClient(serverName, this);
-
-    connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
+    connect(m_monitorClient, &MonitorClient::connected, this, &Monitor::onConnected);
+    connect(m_monitorClient, &MonitorClient::disconnected, this, &Monitor::onDisconnected);
 
     m_monitorClient->connectMonitor();
+}
+
+void Monitor::onConnected()
+{
+    m_terminal = new TerminalWindow(this);
+    connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
+}
+
+void Monitor::onDisconnected()
+{
+    if (!m_terminal)
+        return;
+
+    m_terminal->deleteLater();
+    m_terminal = nullptr;
 }
