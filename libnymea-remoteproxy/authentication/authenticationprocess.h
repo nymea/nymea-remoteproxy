@@ -45,17 +45,16 @@ private:
     QString m_resultFileName;
 
     bool m_dynamicCredentials = true;
-    QString m_awsAccessKeyId;
-    QString m_awsSecretAccessKey;
-    QString m_awsSessionToken;
 
     QNetworkAccessManager *m_manager = nullptr;
     QProcess *m_process = nullptr;
     QElapsedTimer m_requestTimer;
+    QElapsedTimer m_lambdaTimer;
     QElapsedTimer m_processTimer;
 
     void requestDynamicCredentials();
-    void startVerificationProcess();
+    void invokeLambdaFunction(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken);
+    void startVerificationProcess(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken);
     void cleanUp();
 
 signals:
@@ -63,6 +62,7 @@ signals:
 
 private slots:
     void onDynamicCredentialsReady();
+    void onLambdaInvokeFunctionFinished();
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 public slots:

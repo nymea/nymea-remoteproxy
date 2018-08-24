@@ -24,6 +24,7 @@ HEADERS += \
     authentication/userinformation.h \
     authentication/authenticationprocess.h \
     authentication/dummyauthenticator.h \
+    authentication/sigv4utils.h
 
 SOURCES += \
     engine.cpp \
@@ -46,6 +47,7 @@ SOURCES += \
     authentication/userinformation.cpp \
     authentication/authenticationprocess.cpp \
     authentication/dummyauthenticator.cpp \
+    authentication/sigv4utils.cpp
 
 
 # install header file with relative subdirectory
