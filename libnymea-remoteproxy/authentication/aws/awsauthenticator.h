@@ -19,57 +19,41 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef AUTHENTICATIONPROCESS_H
-#define AUTHENTICATIONPROCESS_H
+#ifndef AWSAUTHENTICATOR_H
+#define AWSAUTHENTICATOR_H
 
 #include <QObject>
-#include <QProcess>
-#include <QElapsedTimer>
 #include <QNetworkAccessManager>
 
-#include "authenticator.h"
-#include "userinformation.h"
+#include "awscredentialprovider.h"
+#include "authenticationprocess.h"
+#include "authentication/authenticator.h"
+#include "authentication/authenticationreply.h"
 
 namespace remoteproxy {
 
-class AuthenticationProcess : public QObject
+class AwsAuthenticator : public Authenticator
 {
     Q_OBJECT
 public:
-    explicit AuthenticationProcess(QNetworkAccessManager *manager, QObject *parent = nullptr);
+    explicit AwsAuthenticator(const QUrl &awsCredentialsUrl, QObject *parent = nullptr);
+    ~AwsAuthenticator() override;
 
-    void useDynamicCredentials(bool dynamicCredentials);
+    QString name() const override;
 
 private:
-    QString m_token;
-    QString m_resultFileName;
-
-    bool m_dynamicCredentials = true;
-
     QNetworkAccessManager *m_manager = nullptr;
-    QProcess *m_process = nullptr;
-    QElapsedTimer m_requestTimer;
-    QElapsedTimer m_lambdaTimer;
-    QElapsedTimer m_processTimer;
-
-    void requestDynamicCredentials();
-    void invokeLambdaFunction(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken);
-    void startVerificationProcess(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken);
-    void cleanUp();
-
-signals:
-    void authenticationFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation = UserInformation());
+    AwsCredentialProvider *m_credentialsProvider = nullptr;
+    QHash<AuthenticationProcess *, AuthenticationReply *> m_runningProcesses;
 
 private slots:
-    void onDynamicCredentialsReady();
-    void onLambdaInvokeFunctionFinished();
-    void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onAuthenticationProcessFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation);
 
 public slots:
-    void authenticate(const QString &token);
+    AuthenticationReply *authenticate(ProxyClient *proxyClient) override;
 
 };
 
 }
 
-#endif // AUTHENTICATIONPROCESS_H
+#endif // AWSAUTHENTICATOR_H

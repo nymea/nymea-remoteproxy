@@ -41,7 +41,7 @@ public:
 
     friend class JsonRpcServer;
 
-    static JsonReply *createReply(JsonHandler *handler, const QVariantMap &data);
+    static JsonReply *createReply(JsonHandler *handler, const QString &method, const QVariantMap &data);
     static JsonReply *createAsyncReply(JsonHandler *handler, const QString &method);
 
     Type type() const;
@@ -50,7 +50,6 @@ public:
     void setData(const QVariantMap &data);
 
     JsonHandler *handler() const;
-
     QString method() const;
 
     QUuid clientId() const;

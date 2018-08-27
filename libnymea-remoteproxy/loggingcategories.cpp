@@ -32,4 +32,5 @@ Q_LOGGING_CATEGORY(dcAuthenticationProcess, "AuthenticationProcess")
 Q_LOGGING_CATEGORY(dcProxyServer, "ProxyServer")
 Q_LOGGING_CATEGORY(dcProxyServerTraffic, "ProxyServerTraffic")
 Q_LOGGING_CATEGORY(dcMonitorServer, "MonitorServer")
-
+Q_LOGGING_CATEGORY(dcAwsCredentialsProvider, "AwsCredentialsProvider")
+Q_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic, "AwsCredentialsProviderTraffic")

@@ -78,8 +78,9 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyC
 void AuthenticationHandler::onAuthenticationFinished()
 {
     AuthenticationReply *authenticationReply = static_cast<AuthenticationReply *>(sender());
+    authenticationReply->deleteLater();
 
-    qCDebug(dcJsonRpc()) << "Authentication respons ready for" << authenticationReply->proxyClient() << authenticationReply->error();
+    qCDebug(dcJsonRpc()) << "Authentication response ready for" << authenticationReply->proxyClient() << authenticationReply->error();
     JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
 
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
@@ -92,7 +93,6 @@ void AuthenticationHandler::onAuthenticationFinished()
 
     // Set client authenticated
     authenticationReply->proxyClient()->setAuthenticated(authenticationReply->error() == Authenticator::AuthenticationErrorNoError);
-    authenticationReply->deleteLater();
 
     jsonReply->setData(errorToReply(authenticationReply->error()));
     jsonReply->finished();

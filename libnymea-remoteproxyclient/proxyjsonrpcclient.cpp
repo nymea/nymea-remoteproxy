@@ -61,14 +61,14 @@ JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QStrin
 
 void JsonRpcClient::sendRequest(const QVariantMap &request)
 {
-    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
-    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << qUtf8Printable(data);
+    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact);
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << data;
     m_connection->sendData(data);
 }
 
 void JsonRpcClient::processData(const QByteArray &data)
 {
-    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Received data:" << qUtf8Printable(data);
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Received data:" << data;
 
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);

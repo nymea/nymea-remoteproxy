@@ -136,9 +136,9 @@ QVariantMap JsonHandler::errorToReply(Authenticator::AuthenticationError error) 
     return returns;
 }
 
-JsonReply *JsonHandler::createReply(const QVariantMap &data) const
+JsonReply *JsonHandler::createReply(const QString &method, const QVariantMap &data) const
 {
-    return JsonReply::createReply(const_cast<JsonHandler*>(this), data);
+    return JsonReply::createReply(const_cast<JsonHandler*>(this), method, data);
 }
 
 JsonReply *JsonHandler::createAsyncReply(const QString &method) const

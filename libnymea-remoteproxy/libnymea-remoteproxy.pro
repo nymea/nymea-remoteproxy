@@ -19,12 +19,13 @@ HEADERS += \
     jsonrpc/jsontypes.h \
     jsonrpc/authenticationhandler.h \
     authentication/authenticator.h \
-    authentication/awsauthenticator.h \
     authentication/authenticationreply.h \
-    authentication/userinformation.h \
-    authentication/authenticationprocess.h \
-    authentication/dummyauthenticator.h \
-    authentication/sigv4utils.h
+    authentication/dummy/dummyauthenticator.h \
+    authentication/aws/awsauthenticator.h \
+    authentication/aws/userinformation.h \
+    authentication/aws/authenticationprocess.h \
+    authentication/aws/sigv4utils.h \
+    authentication/aws/awscredentialprovider.h
 
 SOURCES += \
     engine.cpp \
@@ -42,12 +43,13 @@ SOURCES += \
     jsonrpc/jsontypes.cpp \
     jsonrpc/authenticationhandler.cpp \
     authentication/authenticator.cpp \
-    authentication/awsauthenticator.cpp \
     authentication/authenticationreply.cpp \
-    authentication/userinformation.cpp \
-    authentication/authenticationprocess.cpp \
-    authentication/dummyauthenticator.cpp \
-    authentication/sigv4utils.cpp
+    authentication/dummy/dummyauthenticator.cpp \
+    authentication/aws/awsauthenticator.cpp \
+    authentication/aws/userinformation.cpp \
+    authentication/aws/authenticationprocess.cpp \
+    authentication/aws/sigv4utils.cpp \
+    authentication/aws/awscredentialprovider.cpp
 
 
 # install header file with relative subdirectory

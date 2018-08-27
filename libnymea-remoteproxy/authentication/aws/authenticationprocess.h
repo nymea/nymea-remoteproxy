@@ -19,30 +19,57 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef DUMMYAUTHENTICATOR_H
-#define DUMMYAUTHENTICATOR_H
+#ifndef AUTHENTICATIONPROCESS_H
+#define AUTHENTICATIONPROCESS_H
 
 #include <QObject>
+#include <QProcess>
+#include <QElapsedTimer>
+#include <QNetworkAccessManager>
 
-#include "proxyclient.h"
-#include "authenticator.h"
+#include "userinformation.h"
+#include "authentication/authenticator.h"
 
 namespace remoteproxy {
 
-class DummyAuthenticator : public Authenticator
+class AuthenticationProcess : public QObject
 {
     Q_OBJECT
 public:
-    explicit DummyAuthenticator(QObject *parent = nullptr);
-    ~DummyAuthenticator() override = default;
+    explicit AuthenticationProcess(QNetworkAccessManager *manager, const QString &accessKey, const QString &secretAccessKey, const QString &sessionToken, QObject *parent = nullptr);
 
-    QString name() const override;
+private:
+    QNetworkAccessManager *m_manager = nullptr;
+    QString m_accessKey;
+    QString m_secretAccessKey;
+    QString m_sessionToken;
+
+    QString m_token;
+    QString m_resultFileName;
+
+    bool m_fallback = false;
+
+    QProcess *m_process = nullptr;
+    QElapsedTimer m_lambdaTimer;
+    QElapsedTimer m_processTimer;
+
+    void invokeLambdaFunction();
+    void startVerificationProcess();
+
+    void cleanUp();
+
+signals:
+    void authenticationFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation = UserInformation());
+
+private slots:
+    void onLambdaInvokeFunctionFinished();
+    void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 public slots:
-    AuthenticationReply *authenticate(ProxyClient *proxyClient) override;
+    void authenticate(const QString &token);
 
 };
 
 }
 
-#endif // DUMMYAUTHENTICATOR_H
+#endif // AUTHENTICATIONPROCESS_H

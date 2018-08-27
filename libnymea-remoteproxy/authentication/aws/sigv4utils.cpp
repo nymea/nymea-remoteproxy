@@ -1,5 +1,26 @@
-#include "sigv4utils.h"
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                                               *
+ * Copyright (C) 2018 Simon Stürz <simon.stuerz@guh.io>                          *
+ * Copyright (C) 2018 Michael Zanetti <michael.zanetti@guh.io>                   *
+ *                                                                               *
+ * This file is part of nymea-remoteproxy.                                       *
+ *                                                                               *
+ * This program is free software: you can redistribute it and/or modify          *
+ * it under the terms of the GNU General Public License as published by          *
+ * the Free Software Foundation, either version 3 of the License, or             *
+ * (at your option) any later version.                                           *
+ *                                                                               *
+ * This program is distributed in the hope that it will be useful,               *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of                *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                 *
+ * GNU General Public License for more details.                                  *
+ *                                                                               *
+ * You should have received a copy of the GNU General Public License             *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                               *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "sigv4utils.h"
 
 #include <QDateTime>
 #include <QCryptographicHash>
@@ -8,34 +29,37 @@
 #include <QUrlQuery>
 #include <QList>
 
-namespace remoteproxy {
+#include "loggingcategories.h"
 
+namespace remoteproxy {
 
 SigV4Utils::SigV4Utils()
 {
 
 }
 
-void SigV4Utils::signRequest(QNetworkAccessManager::Operation operation, QNetworkRequest &request, const QString &region, const QString &service, const QByteArray &accessKeyId, const QByteArray &secretAccessKey, const QByteArray &sessionToken, const QByteArray &payload)
+void SigV4Utils::signRequest(QNetworkAccessManager::Operation operation, QNetworkRequest &request, const QString &region, const QString &service, const QString &invocationType, const QByteArray &accessKeyId, const QByteArray &secretAccessKey, const QByteArray &sessionToken, const QByteArray &payload)
 {
     QByteArray dateTime;
-    if (request.rawHeaderList().contains("X-Amz-Date")) {
-        dateTime = request.rawHeader("X-AMZ-Date");
+    if (request.rawHeaderList().contains("x-amz-date")) {
+        dateTime = request.rawHeader("x-amz-date");
     } else {
         dateTime = SigV4Utils::getCurrentDateTime();
-        request.setRawHeader("X-Amz-Date", dateTime);
+        request.setRawHeader("x-amz-date", dateTime);
     }
+
+    request.setRawHeader("x-amz-invocation-type", invocationType.toUtf8());
 
     if (!sessionToken.isEmpty()) {
         request.setRawHeader("x-amz-security-token", sessionToken);
     }
 
     QByteArray canonicalRequest = SigV4Utils::getCanonicalRequest(operation, request, payload);
-//    qDebug() << "canonical request:" << qUtf8Printable(canonicalRequest);
+    qCDebug(dcAuthenticationProcess()) << "canonical request:" << endl << qUtf8Printable(canonicalRequest);
     QByteArray stringToSign = SigV4Utils::getStringToSign(canonicalRequest, dateTime, region.toUtf8(), service.toUtf8());
-//    qDebug() << "string to sign:" << stringToSign;
+    qCDebug(dcAuthenticationProcess()) << "string to sign:" << endl << qUtf8Printable(stringToSign);
     QByteArray signature = SigV4Utils::getSignature(stringToSign, secretAccessKey, dateTime, region, service);
-//    qDebug() << "signature:" << signature;
+    qCDebug(dcAuthenticationProcess()) << "signature:" << signature;
     QByteArray authorizeHeader = SigV4Utils::getAuthorizationHeader(accessKeyId, dateTime, region, service, request, signature);
 
     request.setRawHeader("Authorization", authorizeHeader);
@@ -80,7 +104,7 @@ QByteArray SigV4Utils::getSignatureKey(const QByteArray &key, const QByteArray &
     return QMessageAuthenticationCode::hash("aws4_request",
            QMessageAuthenticationCode::hash(service,
            QMessageAuthenticationCode::hash(region,
-           QMessageAuthenticationCode::hash(date, "AWS4"+key,
+           QMessageAuthenticationCode::hash(date, "AWS4" + key,
            hashAlgorithm), hashAlgorithm), hashAlgorithm), hashAlgorithm);
 }
 
@@ -100,6 +124,7 @@ QByteArray SigV4Utils::getCanonicalRequest(QNetworkAccessManager::Operation oper
         Q_ASSERT_X(false, "Network operation not implemented", "SigV4Utils");
     }
     QByteArray uri = request.url().path(QUrl::FullyEncoded).toUtf8();
+
     QUrlQuery query(request.url());
     QList<QPair<QString, QString> > queryItems = query.queryItems();
     QStringList queryItemStrings;
@@ -118,7 +143,7 @@ QByteArray SigV4Utils::getCanonicalRequest(QNetworkAccessManager::Operation oper
 
     QByteArray payloadHash = QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex();
 
-    canonicalRequest = method + '\n' + uri + '\n' + canonicalQueryString + '\n' + canonicalHeaders + '\n' + request.rawHeaderList().join(';').toLower() + '\n' + payloadHash;
+    canonicalRequest = method + '\n' + uri + '\n' + canonicalQueryString + '\n' + canonicalHeaders + '\n' + request.rawHeaderList().join(';').toLower() + '\n' + payloadHash.toLower();
     return canonicalRequest;
 }
 
@@ -133,7 +158,6 @@ QByteArray SigV4Utils::getStringToSign(const QByteArray &canonicalRequest, const
 {
     QByteArray algorithm = "AWS4-HMAC-SHA256";
     QByteArray credentialScope = getCredentialScope(algorithm, dateTime, region, service);
-
     QByteArray stringToSign = algorithm + '\n' + dateTime + '\n' + credentialScope + '\n' + QCryptographicHash::hash(canonicalRequest, QCryptographicHash::Sha256).toHex();
     return stringToSign;
 }

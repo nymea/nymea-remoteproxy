@@ -91,7 +91,7 @@ JsonReply *JsonRpcServer::Hello(const QVariantMap &params, ProxyClient *proxyCli
     data.insert("version", SERVER_VERSION_STRING);
     data.insert("apiVersion", API_VERSION_STRING);
 
-    return createReply(data);
+    return createReply("Hello", data);
 }
 
 JsonReply *JsonRpcServer::Introspect(const QVariantMap &params, ProxyClient *proxyClient) const
@@ -118,7 +118,7 @@ JsonReply *JsonRpcServer::Introspect(const QVariantMap &params, ProxyClient *pro
 
     data.insert("notifications", signalsMap);
 
-    return createReply(data);
+    return createReply("Introspect", data);
 }
 
 void JsonRpcServer::sendResponse(ProxyClient *client, int commandId, const QVariantMap &params)
@@ -142,7 +142,7 @@ void JsonRpcServer::sendErrorResponse(ProxyClient *client, int commandId, const 
 
     QByteArray data = QJsonDocument::fromVariant(errorResponse).toJson(QJsonDocument::Compact);
     qCDebug(dcJsonRpcTraffic()) << "Sending data:" << data;
-    client->interface()->sendData(client->clientId(), data);
+    client->sendData(data);
 }
 
 QString JsonRpcServer::formatAssertion(const QString &targetNamespace, const QString &method, JsonHandler *handler, const QVariantMap &data) const
@@ -190,11 +190,19 @@ void JsonRpcServer::asyncReplyFinished()
         Q_ASSERT_X(reply->handler()->validateReturns(reply->method(), reply->data()).first
                    ,"validating return value", formatAssertion(reply->handler()->name(),
                                                                reply->method(), reply->handler(), reply->data()).toLatin1().data());
+
+        QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
+        if (!returnValidation.first) {
+            qCWarning(dcJsonRpc()) << "Return value validation failed. This should never happen. Please check the source code.";
+        }
+
         sendResponse(proxyClient, reply->commandId(), reply->data());
+
         if (!reply->success()) {
             // Disconnect this client since the request was not successfully
             proxyClient->interface()->killClientConnection(proxyClient->clientId(), "API call was not successfully.");
         }
+
     } else {
         sendErrorResponse(proxyClient, reply->commandId(), "Command timed out");
         // Disconnect this client since he requested something that created a timeout
@@ -289,11 +297,18 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
         m_asyncReplies.insert(reply, proxyClient);
         reply->setClientId(proxyClient->clientId());
         reply->setCommandId(commandId);
+
         connect(reply, &JsonReply::finished, this, &JsonRpcServer::asyncReplyFinished);
         reply->startWait();
     } else {
         Q_ASSERT_X((targetNamespace == "RemoteProxy" && method == "Introspect") || handler->validateReturns(method, reply->data()).first
                    ,"validating return value", formatAssertion(targetNamespace, method, handler, reply->data()).toLatin1().data());
+
+//        QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
+//        if (!returnValidation.first) {
+//            qCWarning(dcJsonRpc()) << "Return value validation failed of sync reply. This should never happen. Please check the source code.";
+//        }
+
         reply->setClientId(proxyClient->clientId());
         reply->setCommandId(commandId);
         sendResponse(proxyClient, commandId, reply->data());
@@ -310,7 +325,7 @@ void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &me
 
     QByteArray data = QJsonDocument::fromVariant(notification).toJson(QJsonDocument::Compact);
     qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
-    proxyClient->interface()->sendData(proxyClient->clientId(), data);
+    proxyClient->sendData(data);
 }
 
 }

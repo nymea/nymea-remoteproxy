@@ -32,28 +32,19 @@
 
 namespace remoteproxy {
 
-AuthenticationProcess::AuthenticationProcess(QNetworkAccessManager *manager, QObject *parent) :
+AuthenticationProcess::AuthenticationProcess(QNetworkAccessManager *manager, const QString &accessKey, const QString &secretAccessKey, const QString &sessionToken, QObject *parent) :
     QObject(parent),
-    m_manager(manager)
+    m_manager(manager),
+    m_accessKey(accessKey),
+    m_secretAccessKey(secretAccessKey),
+    m_sessionToken(sessionToken)
 {
     m_process = new QProcess(this);
     m_process->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_process, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, &AuthenticationProcess::onProcessFinished);
 }
 
-void AuthenticationProcess::useDynamicCredentials(bool dynamicCredentials)
-{
-    m_dynamicCredentials = dynamicCredentials;
-}
-
-void AuthenticationProcess::requestDynamicCredentials()
-{
-    m_requestTimer.start();
-    QNetworkReply *reply = m_manager->get(QNetworkRequest(QUrl("http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2-Remote-Connection-Proxy-Role")));
-    connect(reply, &QNetworkReply::finished, this, &AuthenticationProcess::onDynamicCredentialsReady);
-}
-
-void AuthenticationProcess::invokeLambdaFunction(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken)
+void AuthenticationProcess::invokeLambdaFunction()
 {
     // Known configurations
     QString region = "eu-west-1";
@@ -63,23 +54,21 @@ void AuthenticationProcess::invokeLambdaFunction(const QString accessKey, const 
 
     // {'url_path': '/2015-03-31/functions/system-services-authorizer-dev-checkToken/invocations', 'query_string': {}, 'method': 'POST', 'headers': {'X-Amz-Invocation-Type': 'RequestResponse', 'User-Agent': 'aws-cli/1.14.44 Python/3.6.5 Linux/4.15.0-1019-aws botocore/1.8.48'}, 'body': b'{"token": "...."}', 'url': 'https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/system-services-authorizer-dev-checkToken/invocations', 'context': {'client_region': 'eu-west-1', 'client_config': <botocore.config.Config object at 0x7f44560f3128>, 'has_streaming_input': True, 'auth_type': None}}
 
-    // Create request map
-    QVariantMap requestMap;
-    requestMap.insert("token", m_token);
-    QByteArray payload = QJsonDocument::fromVariant(requestMap).toJson(QJsonDocument::Compact);
-
     QUrl requestUrl;
     requestUrl.setScheme("https");
     requestUrl.setHost(QString("lambda.%1.amazonaws.com").arg(region));
     requestUrl.setPath(QString("/2015-03-31/functions/%1/invocations").arg(lambdaFunctionName));
 
-    QNetworkRequest request(requestUrl);
-    request.setRawHeader("User-Agent", QString("%1/%2 JSON-RPC/%3").arg(SERVER_NAME_STRING).arg(SERVER_VERSION_STRING).arg(API_VERSION_STRING).toUtf8());
-    request.setRawHeader("Content-Type", "application/json");
-    request.setRawHeader("host", requestUrl.host().toUtf8());
-    request.setRawHeader("x-amz-invocation-type", invocationType.toUtf8());
+    // Create request map
+    QVariantMap requestMap;
+    requestMap.insert("token", m_token);
+    QByteArray payload = QJsonDocument::fromVariant(requestMap).toJson(QJsonDocument::Compact);
 
-    SigV4Utils::signRequest(QNetworkAccessManager::PostOperation, request, region, service, accessKey.toUtf8(), secretAccessKey.toUtf8(), sessionToken.toUtf8(), payload);
+    QNetworkRequest request(requestUrl);
+    //request.setRawHeader("User-Agent", QString("%1/%2 JSON-RPC/%3").arg(SERVER_NAME_STRING).arg(SERVER_VERSION_STRING).arg(API_VERSION_STRING).toUtf8());
+    //request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("host", requestUrl.host().toUtf8());
+    SigV4Utils::signRequest(QNetworkAccessManager::PostOperation, request, region, service, invocationType, m_accessKey.toUtf8(), m_secretAccessKey.toUtf8(), m_sessionToken.toUtf8(), payload);
 
     qCDebug(dcAuthenticationProcess()) << "Invoke lambda function" << lambdaFunctionName;
 
@@ -87,19 +76,19 @@ void AuthenticationProcess::invokeLambdaFunction(const QString accessKey, const 
     qCDebug(dcAuthenticationProcess()) << request.url().toString();
 
     foreach (const QByteArray &rawHeader, request.rawHeaderList()) {
-        qDebug(dcAuthenticationProcess()) << request.rawHeader(rawHeader);
+        qDebug(dcAuthenticationProcess()) << rawHeader << request.rawHeader(rawHeader);
     }
     qCDebug(dcAuthenticationProcess()) << payload;
     qCDebug(dcAuthenticationProcess()) << "--------------------------------------------";
 
     m_lambdaTimer.start();
 
-    QNetworkReply *reply = m_manager->get(request);
+    QNetworkReply *reply = m_manager->post(request, payload);
     connect(reply, &QNetworkReply::finished, this, &AuthenticationProcess::onLambdaInvokeFunctionFinished);
 
 }
 
-void AuthenticationProcess::startVerificationProcess(const QString accessKey, const QString &secretAccessKey, const QString &sessionToken)
+void AuthenticationProcess::startVerificationProcess()
 {
     if (m_process->state() != QProcess::NotRunning) {
         qCWarning(dcAuthenticationProcess()) << "Authentication process already running. Killing the running process and restart.";
@@ -113,56 +102,31 @@ void AuthenticationProcess::startVerificationProcess(const QString accessKey, co
     // Set environment
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("AWS_DEFAULT_REGION", "eu-west-1");
-    if (m_dynamicCredentials) {
-        qCDebug(dcAuthenticationProcess()) << "Using dynamic credentials" << accessKey << secretAccessKey << sessionToken;
-        env.insert("AWS_ACCESS_KEY_ID", accessKey);
-        env.insert("AWS_SECRET_ACCESS_KEY", secretAccessKey);
-        env.insert("AWS_SESSION_TOKEN", sessionToken);
+    if (m_fallback) {
+        qCDebug(dcAuthenticationProcess()) << "Using dynamic credentials" << m_accessKey << m_secretAccessKey << m_sessionToken;
+        env.insert("AWS_ACCESS_KEY_ID", m_accessKey);
+        env.insert("AWS_SECRET_ACCESS_KEY", m_secretAccessKey);
+        env.insert("AWS_SESSION_TOKEN", m_sessionToken);
     }
+
     m_process->setProcessEnvironment(env);
 
     // FIXME: check how to clean this up properly
     m_resultFileName = "/tmp/" + QUuid::createUuid().toString().remove("{").remove("}").remove("-") + ".json";
 
+    QStringList processParams = { "lambda", "invoke",
+                                  "--function-name", "system-services-authorizer-dev-checkToken",
+                                  "--invocation-type", "RequestResponse",
+                                  "--payload", QString::fromUtf8(QJsonDocument::fromVariant(request).toJson()),
+                                  m_resultFileName };
+
+    qCDebug(dcAuthenticationProcess()) << "Process environment" << env.toStringList();
+    qCDebug(dcAuthenticationProcess()) << "Process params" << processParams;
+
+
     qCDebug(dcAuthentication()) << "Start authenticator process and store result in" << m_resultFileName;
     m_processTimer.start();
-    m_process->start("aws", { "lambda", "invoke",
-                              "--function-name", "system-services-authorizer-dev-checkToken",
-                              "--invocation-type", "RequestResponse",
-                              "--payload", QString::fromUtf8(QJsonDocument::fromVariant(request).toJson()),
-                              m_resultFileName });
-
-}
-
-void AuthenticationProcess::onDynamicCredentialsReady()
-{
-    QNetworkReply *reply = static_cast<QNetworkReply *>(sender());
-    reply->deleteLater();
-
-    qCDebug(dcAuthenticationProcess()) << "Dynamic credentials request finished (" << m_requestTimer.elapsed() << "[ms] )";
-    if (reply->error()) {
-        qCWarning(dcAuthenticationProcess()) << "Dynamic credentials reply error: " << reply->errorString();
-        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
-        return;
-    }
-
-    QByteArray data = reply->readAll();
-
-    QJsonParseError error;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
-
-    if(error.error != QJsonParseError::NoError) {
-        qCWarning(dcAuthenticationProcess()) << "Failed to parse dynamic credentials reply data" << data << ":" << error.errorString();
-        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
-        return;
-    }
-
-    QVariantMap response = jsonDoc.toVariant().toMap();
-    qCDebug(dcAuthentication()) << "-->" << response;
-
-    startVerificationProcess(response.value("AccessKeyId").toString(),
-                             response.value("SecretAccessKey").toString(),
-                             response.value("Token").toString());
+    m_process->start("aws", processParams);
 }
 
 void AuthenticationProcess::onLambdaInvokeFunctionFinished()
@@ -170,39 +134,58 @@ void AuthenticationProcess::onLambdaInvokeFunctionFinished()
     QNetworkReply *reply = static_cast<QNetworkReply *>(sender());
     reply->deleteLater();
 
-    qCDebug(dcAuthenticationProcess()) << "Lambda invoke  request finished (" << m_lambdaTimer.elapsed() << "[ms] )";
-    if (reply->error()) {
-        qCWarning(dcAuthenticationProcess()) << "Dynamic credentials reply error: " << reply->errorString();
-        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
-        return;
-    }
+    qCDebug(dcAuthenticationProcess()) << "Lambda invoke request finished (" << m_lambdaTimer.elapsed() << "[ms] )";
 
     QByteArray data = reply->readAll();
-
-    qCDebug(dcAuthenticationProcess()) << "Invoke lambda function response ready";
 
     qCDebug(dcAuthenticationProcess()) << "--------------------------------------------";
     qCDebug(dcAuthenticationProcess()) << reply->request().url().toString();
 
     foreach (const QByteArray &rawHeader, reply->rawHeaderList()) {
-        qDebug(dcAuthenticationProcess()) << reply->rawHeader(rawHeader);
+        qDebug(dcAuthenticationProcess()) << rawHeader << reply->rawHeader(rawHeader);
     }
-    qCDebug(dcAuthenticationProcess()) << data;
+    qCDebug(dcAuthenticationProcess()) << qUtf8Printable(data);
     qCDebug(dcAuthenticationProcess()) << "--------------------------------------------";
 
+    if (reply->error()) {
+        qCWarning(dcAuthenticationProcess()) << "Lambda invoke reply error: " << reply->errorString();
+        m_fallback = true;
+        return;
+    }
+
+    qCDebug(dcAuthenticationProcess()) << "Lambda function result ready" << qUtf8Printable(data);
 
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
-
     if(error.error != QJsonParseError::NoError) {
-        qCWarning(dcAuthenticationProcess()) << "Failed to parse dynamic credentials reply data" << data << ":" << error.errorString();
+        qCWarning(dcAuthenticationProcess()) << "Failed to parse lambda invoke result data" << data << ":" << error.errorString();
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
         return;
     }
 
     QVariantMap response = jsonDoc.toVariant().toMap();
-    qCDebug(dcAuthentication()) << "-->" << response;
+    qCDebug(dcAuthenticationProcess()) << "-->" << response;
+    if (response.isEmpty()) {
+        qCWarning(dcAuthenticationProcess()) << "Received empty lambda result.";
+        emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
+        return;
+    }
 
+    bool isValid = response.value("isValid").toBool();
+    if (isValid) {
+        QVariantMap verifiedDataMap = response.value("verifiedData").toMap();
+        QString vendorId = verifiedDataMap.value("vendorId").toString();
+        QString userPoolId = verifiedDataMap.value("userPoolId").toString();
+        QVariantMap verifiedParsedTokenMap = verifiedDataMap.value("verifiedParsedToken").toMap();
+        QString email = verifiedParsedTokenMap.value("email").toString();
+        QString cognitoUsername = verifiedParsedTokenMap.value("cognito:username").toString();
+
+        UserInformation userInformation(email, cognitoUsername, vendorId, userPoolId);
+
+        emit authenticationFinished(Authenticator::AuthenticationErrorNoError, userInformation);
+    } else {
+        emit authenticationFinished(Authenticator::AuthenticationErrorAuthenticationFailed);
+    }
 }
 
 void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -281,15 +264,7 @@ void AuthenticationProcess::authenticate(const QString &token)
 {
     qCDebug(dcAuthenticationProcess()) << "Start authentication process for token" << token;
     m_token = token;
-
-    if (m_dynamicCredentials) {
-        // Request the access information
-        requestDynamicCredentials();
-    } else {
-        // FIXME:
-        // Direct call aws cli and assume the credentials will be provided static
-        // startVerificationProcess();
-    }
+    invokeLambdaFunction();
 }
 
 }

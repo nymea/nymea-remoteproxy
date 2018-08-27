@@ -22,6 +22,7 @@
 #ifndef PROXYCONFIGURATION_H
 #define PROXYCONFIGURATION_H
 
+#include <QUrl>
 #include <QObject>
 #include <QSettings>
 #include <QHostAddress>
@@ -64,6 +65,9 @@ public:
     int aloneTimeout() const;
     void setAloneTimeout(int timeout);
 
+    QUrl awsCredentialsUrl() const;
+    void setAwsCredentialsUrl(const QUrl &url);
+
     // Ssl
     QString sslCertificateFileName() const;
     void setSslCertificateFileName(const QString &fileName);
@@ -99,9 +103,11 @@ private:
     QString m_monitorSocketFileName;
 
     int m_jsonRpcTimeout = 10000;
-    int m_authenticationTimeout = 5000;
-    int m_inactiveTimeout = 5000;
-    int m_aloneTimeout = 5000;
+    int m_authenticationTimeout = 8000;
+    int m_inactiveTimeout = 8000;
+    int m_aloneTimeout = 8000;
+
+    QUrl m_awsCredentialsUrl;
 
     // Ssl
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";

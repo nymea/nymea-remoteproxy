@@ -48,8 +48,7 @@ public:
 private:
     explicit AuthenticationReply(ProxyClient *proxyClient, QObject *parent = nullptr);
     ProxyClient *m_proxyClient = nullptr;
-    QTimer m_timer;
-    QProcess *m_process = nullptr;
+    QTimer *m_timer = nullptr;
 
     bool m_timedOut = false;
     bool m_finished = false;

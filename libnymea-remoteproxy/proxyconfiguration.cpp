@@ -56,7 +56,7 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setAuthenticationTimeout(settings.value("authenticationTimeout", 8000).toInt());
     setInactiveTimeout(settings.value("inactiveTimeout", 8000).toInt());
     setAloneTimeout(settings.value("aloneTimeout", 8000).toInt());
-
+    setAwsCredentialsUrl(QUrl(settings.value("awsCredentialsUrl", "http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2-Remote-Connection-Proxy-Role").toString()));
     settings.endGroup();
 
     settings.beginGroup("SSL");
@@ -205,6 +205,16 @@ void ProxyConfiguration::setAloneTimeout(int timeout)
     m_aloneTimeout = timeout;
 }
 
+QUrl ProxyConfiguration::awsCredentialsUrl() const
+{
+    return m_awsCredentialsUrl;
+}
+
+void ProxyConfiguration::setAwsCredentialsUrl(const QUrl &url)
+{
+    m_awsCredentialsUrl = url;
+}
+
 QString ProxyConfiguration::sslCertificateFileName() const
 {
     return m_sslCertificateFileName;
@@ -292,6 +302,7 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Authentication timeout:" << configuration->authenticationTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Inactive timeout:" << configuration->inactiveTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Alone timeout:" << configuration->aloneTimeout() << " [ms]" << endl;
+    debug.nospace() << "  - AWS credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
     debug.nospace() << "SSL configuration" << endl;
     debug.nospace() << "  - Certificate:" << configuration->sslCertificateFileName() << endl;
     debug.nospace() << "  - Certificate key:" << configuration->sslCertificateKeyFileName() << endl;

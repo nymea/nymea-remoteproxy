@@ -57,9 +57,13 @@ TerminalWindow::TerminalWindow(QObject *parent) :
     m_headerWindow = newwin(m_headerHeight, m_terminalSizeX, 0, 0);
     m_contentWindow = newwin(m_terminalSizeY - m_headerHeight, m_terminalSizeX, m_headerHeight, 0);
 
-    // Draw borders
+    nodelay(m_headerWindow, TRUE);
+    nodelay(m_contentWindow, TRUE);
+
     werase(m_headerWindow);
     werase(m_contentWindow);
+
+    // Draw borders
     drawWindowBorder(m_headerWindow);
     drawWindowBorder(m_contentWindow);
 
@@ -106,6 +110,8 @@ void TerminalWindow::resizeWindow()
     int terminalSizeX;
     int terminalSizeY;
     getmaxyx(stdscr, terminalSizeY, terminalSizeX);
+
+    // Resize the window if size has changed
     if (m_terminalSizeX != terminalSizeX || m_terminalSizeY != terminalSizeY) {
         m_terminalSizeX = terminalSizeX;
         m_terminalSizeY = terminalSizeY;
@@ -155,12 +161,10 @@ void TerminalWindow::paintHeader()
         headerString.append(" ");
 
 
-    wclear(m_headerWindow);
     wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
     mvwprintw(m_headerWindow, 1, 2, convertString(headerString));
     wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
     drawWindowBorder(m_headerWindow);
-    wrefresh(m_headerWindow);
 }
 
 void TerminalWindow::paintContentClients()
@@ -169,7 +173,6 @@ void TerminalWindow::paintContentClients()
         return;
 
     int i = 1;
-    wclear(m_contentWindow);
     foreach (const QVariant &clientVariant, m_clientHash.values()) {
         QVariantMap clientMap = clientVariant.toMap();
 
@@ -191,14 +194,12 @@ void TerminalWindow::paintContentClients()
 
     // Draw borders
     drawWindowBorder(m_contentWindow);
-    wrefresh(m_contentWindow);
 }
 
 void TerminalWindow::paintContentTunnels()
 {
     int i = 1;
 
-    wclear(m_contentWindow);
     foreach (const QVariant &tunnelVaiant, m_dataMap.value("proxyStatistic").toMap().value("tunnels").toList()) {
         QVariantMap tunnelMap = tunnelVaiant.toMap();
         QVariantMap clientOne = m_clientHash.value(tunnelMap.value("clientOne").toString());
@@ -223,12 +224,15 @@ void TerminalWindow::paintContentTunnels()
 
     // Draw borders
     drawWindowBorder(m_contentWindow);
-    wrefresh(m_contentWindow);
 }
 
 void TerminalWindow::eventLoop()
 {
-    resizeWindow();
+
+    werase(m_headerWindow);
+    werase(m_contentWindow);
+
+    resizeWindow();    
 
     int keyInteger = getch();
     switch (keyInteger) {
@@ -264,11 +268,13 @@ void TerminalWindow::eventLoop()
         break;
     }
 
-    refresh();
+    wrefresh(m_headerWindow);
+    wrefresh(m_contentWindow);
+    //refresh();
 
     // Reinvoke the method for the next event loop run
     //QMetaObject::invokeMethod(this, "eventLoop", Qt::QueuedConnection);
-    QTimer::singleShot(50, this, &TerminalWindow::eventLoop);
+    QTimer::singleShot(100, this, &TerminalWindow::eventLoop);
 }
 
 void TerminalWindow::refreshWindow(const QVariantMap &dataMap)

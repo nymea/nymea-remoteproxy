@@ -42,8 +42,8 @@
 #include "loggingcategories.h"
 #include "proxyconfiguration.h"
 #include "remoteproxyserverapplication.h"
-#include "authentication/awsauthenticator.h"
-#include "authentication/dummyauthenticator.h"
+#include "authentication/aws/awsauthenticator.h"
+#include "authentication/dummy/dummyauthenticator.h"
 
 using namespace remoteproxy;
 
@@ -120,12 +120,14 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("Authentication", true);
     s_loggingFilters.insert("ProxyServer", true);
     s_loggingFilters.insert("MonitorServer", true);
+    s_loggingFilters.insert("AwsCredentialsProvider", true);
 
     // Only with verbose enabled
     s_loggingFilters.insert("JsonRpcTraffic", false);
     s_loggingFilters.insert("ProxyServerTraffic", false);
     s_loggingFilters.insert("AuthenticationProcess", false);
     s_loggingFilters.insert("WebSocketServerTraffic", false);
+    s_loggingFilters.insert("AwsCredentialsProviderTraffic", false);
 
     QString configFile = "/etc/nymea/nymea-remoteproxy.conf";
 
@@ -183,6 +185,7 @@ int main(int argc, char *argv[])
         s_loggingFilters["ProxyServerTraffic"] = true;
         s_loggingFilters["AuthenticationProcess"] = true;
         s_loggingFilters["WebSocketServerTraffic"] = true;
+        s_loggingFilters["AwsCredentialsProviderTraffic"] = true;
     }
     QLoggingCategory::installFilter(loggingCategoryFilter);
 
@@ -232,14 +235,14 @@ int main(int argc, char *argv[])
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
-    qCDebug(dcApplication()) << "Using ssl version:" << QSslSocket::sslLibraryVersionString();
+    qCDebug(dcApplication()) << "Using SSL version:" << QSslSocket::sslLibraryVersionString();
 
     Authenticator *authenticator = nullptr;
     if (parser.isSet(mockAuthenticatorOption)) {
         authenticator = qobject_cast<Authenticator *>(new DummyAuthenticator(nullptr));
     } else {
         // Create default authenticator
-        authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(nullptr));
+        authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(configuration->awsCredentialsUrl(), nullptr));
     }
 
     // Configure and start the engines

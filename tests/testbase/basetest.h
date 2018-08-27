@@ -35,8 +35,8 @@
 #include "mockauthenticator.h"
 #include "proxyconfiguration.h"
 #include "remoteproxyconnection.h"
-#include "authentication/awsauthenticator.h"
-#include "authentication/dummyauthenticator.h"
+#include "authentication/aws/awsauthenticator.h"
+#include "authentication/dummy/dummyauthenticator.h"
 
 using namespace remoteproxy;
 using namespace remoteproxyclient;

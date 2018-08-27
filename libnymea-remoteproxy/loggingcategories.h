@@ -36,5 +36,7 @@ Q_DECLARE_LOGGING_CATEGORY(dcAuthenticationProcess)
 Q_DECLARE_LOGGING_CATEGORY(dcProxyServer)
 Q_DECLARE_LOGGING_CATEGORY(dcProxyServerTraffic)
 Q_DECLARE_LOGGING_CATEGORY(dcMonitorServer)
+Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProvider)
+Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic)
 
 #endif // LOGGINGCATEGORIES_H

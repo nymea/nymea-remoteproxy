@@ -19,39 +19,64 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef AWSAUTHENTICATOR_H
-#define AWSAUTHENTICATOR_H
+#ifndef AWSCREDENTIALPROVIDER_H
+#define AWSCREDENTIALPROVIDER_H
 
+#include <QUrl>
+#include <QTimer>
 #include <QObject>
+#include <QDateTime>
+#include <QElapsedTimer>
 #include <QNetworkAccessManager>
-
-#include "authenticator.h"
-#include "authenticationreply.h"
-#include "authenticationprocess.h"
 
 namespace remoteproxy {
 
-class AwsAuthenticator : public Authenticator
+class AwsCredentialProvider : public QObject
 {
     Q_OBJECT
 public:
-    explicit AwsAuthenticator(QObject *parent = nullptr);
-    ~AwsAuthenticator() override;
+    explicit AwsCredentialProvider(QNetworkAccessManager *networkManager, const QUrl &awsCredentialsUrl, QObject *parent = nullptr);
 
-    QString name() const override;
+    QString accessKey() const;
+    QString secretAccessKey() const;
+    QString sessionToken() const;
+
+    bool isValid() const;
+    bool enabled() const;
 
 private:
-    QNetworkAccessManager *m_manager = nullptr;
-    QHash<AuthenticationProcess *, AuthenticationReply *> m_runningProcesses;
+    QNetworkAccessManager *m_networkManager = nullptr;
+    QTimer *m_timer = nullptr;
+
+    QElapsedTimer m_requestTimer;
+
+    bool m_enabled = false;
+
+    QUrl m_requestUrl;
+
+    QString m_accessKey;
+    QString m_secretAccessKey;
+    QString m_sessionToken;
+
+    QDateTime m_expirationTime;
+    QDateTime m_lastUpdateTime;
+
+    void refreshCredentials();
+    void clear();
 
 private slots:
-    void onAuthenticationProcessFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation);
+    void onTimeout();
+    void onReplyFinished();
+
+signals:
+    void credentialsChanged();
 
 public slots:
-    AuthenticationReply *authenticate(ProxyClient *proxyClient) override;
+    void enable();
+    void disable();
 
 };
 
 }
 
-#endif // AWSAUTHENTICATOR_H
+#endif // AWSCREDENTIALPROVIDER_H

@@ -26,16 +26,18 @@
 
 namespace remoteproxy {
 
-AwsAuthenticator::AwsAuthenticator(QObject *parent) :
+AwsAuthenticator::AwsAuthenticator(const QUrl &awsCredentialsUrl, QObject *parent) :
     Authenticator(parent),
     m_manager(new QNetworkAccessManager(this))
 {
-    // TODO: verify if aws command is installed
+    m_credentialsProvider = new AwsCredentialProvider(m_manager, awsCredentialsUrl, this);
+    QMetaObject::invokeMethod(m_credentialsProvider, QString("enable").toLatin1().data(), Qt::QueuedConnection);
 }
 
 AwsAuthenticator::~AwsAuthenticator()
 {
     qCDebug(dcAuthentication()) << "Shutting down" << name();
+    m_credentialsProvider->disable();
 }
 
 QString AwsAuthenticator::name() const
@@ -63,8 +65,18 @@ AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
     qCDebug(dcAuthentication()) << name() << "Start authenticating" << proxyClient;
     AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
 
-    AuthenticationProcess *process = new AuthenticationProcess(m_manager, this);
-    process->useDynamicCredentials(!Engine::instance()->developerMode());
+    if (!m_credentialsProvider->isValid()) {
+        qCWarning(dcAuthentication()) << name() << "There are no credentials for authenticating.";
+        setReplyError(reply, AuthenticationErrorProxyError);
+        setReplyFinished(reply);
+        return reply;
+    }
+
+    AuthenticationProcess *process = new AuthenticationProcess(m_manager,
+                                                               m_credentialsProvider->accessKey(),
+                                                               m_credentialsProvider->secretAccessKey(),
+                                                               m_credentialsProvider->sessionToken(), this);
+
     connect(process, &AuthenticationProcess::authenticationFinished, this, &AwsAuthenticator::onAuthenticationProcessFinished);
 
     // Configure process

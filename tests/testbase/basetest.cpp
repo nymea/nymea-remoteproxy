@@ -34,27 +34,6 @@
 BaseTest::BaseTest(QObject *parent) :
     QObject(parent)
 {
-    m_configuration = new ProxyConfiguration(this);
-    m_configuration->loadConfiguration(":/test-configuration.conf");
-
-    m_mockAuthenticator = new MockAuthenticator(this);
-    m_dummyAuthenticator = new DummyAuthenticator(this);
-    m_awsAuthenticator = new AwsAuthenticator(this);
-
-    m_authenticator = qobject_cast<Authenticator *>(m_mockAuthenticator);
-
-    m_testToken = "eyJraWQiOiJXdnFFT3prVVh5VDlINzFyRUpoNWdxRnkxNFhnR2l3SFAzVEIzUFQ1V3ZrPSIsImFsZyI6IlJT"
-                  "MjU2In0.eyJzdWIiOiJmZTJmZDNlNC1hMGJhLTQ1OTUtOWRiZS00ZDkxYjRiMjFlMzUiLCJhdWQiOiI4cmpoZ"
-                  "mRsZjlqZjFzdW9rMmpjcmx0ZDZ2IiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV2ZW50X2lkIjoiN2Y5NTRiNm"
-                  "ItOTYyZi0xMWU4LWI0ZjItMzU5NWRiZmRiODVmIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE1MzM"
-                  "xOTkxMzgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS13ZXN0LTEuYW1hem9uYXdzLmNvbVwvZXUt"
-                  "d2VzdC0xXzZlWDZZam1YciIsImNvZ25pdG86dXNlcm5hbWUiOiIyYzE3YzUwZC0xZDFlLTRhM2UtYmFjOS0zZ"
-                  "DI0YjQ1MTFiYWEiLCJleHAiOjE1MzMyMDI3MzgsImlhdCI6MTUzMzE5OTEzOCwiZW1haWwiOiJqZW5raW5zQG"
-                  "d1aC5pbyJ9.hMMSvZMx7pMvV70PaUmTZOZgdez5WGX5yagRFPZojBm8jNWZND1lUmi0RFkybeD4HonDiKHxTF"
-                  "_psyJoBVndgHbxYBBl3Np4gn0MxECWjvLxYzGxVBBkN24SqNUyAGkr0uFcZKkBecdtJlqNQnZN8Uk49twmODf"
-                  "raRaRmGmKmRBAK1qDITpUgP6AWqH9xoJWaoDzt0kwJ3EtPxS7vL1PHqOaN8ggXA8Eq4iTCSfXU1HAXhIWJH9Y"
-                  "pQbj58v1vktaAEATdmKmlzmcix-HJK9wWHRSuv3TsNa8DGxvcPOoeTu8Vql7krZ-y7Zu-s2WsgeP4VxyT80VE"
-                  "T_xh6pMkOhE6g";
 
 }
 
@@ -142,6 +121,12 @@ QVariant BaseTest::invokeApiCall(const QString &method, const QVariantMap params
     socket->deleteLater();
 
     for (int i = 0; i < dataSpy.count(); i++) {
+        // Make sure the response ends with '}\n'
+        if (!dataSpy.at(i).last().toByteArray().endsWith("}\n")) {
+            qWarning() << "JSON data does not end with \"}\n\"";
+            return QVariant();
+        }
+
         // Make sure the response it a valid JSON string
         QJsonParseError error;
         jsonDoc = QJsonDocument::fromJson(dataSpy.at(i).last().toByteArray(), &error);
@@ -184,6 +169,12 @@ QVariant BaseTest::injectSocketData(const QByteArray &data)
     socket->deleteLater();
 
     for (int i = 0; i < spy.count(); i++) {
+        // Make sure the response ends with '}\n'
+        if (!spy.at(i).last().toByteArray().endsWith("}\n")) {
+            qWarning() << "JSON data does not end with \"}\n\"";
+            return QVariant();
+        }
+
         // Make sure the response it a valid JSON string
         QJsonParseError error;
         QJsonDocument jsonDoc = QJsonDocument::fromJson(spy.at(i).last().toByteArray(), &error);
@@ -202,6 +193,28 @@ void BaseTest::initTestCase()
     qRegisterMetaType<RemoteProxyConnection::State>();
     qRegisterMetaType<RemoteProxyConnection::ConnectionType>();
 
+    m_configuration = new ProxyConfiguration(this);
+    m_configuration->loadConfiguration(":/test-configuration.conf");
+
+    m_mockAuthenticator = new MockAuthenticator(this);
+    m_dummyAuthenticator = new DummyAuthenticator(this);
+    m_awsAuthenticator = new AwsAuthenticator(m_configuration->awsCredentialsUrl(), this);
+
+    m_authenticator = qobject_cast<Authenticator *>(m_mockAuthenticator);
+
+    m_testToken = "eyJraWQiOiJXdnFFT3prVVh5VDlINzFyRUpoNWdxRnkxNFhnR2l3SFAzVEIzUFQ1V3ZrPSIsImFsZyI6IlJT"
+                  "MjU2In0.eyJzdWIiOiJmZTJmZDNlNC1hMGJhLTQ1OTUtOWRiZS00ZDkxYjRiMjFlMzUiLCJhdWQiOiI4cmpoZ"
+                  "mRsZjlqZjFzdW9rMmpjcmx0ZDZ2IiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV2ZW50X2lkIjoiN2Y5NTRiNm"
+                  "ItOTYyZi0xMWU4LWI0ZjItMzU5NWRiZmRiODVmIiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE1MzM"
+                  "xOTkxMzgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS13ZXN0LTEuYW1hem9uYXdzLmNvbVwvZXUt"
+                  "d2VzdC0xXzZlWDZZam1YciIsImNvZ25pdG86dXNlcm5hbWUiOiIyYzE3YzUwZC0xZDFlLTRhM2UtYmFjOS0zZ"
+                  "DI0YjQ1MTFiYWEiLCJleHAiOjE1MzMyMDI3MzgsImlhdCI6MTUzMzE5OTEzOCwiZW1haWwiOiJqZW5raW5zQG"
+                  "d1aC5pbyJ9.hMMSvZMx7pMvV70PaUmTZOZgdez5WGX5yagRFPZojBm8jNWZND1lUmi0RFkybeD4HonDiKHxTF"
+                  "_psyJoBVndgHbxYBBl3Np4gn0MxECWjvLxYzGxVBBkN24SqNUyAGkr0uFcZKkBecdtJlqNQnZN8Uk49twmODf"
+                  "raRaRmGmKmRBAK1qDITpUgP6AWqH9xoJWaoDzt0kwJ3EtPxS7vL1PHqOaN8ggXA8Eq4iTCSfXU1HAXhIWJH9Y"
+                  "pQbj58v1vktaAEATdmKmlzmcix-HJK9wWHRSuv3TsNa8DGxvcPOoeTu8Vql7krZ-y7Zu-s2WsgeP4VxyT80VE"
+                  "T_xh6pMkOhE6g";
+
     qCDebug(dcApplication()) << "Init test case.";
     restartEngine();
 }
@@ -209,6 +222,13 @@ void BaseTest::initTestCase()
 void BaseTest::cleanupTestCase()
 {
     qCDebug(dcApplication()) << "Clean up test case.";
+    delete m_configuration;
+    delete m_mockAuthenticator;
+    delete m_dummyAuthenticator;
+    delete m_awsAuthenticator;
+
+    m_authenticator = nullptr;
+
     cleanUpEngine();
 }
 
