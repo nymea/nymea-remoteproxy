@@ -27,7 +27,7 @@
 #include <QNetworkReply>
 #include <QJsonDocument>
 
-
+#include "engine.h"
 #include "sigv4utils.h"
 
 namespace remoteproxy {
@@ -47,12 +47,11 @@ AuthenticationProcess::AuthenticationProcess(QNetworkAccessManager *manager, con
 void AuthenticationProcess::invokeLambdaFunction()
 {
     // Known configurations
-    QString region = "eu-west-1";
-    QString lambdaFunctionName = "system-services-authorizer-dev-checkToken";
+    QString region = Engine::instance()->configuration()->awsRegion();
+    QString lambdaFunctionName = Engine::instance()->configuration()->awsAuthorizerLambdaFunctionName();
+
     QString invocationType = "RequestResponse";
     QString service = "lambda";
-
-    // {'url_path': '/2015-03-31/functions/system-services-authorizer-dev-checkToken/invocations', 'query_string': {}, 'method': 'POST', 'headers': {'X-Amz-Invocation-Type': 'RequestResponse', 'User-Agent': 'aws-cli/1.14.44 Python/3.6.5 Linux/4.15.0-1019-aws botocore/1.8.48'}, 'body': b'{"token": "...."}', 'url': 'https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/system-services-authorizer-dev-checkToken/invocations', 'context': {'client_region': 'eu-west-1', 'client_config': <botocore.config.Config object at 0x7f44560f3128>, 'has_streaming_input': True, 'auth_type': None}}
 
     QUrl requestUrl;
     requestUrl.setScheme("https");

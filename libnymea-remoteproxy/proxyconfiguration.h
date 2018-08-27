@@ -65,6 +65,13 @@ public:
     int aloneTimeout() const;
     void setAloneTimeout(int timeout);
 
+    // AWS
+    QString awsRegion() const;
+    void setAwsRegion(const QString &region);
+
+    QString awsAuthorizerLambdaFunctionName() const;
+    void setAwsAuthorizerLambdaFunctionName( const QString &functionName);
+
     QUrl awsCredentialsUrl() const;
     void setAwsCredentialsUrl(const QUrl &url);
 
@@ -107,6 +114,9 @@ private:
     int m_inactiveTimeout = 8000;
     int m_aloneTimeout = 8000;
 
+    // AWS
+    QString m_awsRegion;
+    QString m_awsAuthorizerLambdaFunctionName;
     QUrl m_awsCredentialsUrl;
 
     // Ssl

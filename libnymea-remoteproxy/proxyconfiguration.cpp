@@ -51,11 +51,15 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
     setMonitorSocketFileName(settings.value("monitorSocket", "/tmp/nymea-remoteproxy.monitor").toString());
-
     setJsonRpcTimeout(settings.value("jsonRpcTimeout", 10000).toInt());
     setAuthenticationTimeout(settings.value("authenticationTimeout", 8000).toInt());
     setInactiveTimeout(settings.value("inactiveTimeout", 8000).toInt());
     setAloneTimeout(settings.value("aloneTimeout", 8000).toInt());
+    settings.endGroup();
+
+    settings.beginGroup("AWS");
+    setAwsRegion(settings.value("region", "eu-west-1").toString());
+    setAwsAuthorizerLambdaFunctionName(settings.value("authorizerLambdaFunction", "system-services-authorizer-dev-checkToken").toString());
     setAwsCredentialsUrl(QUrl(settings.value("awsCredentialsUrl", "http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2-Remote-Connection-Proxy-Role").toString()));
     settings.endGroup();
 
@@ -205,6 +209,26 @@ void ProxyConfiguration::setAloneTimeout(int timeout)
     m_aloneTimeout = timeout;
 }
 
+QString ProxyConfiguration::awsRegion() const
+{
+    return m_awsRegion;
+}
+
+void ProxyConfiguration::setAwsRegion(const QString &region)
+{
+    m_awsRegion = region;
+}
+
+QString ProxyConfiguration::awsAuthorizerLambdaFunctionName() const
+{
+    return m_awsAuthorizerLambdaFunctionName;
+}
+
+void ProxyConfiguration::setAwsAuthorizerLambdaFunctionName(const QString &functionName)
+{
+    m_awsAuthorizerLambdaFunctionName = functionName;
+}
+
 QUrl ProxyConfiguration::awsCredentialsUrl() const
 {
     return m_awsCredentialsUrl;
@@ -302,7 +326,10 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Authentication timeout:" << configuration->authenticationTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Inactive timeout:" << configuration->inactiveTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Alone timeout:" << configuration->aloneTimeout() << " [ms]" << endl;
-    debug.nospace() << "  - AWS credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
+    debug.nospace() << "AWS configuration" << endl;
+    debug.nospace() << "  - Region:" << configuration->awsRegion() << endl;
+    debug.nospace() << "  - Authorizer lambda function:" << configuration->awsAuthorizerLambdaFunctionName() << endl;
+    debug.nospace() << "  - Credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
     debug.nospace() << "SSL configuration" << endl;
     debug.nospace() << "  - Certificate:" << configuration->sslCertificateFileName() << endl;
     debug.nospace() << "  - Certificate key:" << configuration->sslCertificateKeyFileName() << endl;
