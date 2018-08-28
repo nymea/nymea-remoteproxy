@@ -128,9 +128,7 @@ void ProxyServer::sendResponse(TransportInterface *interface, const QUuid &clien
 
 void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient)
 {
-    qCDebug(dcProxyServer()) << "Create tunnel between authenticated clients:";
-    qCDebug(dcProxyServer()) << "    -->" << firstClient << firstClient->name();
-    qCDebug(dcProxyServer()) << "    -->" << secondClient << secondClient->name();
+    qCDebug(dcProxyServer()) << "Create tunnel between authenticated clients " << firstClient << secondClient;
 
     TunnelConnection tunnel(firstClient, secondClient);
     if (!tunnel.isValid()) {
@@ -152,6 +150,8 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
     // Make sure the proxy is the first one who knows that the tunnel is connected
     firstClient->setTunnelConnected(true);
     secondClient->setTunnelConnected(true);
+
+    qCDebug(dcProxyServer()) << tunnel;
 
     // Notify the clients in the next event loop
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
@@ -176,7 +176,6 @@ void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &a
 
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
-    connect(proxyClient, &ProxyClient::tunnelConnected, this, &ProxyServer::onProxyClientTunnelConnected);
     connect(proxyClient, &ProxyClient::timeoutOccured, this, &ProxyServer::onProxyClientTimeoutOccured);
 
     m_proxyClients.insert(clientId, proxyClient);
@@ -245,7 +244,7 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         Q_ASSERT_X(remoteClient, "ProxyServer", "Tunnel existing but not tunnel client available");
         Q_ASSERT_X(m_tunnels.contains(proxyClient->token()), "ProxyServer", "Tunnel connect but not existing");
 
-        qCDebug(dcProxyServerTraffic()) << "Pipe data:";
+        qCDebug(dcProxyServerTraffic()) << "Pipe tunnel data:";
         qCDebug(dcProxyServerTraffic()) << "    --> from" << proxyClient;
         qCDebug(dcProxyServerTraffic()) << "    --> to" << remoteClient;
         qCDebug(dcProxyServerTraffic()) << "    --> data:" << qUtf8Printable(data);
@@ -259,8 +258,6 @@ void ProxyServer::onProxyClientAuthenticated()
     ProxyClient *proxyClient = static_cast<ProxyClient *>(sender());
 
     qCDebug(dcProxyServer()) << "Client authenticated" << proxyClient;
-    qCDebug(dcProxyServer()) << "   name:" << proxyClient->name();
-    qCDebug(dcProxyServer()) << "   uuid:" << proxyClient->uuid();
 
     if (m_tunnels.contains(proxyClient->token())) {
         qCWarning(dcProxyServer()) << "There is already a tunnel connection for this token. A third client is not allowed.";
@@ -275,16 +272,22 @@ void ProxyServer::onProxyClientAuthenticated()
     if (m_authenticatedClients.keys().contains(proxyClient->token())) {
         // Found a client with this token
         ProxyClient *tunnelEnd = m_authenticatedClients.take(proxyClient->token());
+
+        // Check if the two clients show up with the same uuid
+        if (tunnelEnd->uuid() == proxyClient->uuid()) {
+            qCWarning(dcProxyServer()) << "The clients have the same uuid. This is not allowed.";
+            proxyClient->killConnection("Duplicated client UUID.");
+            tunnelEnd->killConnection("Duplicated client UUID.");
+            return;
+        }
+
+        // All ok so far. Create the tunnel
         establishTunnel(tunnelEnd, proxyClient);
+
     } else {
         // Append and wait for the other client
         m_authenticatedClients.insert(proxyClient->token(), proxyClient);
     }
-}
-
-void ProxyServer::onProxyClientTunnelConnected()
-{
-
 }
 
 void ProxyServer::onProxyClientTimeoutOccured()

@@ -80,8 +80,8 @@ bool TunnelConnection::isValid() const
 QDebug operator<<(QDebug debug, const TunnelConnection &tunnel)
 {
     debug.nospace() << "TunnelConnection(" << tunnel.creationTimeString() << ")" << endl;
-    debug.nospace() << "    client:" << tunnel.clientOne() << endl;
-    debug.nospace() << "    client:" << tunnel.clientTwo() << endl;
+    debug.nospace() << "    --> " << tunnel.clientOne() << endl;
+    debug.nospace() << "    --> " << tunnel.clientTwo() << endl;
     return debug;
 }
 

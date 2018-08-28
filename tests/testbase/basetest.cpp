@@ -81,6 +81,7 @@ void BaseTest::startServer()
     }
 
     QVERIFY(Engine::instance()->running());
+    QVERIFY(Engine::instance()->developerMode());
     QVERIFY(Engine::instance()->webSocketServer()->running());
     QVERIFY(Engine::instance()->monitorServer()->running());
 }

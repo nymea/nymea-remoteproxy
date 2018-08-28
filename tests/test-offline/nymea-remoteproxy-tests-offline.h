@@ -62,6 +62,7 @@ private slots:
     void clientConnection();
     void remoteConnection();
     void trippleConnection();
+    void duplicateUuid();
     void sslConfigurations();
 
     void jsonRpcTimeout();

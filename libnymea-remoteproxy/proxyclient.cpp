@@ -141,9 +141,13 @@ void ProxyClient::killConnection(const QString &reason)
 
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
-    debug.nospace() << "ProxyClient(" << proxyClient->interface()->serverName();
+    debug.nospace() << "ProxyClient(";
+    if (!proxyClient->name().isEmpty()) {
+        debug.nospace() << proxyClient->name() << ", ";
+    }
+    debug.nospace() << proxyClient->interface()->serverName();
     debug.nospace() << ", " << proxyClient->clientId().toString();
-    debug.nospace() << ", " << proxyClient->peerAddress().toString() << ") ";
+    debug.nospace() << ", " << proxyClient->peerAddress().toString();
     debug.nospace() << ", " << proxyClient->creationTimeString() << ") ";
     return debug;
 }

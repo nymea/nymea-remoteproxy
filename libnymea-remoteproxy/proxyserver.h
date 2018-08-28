@@ -76,7 +76,6 @@ private slots:
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
 
     void onProxyClientAuthenticated();
-    void onProxyClientTunnelConnected();
     void onProxyClientTimeoutOccured();
 
 public slots:
