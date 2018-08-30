@@ -168,6 +168,7 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(ProxyClient *, tunnel.clientTwo()));
 }
 
+
 void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
 {
     TransportInterface *interface = static_cast<TransportInterface *>(sender());
@@ -211,7 +212,6 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
         // Delete the proxy client
         proxyClient->deleteLater();
     }
-
 }
 
 void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray &data)
@@ -260,12 +260,13 @@ void ProxyServer::onProxyClientAuthenticated()
     qCDebug(dcProxyServer()) << "Client authenticated" << proxyClient;
 
     if (m_tunnels.contains(proxyClient->token())) {
-        qCWarning(dcProxyServer()) << "There is already a tunnel connection for this token. A third client is not allowed.";
-        // Note: remove the authenticated token, so the current tunnel will not interrupted.
-        proxyClient->setToken(QString());
-        proxyClient->setAuthenticated(false);
-        proxyClient->killConnection("There is already an established tunnel with this token.");
-        return;
+        // A new connection attempt with the same token, kill the old tunnel connection and allow the new connection to stablish the tunnel
+        qCWarning(dcProxyServer()) << "New authenticated client which already has a tunnel connection. Closing and clean up the old tunnel.";
+
+        TunnelConnection tunnel = m_tunnels.take(proxyClient->token());
+        qCDebug(dcProxyServer()) << "Killing " << tunnel;
+        tunnel.clientOne()->killConnection("Clean up for new connection.");
+        tunnel.clientTwo()->killConnection("Clean up for new connection.");
     }
 
     // Check if we have an other authenticated client with this token
@@ -283,7 +284,6 @@ void ProxyServer::onProxyClientAuthenticated()
 
         // All ok so far. Create the tunnel
         establishTunnel(tunnelEnd, proxyClient);
-
     } else {
         // Append and wait for the other client
         m_authenticatedClients.insert(proxyClient->token(), proxyClient);

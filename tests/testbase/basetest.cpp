@@ -199,7 +199,7 @@ void BaseTest::initTestCase()
 
     m_mockAuthenticator = new MockAuthenticator(this);
     m_dummyAuthenticator = new DummyAuthenticator(this);
-    m_awsAuthenticator = new AwsAuthenticator(m_configuration->awsCredentialsUrl(), this);
+    //m_awsAuthenticator = new AwsAuthenticator(m_configuration->awsCredentialsUrl(), this);
 
     m_authenticator = qobject_cast<Authenticator *>(m_mockAuthenticator);
 
@@ -226,7 +226,7 @@ void BaseTest::cleanupTestCase()
     delete m_configuration;
     delete m_mockAuthenticator;
     delete m_dummyAuthenticator;
-    delete m_awsAuthenticator;
+    //delete m_awsAuthenticator;
 
     m_authenticator = nullptr;
 

@@ -65,6 +65,7 @@ private:
     ProxyClient *getRemoteClient(ProxyClient *proxyClient);
 
     void sendResponse(TransportInterface *interface, const QUuid &clientId, const QVariantMap &response = QVariantMap());
+
     void establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient);
 
 signals:
