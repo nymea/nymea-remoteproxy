@@ -123,6 +123,16 @@ void ProxyClient::setToken(const QString &token)
     m_token = token;
 }
 
+QString ProxyClient::nonce() const
+{
+    return m_nonce;
+}
+
+void ProxyClient::setNonce(const QString &nonce)
+{
+    m_nonce = nonce;
+}
+
 void ProxyClient::sendData(const QByteArray &data)
 {
     if (!m_interface)

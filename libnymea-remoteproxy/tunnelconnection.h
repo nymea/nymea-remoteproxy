@@ -39,6 +39,8 @@ public:
     ProxyClient *clientOne() const;
     ProxyClient *clientTwo() const;
 
+    bool hasClient(ProxyClient *proxyClient) const;
+
     bool isValid() const;
 
 private:

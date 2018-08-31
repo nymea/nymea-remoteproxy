@@ -63,6 +63,9 @@ public:
     QString token() const;
     void setToken(const QString &token);
 
+    QString nonce() const;
+    void setNonce(const QString &nonce);
+
     // Actions for this client
     void sendData(const QByteArray &data);
     void killConnection(const QString &reason);
@@ -81,6 +84,7 @@ private:
     QString m_uuid;
     QString m_name;
     QString m_token;
+    QString m_nonce;
 
 signals:
     void authenticated();

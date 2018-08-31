@@ -43,6 +43,7 @@ AuthenticationHandler::AuthenticationHandler(QObject *parent) :
     params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("token", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("o:nonce", JsonTypes::basicTypeToString(JsonTypes::String));
     setParams("Authenticate", params);
     returns.insert("authenticationError", JsonTypes::authenticationErrorRef());
     setReturns("Authenticate", returns);
@@ -58,14 +59,16 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyC
     QString uuid = params.value("uuid").toString();
     QString name = params.value("name").toString();
     QString token = params.value("token").toString();
+    QString nonce = params.value("nonce").toString();
 
-    qCDebug(dcJsonRpc()) << "Authenticate:" << name << uuid << token;
+    qCDebug(dcJsonRpc()) << "Authenticate:" << name << uuid << token << nonce;
     JsonReply *jsonReply = createAsyncReply("Authenticate");
 
     // Set the token for this proxy client
     proxyClient->setUuid(uuid);
     proxyClient->setName(name);
     proxyClient->setToken(token);
+    proxyClient->setNonce(nonce);
 
     AuthenticationReply *authReply = Engine::instance()->authenticator()->authenticate(proxyClient);
     connect(authReply, &AuthenticationReply::finished, this, &AuthenticationHandler::onAuthenticationFinished);

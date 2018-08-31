@@ -119,13 +119,6 @@ ProxyClient *ProxyServer::getRemoteClient(ProxyClient *proxyClient)
     return nullptr;
 }
 
-void ProxyServer::sendResponse(TransportInterface *interface, const QUuid &clientId, const QVariantMap &response)
-{
-    QByteArray data = QJsonDocument::fromVariant(response).toJson(QJsonDocument::Compact);
-    qCDebug(dcJsonRpcTraffic()) << "Sending data:" << data;
-    interface->sendData(clientId, data);
-}
-
 void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient)
 {
     qCDebug(dcProxyServer()) << "Create tunnel between authenticated clients " << firstClient << secondClient;
@@ -196,11 +189,16 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
             m_authenticatedClients.remove(proxyClient->token());
         }
 
+        if (m_authenticatedClientsNonce.values().contains(proxyClient)) {
+            m_authenticatedClientsNonce.remove(proxyClient->nonce());
+        }
+
         // Unregister from json rpc server
         m_jsonRpcServer->unregisterClient(proxyClient);
 
         // Check if
         if (m_tunnels.contains(proxyClient->token())) {
+
             // There is a tunnel connection for this client, remove the tunnel and disconnect also the other client
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
             m_tunnels.remove(proxyClient->token());
@@ -259,8 +257,10 @@ void ProxyServer::onProxyClientAuthenticated()
 
     qCDebug(dcProxyServer()) << "Client authenticated" << proxyClient;
 
+    // Check if we already have a tunnel for this token
     if (m_tunnels.contains(proxyClient->token())) {
-        // A new connection attempt with the same token, kill the old tunnel connection and allow the new connection to stablish the tunnel
+        // A new connection attempt with the same token, kill the old tunnel
+        // connection and allow the new connection to stablish the tunnel
         qCWarning(dcProxyServer()) << "New authenticated client which already has a tunnel connection. Closing and clean up the old tunnel.";
 
         TunnelConnection tunnel = m_tunnels.take(proxyClient->token());
@@ -269,24 +269,47 @@ void ProxyServer::onProxyClientAuthenticated()
         tunnel.clientTwo()->killConnection("Clean up for new connection.");
     }
 
-    // Check if we have an other authenticated client with this token
-    if (m_authenticatedClients.keys().contains(proxyClient->token())) {
-        // Found a client with this token
-        ProxyClient *tunnelEnd = m_authenticatedClients.take(proxyClient->token());
+    // FIXME: for backwards compatibility
+    if (proxyClient->nonce().isEmpty()) {
+        // Check if we have an other authenticated client with this token
+        if (m_authenticatedClients.keys().contains(proxyClient->token())) {
 
-        // Check if the two clients show up with the same uuid
-        if (tunnelEnd->uuid() == proxyClient->uuid()) {
-            qCWarning(dcProxyServer()) << "The clients have the same uuid. This is not allowed.";
-            proxyClient->killConnection("Duplicated client UUID.");
-            tunnelEnd->killConnection("Duplicated client UUID.");
-            return;
+            // Found a client with this token
+            ProxyClient *tunnelPartner = m_authenticatedClients.take(proxyClient->token());
+
+            // Check if the two clients show up with the same uuid to prevent connection loops
+            if (tunnelPartner->uuid() == proxyClient->uuid()) {
+                qCWarning(dcProxyServer()) << "The clients have the same uuid. This is not allowed.";
+                proxyClient->killConnection("Duplicated client UUID.");
+                tunnelPartner->killConnection("Duplicated client UUID.");
+                return;
+            }
+
+            // All ok so far. Create the tunnel
+            establishTunnel(tunnelPartner, proxyClient);
+        } else {
+            // Append and wait for the other client
+            m_authenticatedClients.insert(proxyClient->token(), proxyClient);
         }
-
-        // All ok so far. Create the tunnel
-        establishTunnel(tunnelEnd, proxyClient);
     } else {
-        // Append and wait for the other client
-        m_authenticatedClients.insert(proxyClient->token(), proxyClient);
+        // The client passed a nonce, let's hash with that to prevent cross connections
+        if (m_authenticatedClientsNonce.keys().contains(proxyClient->nonce())) {
+            // Found a client with this nonce
+            ProxyClient *tunnelPartner = m_authenticatedClientsNonce.take(proxyClient->nonce());
+
+            // Check if the two clients show up with the same uuid to prevent connection loops
+            if (tunnelPartner->uuid() == proxyClient->uuid()) {
+                qCWarning(dcProxyServer()) << "The clients have the same uuid. This could cause a loop and is not allowed.";
+                proxyClient->killConnection("Client loop detected.");
+                tunnelPartner->killConnection("Client loop detected.");
+                return;
+            }
+
+            // All ok so far. Create the tunnel
+            establishTunnel(tunnelPartner, proxyClient);
+        } else {
+            m_authenticatedClientsNonce.insert(proxyClient->nonce(), proxyClient);
+        }
     }
 }
 

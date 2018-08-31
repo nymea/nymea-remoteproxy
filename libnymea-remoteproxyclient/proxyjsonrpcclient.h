@@ -42,7 +42,7 @@ public:
     explicit JsonRpcClient(ProxyConnection *connection, QObject *parent = nullptr);
 
     JsonReply *callHello();
-    JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token);
+    JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token, const QString &nonce);
 
 private:
     ProxyConnection *m_connection = nullptr;

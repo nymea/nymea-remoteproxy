@@ -45,12 +45,13 @@ JsonReply *JsonRpcClient::callHello()
     return reply;
 }
 
-JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token)
+JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token, const QString &nonce)
 {
     QVariantMap params;
     params.insert("name", clientName);
     params.insert("uuid", clientUuid.toString());
     params.insert("token", token);
+    if (!nonce.isEmpty()) params.insert("nonce", nonce);
 
     JsonReply *reply = new JsonReply(m_commandId, "Authentication", "Authenticate", params, this);
     qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());

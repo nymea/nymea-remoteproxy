@@ -54,8 +54,11 @@ private:
     // Transport ClientId, ProxyClient
     QHash<QUuid, ProxyClient *> m_proxyClients;
 
-    // Token, ProxyClient
+    // FIXME: Token, ProxyClient
     QHash<QString, ProxyClient *> m_authenticatedClients;
+
+    // Nonce, ProxyClient
+    QHash<QString, ProxyClient *> m_authenticatedClientsNonce;
 
     // Token, Tunnel
     QHash<QString, TunnelConnection> m_tunnels;
@@ -63,8 +66,6 @@ private:
     void setRunning(bool running);
 
     ProxyClient *getRemoteClient(ProxyClient *proxyClient);
-
-    void sendResponse(TransportInterface *interface, const QUuid &clientId, const QVariantMap &response = QVariantMap());
 
     void establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient);
 

@@ -53,7 +53,7 @@ void MockAuthenticator::replyFinished()
 
     setReplyError(reply->authenticationReply(), reply->error());
     setReplyFinished(reply->authenticationReply());
-    delete reply;
+    reply->deleteLater();
 }
 
 AuthenticationReply *MockAuthenticator::authenticate(ProxyClient *proxyClient)

@@ -58,6 +58,9 @@ private slots:
     void authenticate_data();
     void authenticate();
 
+    void authenticateNonce();
+    void authenticateSendData();
+
     // Client lib
     void clientConnection();
     void remoteConnection();

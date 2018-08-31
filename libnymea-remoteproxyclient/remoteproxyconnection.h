@@ -143,7 +143,7 @@ private slots:
 
 public slots:
     bool connectServer(const QUrl &url);
-    bool authenticate(const QString &token);
+    bool authenticate(const QString &token, const QString &nonce = QString());
     void disconnectServer();
     bool sendData(const QByteArray &data);
 };

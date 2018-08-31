@@ -340,7 +340,7 @@ bool RemoteProxyConnection::connectServer(const QUrl &url)
     return true;
 }
 
-bool RemoteProxyConnection::authenticate(const QString &token)
+bool RemoteProxyConnection::authenticate(const QString &token, const QString &nonce)
 {
     if (m_state != StateReady) {
         qCWarning(dcRemoteProxyClientConnection()) << "Could not authenticate. The connection is not ready";
@@ -349,8 +349,8 @@ bool RemoteProxyConnection::authenticate(const QString &token)
 
     setState(StateAuthenticating);
 
-    qCDebug(dcRemoteProxyClientConnection()) << "Start authentication using token" << token;
-    JsonReply *reply = m_jsonClient->callAuthenticate(m_clientUuid, m_clientName, token);
+    qCDebug(dcRemoteProxyClientConnection()) << "Start authentication using token" << token << nonce;
+    JsonReply *reply = m_jsonClient->callAuthenticate(m_clientUuid, m_clientName, token, nonce);
     connect(reply, &JsonReply::finished, this, &RemoteProxyConnection::onAuthenticateFinished);
     return true;
 }

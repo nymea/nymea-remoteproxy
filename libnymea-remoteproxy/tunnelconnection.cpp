@@ -60,6 +60,11 @@ ProxyClient *TunnelConnection::clientTwo() const
     return m_clientTwo;
 }
 
+bool TunnelConnection::hasClient(ProxyClient *proxyClient) const
+{
+    return m_clientOne == proxyClient || m_clientTwo == proxyClient;
+}
+
 bool TunnelConnection::isValid() const
 {
     // Both clients have to be valid
