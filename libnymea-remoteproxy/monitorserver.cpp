@@ -116,6 +116,8 @@ void MonitorServer::startServer()
     }
 
     m_server = new QLocalServer(this);
+    m_server->setSocketOptions(QLocalServer::UserAccessOption | QLocalServer::GroupAccessOption | QLocalServer::OtherAccessOption);
+
     if (!m_server->listen(m_serverName)) {
         qCWarning(dcMonitorServer()) << "Could not start local server for monitor on" << m_serverName << m_server->errorString();
         delete m_server;

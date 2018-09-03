@@ -56,12 +56,12 @@ int main(int argc, char *argv[])
     // Check socket file
     QFileInfo fileInfo(parser.value(socketOption));
     if (!fileInfo.exists()) {
-        qWarning() << "Could not find socket descriptor" << fileInfo.canonicalFilePath();
+        qWarning() << "Could not find socket descriptor" << parser.value(socketOption);
         exit(1);
     }
 
     if (!fileInfo.isReadable()) {
-        qWarning() << "Could not open socket descriptor" << fileInfo.canonicalFilePath();
+        qWarning() << "Could not open socket descriptor" << parser.value(socketOption);
         exit(1);
     }
 
