@@ -104,6 +104,9 @@ int main(int argc, char *argv[])
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
     parser.addOption(tokenOption);
 
+    QCommandLineOption nonceOption(QStringList() << "n" << "nonce", "The shared connection unique nonce for this tunnel.", "nonce");
+    parser.addOption(nonceOption);
+
     QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
@@ -159,7 +162,7 @@ int main(int argc, char *argv[])
     ProxyClient client(parser.value(nameOption), uuid);
     client.setInsecure(parser.isSet(insecureOption));
     client.setPingpong(parser.isSet(pingPongOption));
-    client.start(serverUrl, parser.value(tokenOption));
+    client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
 
     return application.exec();
 }

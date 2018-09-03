@@ -44,6 +44,7 @@ private:
     QString m_name;
     QUuid m_uuid;
     QString m_token;
+    QString m_nonce;
     bool m_insecure = false;
     bool m_pingpong = false;
 
@@ -61,7 +62,7 @@ private slots:
     void sendPing();
 
 public slots:
-    void start(const QUrl &url, const QString &token);
+    void start(const QUrl &url, const QString &token, const QString &nonce);
 
 };
 

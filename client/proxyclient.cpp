@@ -61,7 +61,7 @@ void ProxyClient::onClientReady()
 {
     qCDebug(dcProxyClient()) << "Connected to proxy server" << m_connection->serverUrl().toString();
     qCDebug(dcProxyClient()) << "Start authentication";
-    m_connection->authenticate(m_token);
+    m_connection->authenticate(m_token, m_nonce);
 }
 
 void ProxyClient::onAuthenticationFinished()
@@ -111,8 +111,9 @@ void ProxyClient::sendPing()
     m_connection->sendData(data);
 }
 
-void ProxyClient::start(const QUrl &url, const QString &token)
+void ProxyClient::start(const QUrl &url, const QString &token, const QString &nonce)
 {
     m_token = token;
+    m_nonce = nonce;
     m_connection->connectServer(url);
 }
