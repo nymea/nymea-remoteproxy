@@ -32,10 +32,7 @@ MonitorServer::MonitorServer(const QString &serverName, QObject *parent) :
     QObject(parent),
     m_serverName(serverName)
 {
-    m_timer = new QTimer(this);
-    m_timer->setInterval(1000);
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &MonitorServer::onTimeout);
+
 }
 
 MonitorServer::~MonitorServer()
@@ -51,34 +48,10 @@ bool MonitorServer::running() const
     return m_server->isListening();
 }
 
-QVariantMap MonitorServer::createMonitorData()
-{
-    QVariantMap monitorData;
-    monitorData.insert("serverName", Engine::instance()->configuration()->serverName());
-    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
-    monitorData.insert("apiVersion", API_VERSION_STRING);
-    monitorData.insert("proxyStatistic", Engine::instance()->proxyServer()->currentStatistics());
-    return monitorData;
-}
-
 void MonitorServer::sendMonitorData(QLocalSocket *clientConnection, const QVariantMap &dataMap)
 {
     clientConnection->write(QJsonDocument::fromVariant(dataMap).toJson(QJsonDocument::Compact) + '\n');
     clientConnection->flush();
-}
-
-void MonitorServer::onTimeout()
-{
-    // If no client left or no server running, stop the timer
-    if (m_clients.isEmpty() || !m_server)
-        m_timer->stop();
-
-    QVariantMap dataMap = createMonitorData();
-
-    // Send each monitor the current data
-    foreach (QLocalSocket *clientConnection, m_clients) {
-        sendMonitorData(clientConnection, dataMap);
-    }
 }
 
 void MonitorServer::onMonitorConnected()
@@ -89,12 +62,6 @@ void MonitorServer::onMonitorConnected()
     m_clients.append(clientConnection);
 
     qCDebug(dcMonitorServer()) << "New monitor connected.";
-
-    if (!m_timer->isActive()) {
-        // Send the data right the way
-        onTimeout();
-        m_timer->start();
-    }
 }
 
 void MonitorServer::onMonitorDisconnected()
@@ -131,7 +98,6 @@ void MonitorServer::startServer()
 
 void MonitorServer::stopServer()
 {
-    m_timer->stop();
     if (!m_server)
         return;
 
@@ -143,6 +109,14 @@ void MonitorServer::stopServer()
     m_server->close();
     delete m_server;
     m_server = nullptr;
+}
+
+void MonitorServer::updateClients(const QVariantMap &dataMap)
+{
+    // Send each monitor the current data
+    foreach (QLocalSocket *clientConnection, m_clients) {
+        sendMonitorData(clientConnection, dataMap);
+    }
 }
 
 }

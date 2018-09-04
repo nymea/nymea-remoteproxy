@@ -23,7 +23,9 @@
 #define ENGINE_H
 
 #include <QUrl>
+#include <QTimer>
 #include <QObject>
+#include <QDateTime>
 #include <QHostAddress>
 #include <QSslConfiguration>
 
@@ -66,6 +68,11 @@ private:
     ~Engine();
     static Engine *s_instance;
 
+    QTimer *m_timer = nullptr;
+    qint64 m_lastTimeStamp = 0;
+    int m_currentTimeCounter = 0;
+    qint64 m_runTime = 0;
+
     bool m_running = false;
     bool m_developerMode = false;
 
@@ -75,10 +82,13 @@ private:
     WebSocketServer *m_webSocketServer = nullptr;
     MonitorServer *m_monitorServer = nullptr;
 
+    QVariantMap createServerStatistic();
+
 signals:
     void runningChanged(bool running);
 
 private slots:
+    void onTimerTick();
     void clean();
     void setRunning(bool running);
 

@@ -65,6 +65,7 @@ QVariantMap ProxyServer::currentStatistics()
     QVariantMap statisticsMap;
     statisticsMap.insert("clientCount", m_proxyClients.count());
     statisticsMap.insert("tunnelCount", m_tunnels.count());
+    statisticsMap.insert("troughput", m_troughput);
 
     // Create client list
     QVariantList clientList;
@@ -76,7 +77,10 @@ QVariantMap ProxyServer::currentStatistics()
         clientMap.insert("authenticated", client->isAuthenticated());
         clientMap.insert("tunnelConnected", client->isTunnelConnected());
         clientMap.insert("name", client->name());
+        clientMap.insert("userName", client->userName());
         clientMap.insert("uuid", client->uuid());
+        clientMap.insert("rxDataCount", client->rxDataCount());
+        clientMap.insert("txDataCount", client->txDataCount());
         clientList.append(clientMap);
     }
     statisticsMap.insert("clients", clientList);
@@ -242,6 +246,11 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         Q_ASSERT_X(remoteClient, "ProxyServer", "Tunnel existing but not tunnel client available");
         Q_ASSERT_X(m_tunnels.contains(proxyClient->token()), "ProxyServer", "Tunnel connect but not existing");
 
+        // Calculate server statisitcs
+        m_troughputCounter += data.count();
+        proxyClient->addRxDataCount(data.count());
+        remoteClient->addTxDataCount(data.count());
+
         qCDebug(dcProxyServerTraffic()) << "Pipe tunnel data:";
         qCDebug(dcProxyServerTraffic()) << "    --> from" << proxyClient;
         qCDebug(dcProxyServerTraffic()) << "    --> to" << remoteClient;
@@ -336,6 +345,12 @@ void ProxyServer::stopServer()
         interface->stopServer();
     }
     setRunning(false);
+}
+
+void ProxyServer::tick()
+{
+    m_troughput = m_troughputCounter;
+    m_troughputCounter = 0;
 }
 
 }

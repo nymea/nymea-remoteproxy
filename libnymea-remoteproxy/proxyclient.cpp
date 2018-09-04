@@ -88,6 +88,16 @@ void ProxyClient::setTunnelConnected(bool isTunnelConnected)
     }
 }
 
+QString ProxyClient::userName() const
+{
+    return m_userName;
+}
+
+void ProxyClient::setUserName(const QString &userName)
+{
+    m_userName = userName;
+}
+
 TransportInterface *ProxyClient::interface() const
 {
     return m_interface;
@@ -133,6 +143,26 @@ void ProxyClient::setNonce(const QString &nonce)
     m_nonce = nonce;
 }
 
+quint64 ProxyClient::rxDataCount() const
+{
+    return m_rxDataCount;
+}
+
+void ProxyClient::addRxDataCount(int dataCount)
+{
+    m_rxDataCount += static_cast<quint64>(dataCount);
+}
+
+quint64 ProxyClient::txDataCount() const
+{
+    return m_txDataCount;
+}
+
+void ProxyClient::addTxDataCount(int dataCount)
+{
+    m_txDataCount += static_cast<quint64>(dataCount);
+}
+
 void ProxyClient::sendData(const QByteArray &data)
 {
     if (!m_interface)
@@ -157,6 +187,7 @@ QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
     }
     debug.nospace() << proxyClient->interface()->serverName();
     debug.nospace() << ", " << proxyClient->clientId().toString();
+    debug.nospace() << ", " << proxyClient->userName();
     debug.nospace() << ", " << proxyClient->peerAddress().toString();
     debug.nospace() << ", " << proxyClient->creationTimeString() << ") ";
     return debug;

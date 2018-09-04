@@ -56,6 +56,8 @@ void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::Authentica
         qCDebug(dcAuthentication()) << name() << reply->proxyClient() << "finished with error" << error;
     }
 
+    reply->proxyClient()->setUserName(userInformation.email());
+
     setReplyError(reply, error);
     setReplyFinished(reply);
 }

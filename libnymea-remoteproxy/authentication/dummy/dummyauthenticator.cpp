@@ -43,6 +43,8 @@ AuthenticationReply *DummyAuthenticator::authenticate(ProxyClient *proxyClient)
     qCWarning(dcAuthentication()) << "Attention: This authenticator will always succeed! This is a security risk and was explicitly enabled!";
     AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
 
+    proxyClient->setUserName("dummy@example.com");
+
     setReplyError(reply, AuthenticationErrorNoError);
     setReplyFinished(reply);
     return reply;

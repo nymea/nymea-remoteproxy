@@ -105,6 +105,22 @@ QString TerminalWindow::getDurationString(uint timestamp)
     return res.sprintf("%02d:%02d:%02d", hours, minutes, seconds);
 }
 
+QString TerminalWindow::humanReadableTraffic(int bytes)
+{
+    double dataCount = bytes;
+    QStringList list;
+    list << "KB" << "MB" << "GB" << "TB";
+
+    QStringListIterator i(list);
+    QString unit("B");
+
+    while(dataCount >= 1024.0 && i.hasNext()) {
+        unit = i.next();
+        dataCount /= 1024.0;
+    }
+    return QString().setNum(dataCount,'f',2) + " " + unit;
+}
+
 void TerminalWindow::resizeWindow()
 {
     int terminalSizeX;
@@ -146,12 +162,13 @@ void TerminalWindow::drawWindowBorder(WINDOW *window)
 
 void TerminalWindow::paintHeader()
 {
-    QString headerString = QString(" Server: %1 %2 | API version %3 | Clients: %4 | Tunnels %5 | %6 ")
+    QString headerString = QString(" Server: %1 %2 | API version %3 | Clients: %4 | Tunnels %5 | %6 | %7 ")
             .arg(m_dataMap.value("serverName", "-").toString())
             .arg(m_dataMap.value("serverVersion", "-").toString())
             .arg(m_dataMap.value("apiVersion", "-").toString())
             .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
             .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
+            .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
             .arg((m_view == ViewClients ? "-- Clients --" : "-- Tunnels --"));
 
     int delta = m_terminalSizeX - headerString.count();
@@ -164,7 +181,6 @@ void TerminalWindow::paintHeader()
     wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
     mvwprintw(m_headerWindow, 1, 2, convertString(headerString));
     wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
-    drawWindowBorder(m_headerWindow);
 }
 
 void TerminalWindow::paintContentClients()
@@ -179,11 +195,15 @@ void TerminalWindow::paintContentClients()
         uint timeStamp = clientMap.value("timestamp").toUInt();
         QString clientConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
 
-        QString clientPrint = QString("%1 | %2 | %3 | %4 | %5 | %6 | %7")
+        int rxDataCountBytes = clientMap.value("rxDataCount").toInt();
+        int txDataCountBytes = clientMap.value("txDataCount").toInt();
+
+        QString clientPrint = QString("%1 | %2 | %3 | RX: %4 | TX: %5 | %6 | %7 | %8")
                 .arg(clientConnectionTime)
                 .arg(clientMap.value("duration").toString())
                 .arg(clientMap.value("address").toString(), - 16)
-                .arg(clientMap.value("uuid").toString())
+                .arg(humanReadableTraffic(rxDataCountBytes), - 10)
+                .arg(humanReadableTraffic(txDataCountBytes), - 10)
                 .arg((clientMap.value("authenticated").toBool() ? "A" : "-"))
                 .arg((clientMap.value("tunnelConnected").toBool() ? "T" : "-"))
                 .arg(clientMap.value("name").toString(), -30);
@@ -192,8 +212,6 @@ void TerminalWindow::paintContentClients()
         i++;
     }
 
-    // Draw borders
-    drawWindowBorder(m_contentWindow);
 }
 
 void TerminalWindow::paintContentTunnels()
@@ -209,21 +227,21 @@ void TerminalWindow::paintContentTunnels()
         uint timeStamp = tunnelMap.value("timestamp").toUInt();
         QString tunnelConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
 
-        QString tunnelPrint = QString("%1 | %2 %3 %4 %5 %6")
+
+        QString tunnelPrint = QString("%1 | %2 | %3 | %4 | %5 (%6) <---> %7 (%8)")
                 .arg(tunnelConnectionTime)
-                .arg(clientOne.value("address").toString(), - 16)
+                .arg(getDurationString(timeStamp))
+                .arg(humanReadableTraffic(clientOne.value("rxDataCount").toInt() + clientOne.value("txDataCount").toInt()), - 10)
+                .arg(clientOne.value("userName").toString())
                 .arg(clientOne.value("name").toString())
-                .arg("   <--->   ")
-                .arg(clientTwo.value("address").toString(), - 16)
+                .arg(clientOne.value("address").toString())
                 .arg(clientTwo.value("name").toString())
+                .arg(clientTwo.value("address").toString())
                 ;
 
         mvwprintw(m_contentWindow, i, 2, convertString(tunnelPrint));
         i++;
     }
-
-    // Draw borders
-    drawWindowBorder(m_contentWindow);
 }
 
 void TerminalWindow::eventLoop()
@@ -232,7 +250,7 @@ void TerminalWindow::eventLoop()
     werase(m_headerWindow);
     werase(m_contentWindow);
 
-    resizeWindow();    
+    resizeWindow();
 
     int keyInteger = getch();
     switch (keyInteger) {
@@ -268,9 +286,13 @@ void TerminalWindow::eventLoop()
         break;
     }
 
+    // Draw borders
+    drawWindowBorder(m_headerWindow);
+    drawWindowBorder(m_contentWindow);
+
     wrefresh(m_headerWindow);
     wrefresh(m_contentWindow);
-    //refresh();
+    refresh();
 
     // Reinvoke the method for the next event loop run
     //QMetaObject::invokeMethod(this, "eventLoop", Qt::QueuedConnection);

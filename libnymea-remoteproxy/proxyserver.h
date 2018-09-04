@@ -63,6 +63,10 @@ private:
     // Token, Tunnel
     QHash<QString, TunnelConnection> m_tunnels;
 
+    // Statistic measurments
+    int m_troughput = 0;
+    int m_troughputCounter = 0;
+
     void setRunning(bool running);
 
     ProxyClient *getRemoteClient(ProxyClient *proxyClient);
@@ -83,6 +87,8 @@ private slots:
 public slots:
     void startServer();
     void stopServer();
+
+    void tick();
 
 };
 

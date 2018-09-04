@@ -41,20 +41,19 @@ public:
 private:
     QString m_serverName;
     QLocalServer *m_server = nullptr;
-    QTimer *m_timer = nullptr;
     QList<QLocalSocket *> m_clients;
 
-    QVariantMap createMonitorData();
     void sendMonitorData(QLocalSocket *clientConnection, const QVariantMap &dataMap);
 
 private slots:
-    void onTimeout();
     void onMonitorConnected();
     void onMonitorDisconnected();
 
 public slots:
     void startServer();
     void stopServer();
+
+    void updateClients(const QVariantMap &dataMap);
 };
 
 }

@@ -59,6 +59,8 @@ private:
     const char *convertString(const QString &string);
     QString getDurationString(uint timestamp);
 
+    QString humanReadableTraffic(int bytes);
+
     // content paint methods
     void resizeWindow();
     void drawWindowBorder(WINDOW *window);

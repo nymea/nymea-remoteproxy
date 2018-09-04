@@ -157,12 +157,43 @@ MonitorServer *Engine::monitorServer() const
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
+    m_lastTimeStamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
 
+    m_timer = new QTimer(this);
+    m_timer->setSingleShot(false);
+    m_timer->setInterval(50);
+
+    connect(m_timer, &QTimer::timeout, this, &Engine::onTimerTick);
 }
 
 Engine::~Engine()
 {
     stop();
+}
+
+QVariantMap Engine::createServerStatistic()
+{
+    QVariantMap monitorData;
+    monitorData.insert("serverName", m_configuration->serverName());
+    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
+    monitorData.insert("apiVersion", API_VERSION_STRING);
+    monitorData.insert("proxyStatistic", proxyServer()->currentStatistics());
+    return monitorData;
+}
+
+void Engine::onTimerTick()
+{
+    qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    qint64 deltaTime = timestamp - m_lastTimeStamp;
+    m_lastTimeStamp = timestamp;
+
+    m_currentTimeCounter += deltaTime;
+    if (m_currentTimeCounter >= 1000) {
+        // One second passed, do second tick
+        m_proxyServer->tick();
+        m_monitorServer->updateClients(createServerStatistic());
+        m_currentTimeCounter = 0;
+    }
 }
 
 void Engine::clean()
@@ -195,9 +226,14 @@ void Engine::setRunning(bool running)
     if (m_running == running)
         return;
 
-    //qCDebug(dcEngine()) << "----------------------------------------------------------";
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
-    //qCDebug(dcEngine()) << "----------------------------------------------------------";
+
+    if (running) {
+        m_timer->start();
+    } else {
+        m_timer->stop();
+    }
+
     m_running = running;
     emit runningChanged(m_running);
 }

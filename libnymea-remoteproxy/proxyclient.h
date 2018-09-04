@@ -51,6 +51,9 @@ public:
     bool isTunnelConnected() const;
     void setTunnelConnected(bool isTunnelConnected);
 
+    QString userName() const;
+    void setUserName(const QString &userName);
+
     TransportInterface *interface() const;
 
     // Properties from auth request
@@ -65,6 +68,12 @@ public:
 
     QString nonce() const;
     void setNonce(const QString &nonce);
+
+    quint64 rxDataCount() const;
+    void addRxDataCount(int dataCount);
+
+    quint64 txDataCount() const;
+    void addTxDataCount(int dataCount);
 
     // Actions for this client
     void sendData(const QByteArray &data);
@@ -85,6 +94,11 @@ private:
     QString m_name;
     QString m_token;
     QString m_nonce;
+
+    QString m_userName;
+
+    quint64 m_rxDataCount = 0;
+    quint64 m_txDataCount = 0;
 
 signals:
     void authenticated();
