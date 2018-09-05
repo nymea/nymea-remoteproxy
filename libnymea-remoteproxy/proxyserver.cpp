@@ -22,6 +22,7 @@
 #include "proxyserver.h"
 #include "loggingcategories.h"
 
+#include <QSettings>
 #include <QMetaObject>
 #include <QVariantList>
 #include <QJsonDocument>
@@ -32,6 +33,8 @@ ProxyServer::ProxyServer(QObject *parent) : QObject(parent)
 {
     qRegisterMetaType<ProxyClient *>("ProxyClient *");
     m_jsonRpcServer = new JsonRpcServer(this);
+
+    loadStatistics();
 }
 
 ProxyServer::~ProxyServer()
@@ -66,6 +69,12 @@ QVariantMap ProxyServer::currentStatistics()
     statisticsMap.insert("clientCount", m_proxyClients.count());
     statisticsMap.insert("tunnelCount", m_tunnels.count());
     statisticsMap.insert("troughput", m_troughput);
+
+    QVariantMap totalStatisticsMap;
+    totalStatisticsMap.insert("totalClientCount", m_totalClientCount);
+    totalStatisticsMap.insert("totalTunnelCount", m_totalTunnelCount);
+    totalStatisticsMap.insert("totalTraffic", m_totalTraffic);
+    statisticsMap.insert("total", totalStatisticsMap);
 
     // Create client list
     QVariantList clientList;
@@ -109,6 +118,26 @@ void ProxyServer::setRunning(bool running)
     emit runningChanged();
 }
 
+void ProxyServer::loadStatistics()
+{
+    QSettings settings;
+    settings.beginGroup("Statistics");
+    m_totalClientCount = settings.value("totalClientCount", 0).toInt();
+    m_totalTunnelCount = settings.value("totalTunnelCount", 0).toInt();
+    m_totalTraffic = settings.value("totalTraffic", 0).toInt();
+    settings.endGroup();
+}
+
+void ProxyServer::saveStatistics()
+{
+    QSettings settings;
+    settings.beginGroup("Statistics");
+    settings.setValue("totalClientCount", m_totalClientCount);
+    settings.value("totalTunnelCount", m_totalTunnelCount);
+    settings.value("totalTraffic", m_totalTraffic);
+    settings.endGroup();
+}
+
 ProxyClient *ProxyServer::getRemoteClient(ProxyClient *proxyClient)
 {
     if (!m_tunnels.contains(proxyClient->token()))
@@ -150,6 +179,10 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
 
     qCDebug(dcProxyServer()) << tunnel;
 
+
+    m_totalTunnelCount += 1;
+    saveStatistics();
+
     // Notify the clients in the next event loop
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
                               Q_ARG(QString, m_jsonRpcServer->name()),
@@ -175,6 +208,9 @@ void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &a
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
     connect(proxyClient, &ProxyClient::timeoutOccured, this, &ProxyServer::onProxyClientTimeoutOccured);
+
+    m_totalClientCount += 1;
+    saveStatistics();
 
     m_proxyClients.insert(clientId, proxyClient);
     m_jsonRpcServer->registerClient(proxyClient);
@@ -250,6 +286,9 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         m_troughputCounter += data.count();
         proxyClient->addRxDataCount(data.count());
         remoteClient->addTxDataCount(data.count());
+
+        m_totalTraffic += data.count();
+        saveStatistics();
 
         qCDebug(dcProxyServerTraffic()) << "Pipe tunnel data:";
         qCDebug(dcProxyServerTraffic()) << "    --> from" << proxyClient;

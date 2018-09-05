@@ -83,7 +83,7 @@ void Engine::start(ProxyConfiguration *configuration)
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
     m_monitorServer->startServer();
 
-    // Set tunning true in the next event loop
+    // Set running true in the next event loop
     QMetaObject::invokeMethod(this, QString("setRunning").toLatin1().data(), Qt::QueuedConnection, Q_ARG(bool, true));
 }
 

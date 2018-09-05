@@ -162,13 +162,16 @@ void TerminalWindow::drawWindowBorder(WINDOW *window)
 
 void TerminalWindow::paintHeader()
 {
-    QString headerString = QString(" Server: %1 %2 | API version %3 | Clients: %4 | Tunnels %5 | %6 | %7 ")
+    QString headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
             .arg(m_dataMap.value("serverName", "-").toString())
             .arg(m_dataMap.value("serverVersion", "-").toString())
             .arg(m_dataMap.value("apiVersion", "-").toString())
             .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
+            .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
             .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
+            .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
             .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+            .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
             .arg((m_view == ViewClients ? "-- Clients --" : "-- Tunnels --"));
 
     int delta = m_terminalSizeX - headerString.count();

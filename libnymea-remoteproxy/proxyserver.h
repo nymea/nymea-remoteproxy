@@ -67,10 +67,21 @@ private:
     int m_troughput = 0;
     int m_troughputCounter = 0;
 
+    // Persistent statistics
+    int m_totalClientCount = 0;
+    int m_totalTunnelCount = 0;
+    int m_totalTraffic = 0;
+
+
+    // Set private properties
     void setRunning(bool running);
 
-    ProxyClient *getRemoteClient(ProxyClient *proxyClient);
+    void loadStatistics();
+    void saveStatistics();
 
+
+    // Helper methods
+    ProxyClient *getRemoteClient(ProxyClient *proxyClient);
     void establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient);
 
 signals:

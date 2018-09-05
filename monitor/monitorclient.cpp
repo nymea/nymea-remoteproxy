@@ -69,7 +69,6 @@ void MonitorClient::onErrorOccured(QLocalSocket::LocalSocketError socketError)
 {
     Q_UNUSED(socketError)
     qWarning() << "Local socket error occured" << m_socket->errorString();
-    exit(1);
 }
 
 void MonitorClient::connectMonitor()

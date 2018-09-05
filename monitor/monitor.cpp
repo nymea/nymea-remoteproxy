@@ -41,6 +41,8 @@ void Monitor::onDisconnected()
     if (!m_terminal)
         return;
 
-    m_terminal->deleteLater();
+    delete m_terminal;
     m_terminal = nullptr;
+    qDebug() << "Monitor disconnected.";
+    exit(0);
 }
