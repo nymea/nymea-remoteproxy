@@ -19,85 +19,45 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef LOGENGINE_H
+#define LOGENGINE_H
 
-#include <QUrl>
-#include <QTimer>
+#include <QFile>
 #include <QObject>
-#include <QDateTime>
-#include <QHostAddress>
-#include <QSslConfiguration>
 
-#include "logengine.h"
-#include "proxyserver.h"
-#include "monitorserver.h"
-#include "websocketserver.h"
-#include "proxyconfiguration.h"
-#include "authentication/authenticator.h"
+#include "tunnelconnection.h"
 
 namespace remoteproxy {
 
-class Engine : public QObject
+class LogEngine : public QObject
 {
     Q_OBJECT
 public:
-    static Engine *instance();
-    void destroy();
+    explicit LogEngine(QObject *parent = nullptr);
+    ~LogEngine();
 
-    static bool exists();
-
-    void start(ProxyConfiguration *configuration);
-    void stop();
-
-    bool running() const;
-    bool developerMode() const;
-
-    QString serverName() const;
-
-    void setAuthenticator(Authenticator *authenticator);
-    void setDeveloperModeEnabled(bool enabled);
-
-    ProxyConfiguration *configuration() const;
-    Authenticator *authenticator() const;
-    ProxyServer *proxyServer() const;
-    WebSocketServer *webSocketServer() const;
-    MonitorServer *monitorServer() const;
-    LogEngine *logEngine() const;
-
+    void logTunnel(const TunnelConnection &tunnel);
+    void logStatistics(int tunnelCount, int connectionCount, int troughput);
 
 private:
-    explicit Engine(QObject *parent = nullptr);
-    ~Engine();
-    static Engine *s_instance;
+    QFile m_tunnelsFile;
+    QFile m_statisticsFile;
 
-    QTimer *m_timer = nullptr;
-    qint64 m_lastTimeStamp = 0;
-    int m_currentTimeCounter = 0;
-    qint64 m_runTime = 0;
+    QString m_tunnelsFileName;
+    QString m_statisticsFileName;
 
-    bool m_running = false;
-    bool m_developerMode = false;
+    bool m_enabled = false;
+    int m_currentDay;
 
-    ProxyConfiguration *m_configuration = nullptr;
-    Authenticator *m_authenticator = nullptr;
-    ProxyServer *m_proxyServer = nullptr;
-    WebSocketServer *m_webSocketServer = nullptr;
-    MonitorServer *m_monitorServer = nullptr;
-    LogEngine *m_logEngine = nullptr;
+    void rotateLogs();
+    QString createTimestamp();
 
-    QVariantMap createServerStatistic();
-
-signals:
-    void runningChanged(bool running);
-
-private slots:
-    void onTimerTick();
-    void clean();
-    void setRunning(bool running);
+public slots:
+    void enable();
+    void disable();
 
 };
 
 }
 
-#endif // ENGINE_H
+#endif // LOGENGINE_H

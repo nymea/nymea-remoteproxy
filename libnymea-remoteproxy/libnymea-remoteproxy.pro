@@ -25,7 +25,8 @@ HEADERS += \
     authentication/aws/userinformation.h \
     authentication/aws/authenticationprocess.h \
     authentication/aws/sigv4utils.h \
-    authentication/aws/awscredentialprovider.h
+    authentication/aws/awscredentialprovider.h \
+    logengine.h
 
 SOURCES += \
     engine.cpp \
@@ -49,7 +50,8 @@ SOURCES += \
     authentication/aws/userinformation.cpp \
     authentication/aws/authenticationprocess.cpp \
     authentication/aws/sigv4utils.cpp \
-    authentication/aws/awscredentialprovider.cpp
+    authentication/aws/awscredentialprovider.cpp \
+    logengine.cpp
 
 
 # install header file with relative subdirectory

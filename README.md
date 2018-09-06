@@ -56,6 +56,7 @@ The package will deliver a default configuration file with following content (`/
     name=nymea-remoteproxy
     writeLogs=false
     logFile=/var/log/nymea-remoteproxy.log
+    logEngineEnabled=false
     monitorSocket=/tmp/nymea-remoteproxy-monitor.sock
     jsonRpcTimeout=10000
     authenticationTimeout=8000

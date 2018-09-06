@@ -83,6 +83,9 @@ void Engine::start(ProxyConfiguration *configuration)
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
     m_monitorServer->startServer();
 
+    if (configuration->logEngineEnabled())
+        m_logEngine->enable();
+
     // Set running true in the next event loop
     QMetaObject::invokeMethod(this, QString("setRunning").toLatin1().data(), Qt::QueuedConnection, Q_ARG(bool, true));
 }
@@ -154,6 +157,11 @@ MonitorServer *Engine::monitorServer() const
     return m_monitorServer;
 }
 
+LogEngine *Engine::logEngine() const
+{
+    return m_logEngine;
+}
+
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
@@ -164,6 +172,8 @@ Engine::Engine(QObject *parent) :
     m_timer->setInterval(50);
 
     connect(m_timer, &QTimer::timeout, this, &Engine::onTimerTick);
+
+    m_logEngine = new LogEngine(this);
 }
 
 Engine::~Engine()
@@ -191,7 +201,13 @@ void Engine::onTimerTick()
     if (m_currentTimeCounter >= 1000) {
         // One second passed, do second tick
         m_proxyServer->tick();
-        m_monitorServer->updateClients(createServerStatistic());
+
+        QVariantMap serverStatistics = createServerStatistic();
+        m_monitorServer->updateClients(serverStatistics);
+        m_logEngine->logStatistics(serverStatistics.value("proxyStatistic").toMap().value("tunnelCount").toInt(),
+                                   serverStatistics.value("proxyStatistic").toMap().value("clientCount").toInt(),
+                                   serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
+
         m_currentTimeCounter = 0;
     }
 }

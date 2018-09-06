@@ -19,6 +19,7 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "engine.h"
 #include "proxyserver.h"
 #include "loggingcategories.h"
 
@@ -179,7 +180,6 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
 
     qCDebug(dcProxyServer()) << tunnel;
 
-
     m_totalTunnelCount += 1;
     saveStatistics();
 
@@ -190,14 +190,12 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(QVariantMap, notificationParamsFirst),
                               Q_ARG(ProxyClient *, tunnel.clientOne()));
 
-
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsSecond),
                               Q_ARG(ProxyClient *, tunnel.clientTwo()));
 }
-
 
 void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
 {
@@ -241,7 +239,8 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
 
             // There is a tunnel connection for this client, remove the tunnel and disconnect also the other client
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
-            m_tunnels.remove(proxyClient->token());
+            TunnelConnection tunnelConnection = m_tunnels.take(proxyClient->token());
+            Engine::instance()->logEngine()->logTunnel(tunnelConnection);
             if (remoteClient) {
                 remoteClient->killConnection("Tunnel client disconnected");
             }

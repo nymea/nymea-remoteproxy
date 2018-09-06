@@ -50,6 +50,7 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setServerName(settings.value("name", "nymea-remoteproxy").toString());
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
+    setLogEngineEnabled(settings.value("logEngineEnabled", false).toBool());
     setMonitorSocketFileName(settings.value("monitorSocket", "/tmp/nymea-remoteproxy.monitor").toString());
     setJsonRpcTimeout(settings.value("jsonRpcTimeout", 10000).toInt());
     setAuthenticationTimeout(settings.value("authenticationTimeout", 8000).toInt());
@@ -157,6 +158,16 @@ QString ProxyConfiguration::logFileName() const
 void ProxyConfiguration::setLogFileName(const QString &logFileName)
 {
     m_logFileName = logFileName;
+}
+
+bool ProxyConfiguration::logEngineEnabled() const
+{
+    return m_logEngineEnabled;
+}
+
+void ProxyConfiguration::setLogEngineEnabled(bool enabled)
+{
+    m_logEngineEnabled = enabled;
 }
 
 QString ProxyConfiguration::monitorSocketFileName() const
@@ -322,6 +333,7 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Server name:" << configuration->serverName() << endl;
     debug.nospace() << "  - Write logfile:" << configuration->writeLogFile() << endl;
     debug.nospace() << "  - Logfile:" << configuration->logFileName() << endl;
+    debug.nospace() << "  - Log engine enabled:" << configuration->logEngineEnabled() << endl;
     debug.nospace() << "  - JSON RPC timeout:" << configuration->jsonRpcTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Authentication timeout:" << configuration->authenticationTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Inactive timeout:" << configuration->inactiveTimeout() << " [ms]" << endl;

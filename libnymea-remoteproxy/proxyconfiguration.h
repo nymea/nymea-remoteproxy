@@ -50,6 +50,9 @@ public:
     QString logFileName() const;
     void setLogFileName(const QString &logFileName);
 
+    bool logEngineEnabled() const;
+    void setLogEngineEnabled(bool enabled);
+
     QString monitorSocketFileName() const;
     void setMonitorSocketFileName(const QString &fileName);
 
@@ -107,6 +110,7 @@ private:
     QString m_serverName;
     bool m_writeLogFile = false;
     QString m_logFileName = "/var/log/nymea-remoteproxy.log";
+    bool m_logEngineEnabled = false;
     QString m_monitorSocketFileName;
 
     int m_jsonRpcTimeout = 10000;
