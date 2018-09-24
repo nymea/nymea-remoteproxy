@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+# -*- coding: UTF-8 -*-
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                                                             #
+#  Copyright (C) 2018 Simon Stuerz <simon.stuerz@guh.io>                      #
+#                                                                             #
+#  This file is part of nymea-remoteproxy.                                    #
+#                                                                             #
+#  nymea-remoteproxy is free software: you can redistribute it and/or modi    #
+#  it under the terms of the GNU General Public License as published by       #
+#  the Free Software Foundation, version 3 of the License.                    #
+#                                                                             #
+#  nymea-remoteproxy is distributed in the hope that it will be useful,       #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the               #
+#  GNU General Public License for more details.                               #
+#                                                                             #
+#  You should have received a copy of the GNU General Public License          #
+#  along with nymea-remoteproxy. If not, see <http://www.gnu.org/licenses/>.  #
+#                                                                             #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+import sys
+import os
+import shutil
+import traceback
+import argparse
+import Gnuplot
+
+__version__ = "0.1.0"
+
+#--------------------------------------------------------------------------------
+def prepareWorkingDirectory(workDirectory, logDirectory, daysCount):
+    print("Prepare working directory %s" % workDirectory)
+
+    if os.path.isdir(workDirectory):
+        print("Clean up old working directory.")
+        shutil.rmtree(workDirectory)
+
+    os.makedirs(workDirectory)
+    
+    tunnelLogFiles = []
+    statisticsLogFiles = []
+
+    print("Reading files from %s" % logDirectory)
+    for fileName in os.listdir(logDirectory):
+        if "nymea-remoteproxy-tunnels" in fileName:
+            tunnelLogFiles.append(fileName)
+        
+        if "nymea-remoteproxy-statistics" in fileName:
+            statisticsLogFiles.append(fileName)
+        
+    # Write data file for processing
+    tunnelLogFiles = tunnelLogFiles[-(daysCount + 1):]
+    tunnelOutputFileName = workDirectory + "/tunnels.dat"
+    tunnelOutputFile = open(tunnelOutputFileName, "a")
+    
+    for fileName in sorted(tunnelLogFiles):
+        print("%s" % fileName)
+        inputFile = open(logDirectory + "/" + fileName)
+        for line in inputFile.readlines():
+            tunnelOutputFile.write(line)
+    
+    tunnelOutputFile.close()
+
+    statisticsLogFiles = statisticsLogFiles[-(daysCount + 1):]
+    statisticsOutputFileName = workDirectory + "/statistics.dat"
+    statisticsOutputFile = open(statisticsOutputFileName, "a")
+    
+    for fileName in sorted(statisticsLogFiles):
+        print("%s" % fileName)
+        inputFile = open(logDirectory + "/" + fileName)
+        for line in inputFile.readlines():
+            statisticsOutputFile.write(line)
+    
+    statisticsOutputFile.close()
+
+
+#--------------------------------------------------------------------------------
+def plotStatistics(workDirectory, imageWidth, imageHeight):
+    print("Create statistics plots into %s" % workDirectory)
+
+    plot = Gnuplot.Gnuplot()
+    plot.title("Server connections")
+    plot.xlabel("Time")
+    plot.ylabel("Count")
+    
+    plot("set term png size %s, %s" % (imageWidth, imageHeight))
+    plot("set output '%s'" % (workDirectory + "/statistics.png"))
+    plot("set xdata time")
+    plot("set timefmt '%s'")
+    plot("set xtics format '%d.%m.%y %H:%M:%S'")
+    plot("set yrange [0:*]")
+    plot("set grid")
+    plot("plot '%s' using 1:2 with lines title 'Tunnels',"
+         "     '%s' using 1:3 with lines title 'Connections'" % (workDirectory + "/statistics.dat", workDirectory + "/statistics.dat"))
+    
+
+def sendReportMail():
+    print("Sending report email")
+    
+
+
+#--------------------------------------------------------------------------------
+# Main 
+#--------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    # Process arguments
+    parser = argparse.ArgumentParser(description='The nymea-remoteproxy-statistics tool allowes to process the log files and create statistic reports.')
+    parser.add_argument('-v','--version', action='version', version=__version__)
+    parser.add_argument('-l', '--logs', metavar='DIRECTORY', type=str, default='/var/log', help='the path to the log directoy of the nymea-remoteproxy server. Default is "/var/log".')
+    parser.add_argument('-d', '--days', metavar='DAYS', type=int, default='1', help='the amount of past days included into the report. Default is 1.')
+    args = parser.parse_args()
+    
+    # Variables 
+    daysCount = args.days
+    logDirectory = os.path.abspath(args.logs)
+    workDirectory = os.path.abspath("/tmp/nymea-remoteproxy-statistics")
+    
+    print("Using log dir %s" % logDirectory)
+    print("Amount of days for report: %s" % daysCount)
+
+    prepareWorkingDirectory(workDirectory, logDirectory, daysCount)
+    plotStatistics(workDirectory, 5000, 500)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

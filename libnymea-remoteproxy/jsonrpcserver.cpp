@@ -38,7 +38,8 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
 
     params.clear(); returns.clear();
     setDescription("Hello", "Once connected to this server, a client can get information about the server by saying Hello. "
-                            "The response informs the client about this proxy server.");
+                            "The response informs the client about this proxy server. This method can only be called once, "
+                            "otherwise the connection will be killed.");
     setParams("Hello", params);
     returns.insert("server", JsonTypes::basicTypeToString(JsonTypes::String));
     returns.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
@@ -47,7 +48,8 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
     setReturns("Hello", returns);
 
     params.clear(); returns.clear();
-    setDescription("Introspect", "Introspect this API.");
+    setDescription("Introspect", "Introspect this API. This method can only be called once, "
+                                 "otherwise the connection will be killed.");
     setParams("Introspect", params);
     returns.insert("methods", JsonTypes::basicTypeToString(JsonTypes::Object));
     returns.insert("types", JsonTypes::basicTypeToString(JsonTypes::Object));
@@ -288,6 +290,13 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
     if (!validationResult.first) {
         sendErrorResponse(proxyClient, commandId,  "Invalid params: " + validationResult.second);
         proxyClient->killConnection("Invalid params passed.");
+        return;
+    }
+
+    // Verfiy if this method was already called by this client
+    if (!proxyClient->validateMethodCall(message.value("method").toString())) {
+        sendErrorResponse(proxyClient, commandId,  "Multiple method call not allowed. The method" + message.value("method").toString() + "has already been called by this client.");
+        proxyClient->killConnection("Multiple method call.");
         return;
     }
 

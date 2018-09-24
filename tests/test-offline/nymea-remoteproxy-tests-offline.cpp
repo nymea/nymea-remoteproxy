@@ -275,7 +275,7 @@ void RemoteProxyOfflineTests::websocketPing()
     qDebug() << pongSpy.at(0).at(0) << pongSpy.at(0).at(1);
 
     QVERIFY(pongSpy.at(0).at(1).toByteArray() == pingMessage);
-
+    client->deleteLater();
     // Clean up
     stopServer();
 }
@@ -352,7 +352,6 @@ void RemoteProxyOfflineTests::authenticate_data()
     QTest::addColumn<QString>("name");
     QTest::addColumn<QString>("token");
     QTest::addColumn<QString>("nonce");
-
     QTest::addColumn<int>("timeout");
     QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
 
@@ -547,6 +546,61 @@ void RemoteProxyOfflineTests::authenticateSendData()
     socket->deleteLater();
 
     // Clean up
+    stopServer();
+}
+
+void RemoteProxyOfflineTests::multipleApiCall_data()
+{
+    QTest::addColumn<QString>("method");
+    QTest::addColumn<QVariantMap>("params");
+
+    QVariantMap authParams;
+    authParams.insert("uuid", "uuid");
+    authParams.insert("name", "name");
+    authParams.insert("token", "token");
+    authParams.insert("nonce", "nonce");
+
+    QTest::newRow("Hello") << "RemoteProxy.Hello" << QVariantMap();
+    QTest::newRow("Introspect") << "RemoteProxy.Introspect" << QVariantMap();
+    QTest::newRow("Authenticate") << "Authentication.Authenticate" << authParams;
+}
+
+void RemoteProxyOfflineTests::multipleApiCall()
+{
+    QFETCH(QString, method);
+    QFETCH(QVariantMap, params);
+
+    // Start the server
+    startServer();
+
+    // Make the method call
+    QWebSocket *client = new QWebSocket("bad-client");
+    connect(client, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+    QSignalSpy spyConnection(client, SIGNAL(connected()));
+    client->open(Engine::instance()->webSocketServer()->serverUrl());
+    spyConnection.wait();
+
+    m_commandCounter++;
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+    QSignalSpy dataSpy(client, SIGNAL(textMessageReceived(QString)));
+    client->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    dataSpy.wait();
+
+    // Call the same method a second time and make sure the client will be disconnected
+    QSignalSpy disconnectedSpy(client, SIGNAL(disconnected()));
+    dataSpy.clear();
+    client->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    disconnectedSpy.wait(100);
+    QVERIFY(disconnectedSpy.count() == 1);
+
+    // Clean up
+    client->deleteLater();
     stopServer();
 }
 
