@@ -29,11 +29,32 @@ import shutil
 import traceback
 import argparse
 import Gnuplot
+import time
+import datetime
+import tzlocal
+import pytz
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 #--------------------------------------------------------------------------------
-def prepareWorkingDirectory(workDirectory, logDirectory, daysCount):
+def convertLineToTimezone(line, timezoneString):
+    if timezone is "UTC":
+        return line
+    
+    lineTokens = line.split(' ')
+    print("Line tokens", lineTokens)
+    timestamp = lineTokens[0]
+    utcTime = datetime.datetime.fromtimestamp(int(timestamp))
+    print("Convert timestamp", timestamp, utcTime.strftime("%Y.%m.%d %H:%M:%S (%Z)") , "to timezone", timezoneString)
+
+    timezoneObject = pytz.timezone(timezoneString)
+    timezoneOffset = timezoneObject.utcoffset()
+    convertedTimestamp = timezoneObject.localize(utcTime)
+    print("Result", timezoneOffset, utcTime.strftime("%Y-%m-%d %H:%M:%S.%f%z (%Z)"), "-->", convertedTimestamp.strftime("%Y-%m-%d %H:%M:%S.%f%z (%Z)"))
+    
+
+#--------------------------------------------------------------------------------
+def prepareWorkingDirectory(workDirectory, logDirectory, daysCount, timezone):
     print("Prepare working directory %s" % workDirectory)
 
     if os.path.isdir(workDirectory):
@@ -41,43 +62,71 @@ def prepareWorkingDirectory(workDirectory, logDirectory, daysCount):
         shutil.rmtree(workDirectory)
 
     os.makedirs(workDirectory)
-    
+
     tunnelLogFiles = []
     statisticsLogFiles = []
 
+    # Read the file list
     print("Reading files from %s" % logDirectory)
     for fileName in os.listdir(logDirectory):
         if "nymea-remoteproxy-tunnels" in fileName:
             tunnelLogFiles.append(fileName)
-        
+
         if "nymea-remoteproxy-statistics" in fileName:
             statisticsLogFiles.append(fileName)
-        
+
+    # Sort file lists for beeing able to get the last n days logs
+    tunnelLogFiles.sort()
+    statisticsLogFiles.sort()
+
     # Write data file for processing
     tunnelLogFiles = tunnelLogFiles[-(daysCount + 1):]
     tunnelOutputFileName = workDirectory + "/tunnels.dat"
     tunnelOutputFile = open(tunnelOutputFileName, "a")
-    
+
     for fileName in sorted(tunnelLogFiles):
         print("%s" % fileName)
         inputFile = open(logDirectory + "/" + fileName)
         for line in inputFile.readlines():
             tunnelOutputFile.write(line)
-    
+
     tunnelOutputFile.close()
 
     statisticsLogFiles = statisticsLogFiles[-(daysCount + 1):]
     statisticsOutputFileName = workDirectory + "/statistics.dat"
     statisticsOutputFile = open(statisticsOutputFileName, "a")
-    
+
     for fileName in sorted(statisticsLogFiles):
         print("%s" % fileName)
         inputFile = open(logDirectory + "/" + fileName)
         for line in inputFile.readlines():
             statisticsOutputFile.write(line)
-    
+
     statisticsOutputFile.close()
 
+
+#--------------------------------------------------------------------------------
+def createStatistics(workDirectory):
+    print("Preparing statistics for different plots")   
+    
+    statisticsFile = open(workDirectory + "/statistics.dat", "r")
+    tunnelsFile = open(workDirectory + "/tunnels.dat", "r")
+    
+    hourlyTunnelsList = []
+    userList = []
+    
+    
+    # Init lists
+    for x in range(0, 23):
+        hourlyTunnelsList.append(0)
+        
+    print("Initialized hour statistics", hourlyTunnelsList)
+    
+    # Walk troug lines and calculate statistics
+    #for line in statisticsFile:
+        
+    
+    
 
 #--------------------------------------------------------------------------------
 def plotStatistics(workDirectory, imageWidth, imageHeight):
@@ -87,7 +136,7 @@ def plotStatistics(workDirectory, imageWidth, imageHeight):
     plot.title("Server connections")
     plot.xlabel("Time")
     plot.ylabel("Count")
-    
+
     plot("set term png size %s, %s" % (imageWidth, imageHeight))
     plot("set output '%s'" % (workDirectory + "/statistics.png"))
     plot("set xdata time")
@@ -97,15 +146,15 @@ def plotStatistics(workDirectory, imageWidth, imageHeight):
     plot("set grid")
     plot("plot '%s' using 1:2 with lines title 'Tunnels',"
          "     '%s' using 1:3 with lines title 'Connections'" % (workDirectory + "/statistics.dat", workDirectory + "/statistics.dat"))
-    
+
 
 def sendReportMail():
     print("Sending report email")
-    
+
 
 
 #--------------------------------------------------------------------------------
-# Main 
+# Main
 #--------------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -113,39 +162,26 @@ if __name__ == "__main__":
     # Process arguments
     parser = argparse.ArgumentParser(description='The nymea-remoteproxy-statistics tool allowes to process the log files and create statistic reports.')
     parser.add_argument('-v','--version', action='version', version=__version__)
-    parser.add_argument('-l', '--logs', metavar='DIRECTORY', type=str, default='/var/log', help='the path to the log directoy of the nymea-remoteproxy server. Default is "/var/log".')
+    parser.add_argument('-l', '--logs', metavar='DIR', type=str, default='/var/log', help='the path to the log directoy of the nymea-remoteproxy server. Default is "/var/log".')
     parser.add_argument('-d', '--days', metavar='DAYS', type=int, default='1', help='the amount of past days included into the report. Default is 1.')
+    parser.add_argument('-t', '--timezone', metavar='ZONE', type=str, default='UTC', help='the timezone the statistics should be created for. Default is UTC.')
     args = parser.parse_args()
-    
-    # Variables 
+
+    # Variables
     daysCount = args.days
     logDirectory = os.path.abspath(args.logs)
     workDirectory = os.path.abspath("/tmp/nymea-remoteproxy-statistics")
+    timezone = args.timezone
     
     print("Using log dir %s" % logDirectory)
+    print("Using working dir %s" % workDirectory)
     print("Amount of days for report: %s" % daysCount)
+    print("Creating statistics for timezone: %s" % timezone)
 
-    prepareWorkingDirectory(workDirectory, logDirectory, daysCount)
+    convertLineToTimezone("1538870830 1538870830 jenkins@guh.io 37.61.202.234 37.61.202.234 13", "Europe/Vienna")
+    
+    prepareWorkingDirectory(workDirectory, logDirectory, daysCount, timezone)
+    createStatistics(workDirectory)
     plotStatistics(workDirectory, 5000, 500)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+

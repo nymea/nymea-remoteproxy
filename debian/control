@@ -12,9 +12,10 @@ Package: nymea-remoteproxy
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         awscli,
          libnymea-remoteproxy (= ${binary:Version}),
-Suggests: nymea-remoteproxy-monitor (= ${binary:Version})
+Recommends: nymea-remoteproxy-monitor (= ${binary:Version}),
+         nymea-remoteproxy-statistics (= ${binary:Version})
+Suggests: nymea-remoteproxy-client (= ${binary:Version})
 Description: The nymea remote proxy server
   The nymea remote proxy server
 

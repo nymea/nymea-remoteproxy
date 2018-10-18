@@ -195,6 +195,7 @@ QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
     if (!proxyClient->name().isEmpty()) {
         debug.nospace() << proxyClient->name() << ", ";
     }
+
     debug.nospace() << proxyClient->interface()->serverName();
     debug.nospace() << ", " << proxyClient->clientId().toString();
     debug.nospace() << ", " << proxyClient->userName();

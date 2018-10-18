@@ -23,6 +23,7 @@
 #include "loggingcategories.h"
 
 #include <QDateTime>
+#include <QCryptographicHash>
 
 namespace remoteproxy {
 
@@ -48,7 +49,7 @@ void LogEngine::logTunnel(const TunnelConnection &tunnel)
     QStringList logString;
     logString << createTimestamp();
     logString << QString::number(tunnel.creationTime());
-    logString << tunnel.clientOne()->userName();
+    logString << QString::fromUtf8(QCryptographicHash::hash(tunnel.clientOne()->userName().toUtf8(), QCryptographicHash::Sha3_256));
     logString << tunnel.clientOne()->peerAddress().toString();
     logString << tunnel.clientTwo()->peerAddress().toString();
     logString << QString::number(tunnel.clientOne()->rxDataCount() + tunnel.clientOne()->txDataCount());
