@@ -49,10 +49,12 @@ void LogEngine::logTunnel(const TunnelConnection &tunnel)
     QStringList logString;
     logString << createTimestamp();
     logString << QString::number(tunnel.creationTime());
-    logString << QString::fromUtf8(QCryptographicHash::hash(tunnel.clientOne()->userName().toUtf8(), QCryptographicHash::Sha3_256));
+    logString << QString::fromUtf8(QCryptographicHash::hash(tunnel.clientOne()->userName().toLatin1(), QCryptographicHash::Sha3_256).toHex());
     logString << tunnel.clientOne()->peerAddress().toString();
     logString << tunnel.clientTwo()->peerAddress().toString();
     logString << QString::number(tunnel.clientOne()->rxDataCount() + tunnel.clientOne()->txDataCount());
+
+    qCDebug(dcLogEngine()) << "Logging tunnel" << logString;
 
     QTextStream textStream(&m_tunnelsFile);
     textStream << logString.join(" ") << endl;
@@ -69,6 +71,8 @@ void LogEngine::logStatistics(int tunnelCount, int connectionCount, int troughpu
     logString << QString::number(tunnelCount);
     logString << QString::number(connectionCount);
     logString << QString::number(troughput);
+
+    qCDebug(dcLogEngine()) << "Logging statisitcs" << logString;
 
     QTextStream textStream(&m_statisticsFile);
     textStream << logString.join(" ") << endl;

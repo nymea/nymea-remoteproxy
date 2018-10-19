@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
     s_loggingFilters.insert("AwsCredentialsProvider", true);
 
     // Only with verbose enabled
+    s_loggingFilters.insert("LogEngine", false);
     s_loggingFilters.insert("JsonRpcTraffic", false);
     s_loggingFilters.insert("ProxyServerTraffic", false);
     s_loggingFilters.insert("AuthenticationProcess", false);
@@ -181,6 +182,7 @@ int main(int argc, char *argv[])
     }
 
     if (parser.isSet(verboseOption)) {
+        s_loggingFilters["LogEngine"] = true;
         s_loggingFilters["JsonRpcTraffic"] = true;
         s_loggingFilters["ProxyServerTraffic"] = true;
         s_loggingFilters["AuthenticationProcess"] = true;
