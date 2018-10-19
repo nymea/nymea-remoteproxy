@@ -85,7 +85,6 @@ void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state)
         setConnected(true);
         break;
     default:
-        setConnected(false);
         break;
     }
 

@@ -184,14 +184,11 @@ void RemoteProxyConnection::onConnectionChanged(bool isConnected)
 {
     if (isConnected) {
         qCDebug(dcRemoteProxyClientConnection()) << "Connected to proxy server.";
-        setState(StateConnected);
-
         setState(StateInitializing);
         JsonReply *reply = m_jsonClient->callHello();
         connect(reply, &JsonReply::finished, this, &RemoteProxyConnection::onHelloFinished);
     } else {
         qCDebug(dcRemoteProxyClientConnection()) << "Disconnected from proxy server.";
-        setState(StateDisconnected);
         cleanUp();
     }
 }
@@ -269,6 +266,8 @@ void RemoteProxyConnection::onHelloFinished()
     m_proxyServerName = responseParams.value("name").toString();
     m_proxyServerVersion = responseParams.value("version").toString();
     m_proxyServerApiVersion = responseParams.value("apiVersion").toString();
+
+    qCDebug(dcRemoteProxyClientConnection()) << "Connected to" << m_serverName << m_proxyServerName << m_proxyServerVersion << "API:" << m_proxyServerApiVersion;
 
     setState(StateReady);
 }

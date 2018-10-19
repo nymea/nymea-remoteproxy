@@ -166,9 +166,10 @@ void RemoteProxyOfflineTests::monitorServer()
 
     // TODO: verify monitor data
 
-    QSignalSpy disconnectedSpy(monitor, &QLocalSocket::connected);
+    QSignalSpy disconnectedSpy(monitor, &QLocalSocket::disconnected);
     monitor->disconnectFromServer();
     disconnectedSpy.wait(200);
+    QVERIFY(disconnectedSpy.count() == 1);
 
     // Clean up
     monitor->deleteLater();
@@ -247,9 +248,9 @@ void RemoteProxyOfflineTests::websocketBinaryData()
 
     // Send binary data and make sure the server disconnects this socket
     QSignalSpy spyDisconnected(client, SIGNAL(disconnected()));
-    client->sendBinaryMessage("trying to upload stuff...stuff...more stuff... other stuff");
-    spyConnection.wait(200);
-    QVERIFY(spyConnection.count() == 1);
+    client->sendBinaryMessage("Trying to upload stuff...stuff...more stuff... other stuff");
+    spyDisconnected.wait(200);
+    QVERIFY(spyDisconnected.count() == 1);
 
     // Clean up
     stopServer();
@@ -596,7 +597,7 @@ void RemoteProxyOfflineTests::multipleApiCall()
     QSignalSpy disconnectedSpy(client, SIGNAL(disconnected()));
     dataSpy.clear();
     client->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
-    disconnectedSpy.wait(100);
+    disconnectedSpy.wait();
     QVERIFY(disconnectedSpy.count() == 1);
 
     // Clean up
@@ -645,9 +646,9 @@ void RemoteProxyOfflineTests::clientConnection()
     QSignalSpy spyDisconnected(connection, &RemoteProxyConnection::disconnected);
     connection->disconnectServer();
     // FIXME: check why it waits the full time here
-    spyDisconnected.wait(500);
+    spyDisconnected.wait(200);
 
-    QVERIFY(spyDisconnected.count() >= 1);
+    QVERIFY(spyDisconnected.count() == 1);
     QVERIFY(!connection->isConnected());
 
     connection->deleteLater();
@@ -823,8 +824,8 @@ void RemoteProxyOfflineTests::trippleConnection()
     connectionOneDisconnectedSpy.wait(200);
     connectionTwoDisconnectedSpy.wait(200);
 
-    QVERIFY(connectionOneDisconnectedSpy.count() >= 1);
-    QVERIFY(connectionTwoDisconnectedSpy.count() >= 1);
+    QVERIFY(connectionOneDisconnectedSpy.count() == 1);
+    QVERIFY(connectionTwoDisconnectedSpy.count() == 1);
     QVERIFY(connectionOne->state() == RemoteProxyConnection::StateDisconnected);
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateDisconnected);
 
@@ -882,10 +883,10 @@ void RemoteProxyOfflineTests::duplicateUuid()
 
     QVERIFY(connectionTwo->authenticate(m_testToken));
     disconnectSpyOne.wait(200);
-    QVERIFY(disconnectSpyOne.count() >= 1);
+    QVERIFY(disconnectSpyOne.count() == 1);
 
     disconnectSpyTwo.wait(200);
-    QVERIFY(disconnectSpyTwo.count() >= 1);
+    QVERIFY(disconnectSpyTwo.count() == 1);
 
     connectionOne->deleteLater();
     connectionTwo->deleteLater();
@@ -966,7 +967,7 @@ void RemoteProxyOfflineTests::inactiveTimeout()
 
     // Now wait for disconnected
     connectionDisconnectedSpy.wait();
-    QVERIFY(connectionDisconnectedSpy.count() >= 1);
+    QVERIFY(connectionDisconnectedSpy.count() == 1);
 
     // Clean up
     stopServer();

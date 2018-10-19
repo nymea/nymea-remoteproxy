@@ -114,8 +114,9 @@ void WebSocketServer::onClientConnected()
 void WebSocketServer::onClientDisconnected()
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    QUuid clientId = m_clientList.key(client);
+    client->abort();
 
+    QUuid clientId = m_clientList.key(client);
     qCDebug(dcWebSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString() << client->closeReason();
 
     m_clientList.take(clientId)->deleteLater();
