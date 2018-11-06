@@ -31,8 +31,6 @@ import argparse
 import Gnuplot
 import time
 import datetime
-import tzlocal
-import pytz
 
 __version__ = "0.1.1"
 
@@ -40,18 +38,18 @@ __version__ = "0.1.1"
 def convertLineToTimezone(line, timezoneString):
     if timezone is "UTC":
         return line
-    
+
     lineTokens = line.split(' ')
     print("Line tokens", lineTokens)
     timestamp = lineTokens[0]
-    utcTime = datetime.datetime.fromtimestamp(int(timestamp))
+    utcTime = datetime.datetime.utcfromtimestamp(int(timestamp))
     print("Convert timestamp", timestamp, utcTime.strftime("%Y.%m.%d %H:%M:%S (%Z)") , "to timezone", timezoneString)
 
     timezoneObject = pytz.timezone(timezoneString)
     timezoneOffset = timezoneObject.utcoffset()
     convertedTimestamp = timezoneObject.localize(utcTime)
     print("Result", timezoneOffset, utcTime.strftime("%Y-%m-%d %H:%M:%S.%f%z (%Z)"), "-->", convertedTimestamp.strftime("%Y-%m-%d %H:%M:%S.%f%z (%Z)"))
-    
+
 
 #--------------------------------------------------------------------------------
 def prepareWorkingDirectory(workDirectory, logDirectory, daysCount, timezone):
@@ -107,26 +105,41 @@ def prepareWorkingDirectory(workDirectory, logDirectory, daysCount, timezone):
 
 #--------------------------------------------------------------------------------
 def createStatistics(workDirectory):
-    print("Preparing statistics for different plots")   
-    
+    print("Preparing statistics for different plots")
+
     statisticsFile = open(workDirectory + "/statistics.dat", "r")
     tunnelsFile = open(workDirectory + "/tunnels.dat", "r")
-    
+
     hourlyTunnelsList = []
     userList = []
-    
-    
+
     # Init lists
-    for x in range(0, 23):
+    for x in range(0, 24):
         hourlyTunnelsList.append(0)
+
+    print("Initialized hour statistics %s" % hourlyTunnelsList)
+
+    # Walk trough lines and calculate statistics
+    for line in tunnelsFile.readlines():
+        lineTokens = line.split(' ')
+        # print("Line tokens: %s" % lineTokens)
+        tunnelCloseTime = int(lineTokens[0])
+        tunnelCreationTime = int(lineTokens[1])
+        tunnelUser = lineTokens[2]
+        tunnelTraffic = int(lineTokens[5])
+        tunnelDuration = tunnelCloseTime - tunnelCreationTime;
         
-    print("Initialized hour statistics", hourlyTunnelsList)
-    
-    # Walk troug lines and calculate statistics
-    #for line in statisticsFile:
+        utcTime = datetime.datetime.utcfromtimestamp(int(tunnelCreationTime))
+        creationTimeString = utcTime.strftime("%Y.%m.%d %H:%M:%S (%Z)")
+        creationHour = int(utcTime.strftime("%H"))
         
+        hourlyTunnelsList[creationHour] = hourlyTunnelsList[creationHour] + 1
+        
+        print("User: %s %s -> %s -> Duration: %s -> Traffic %s" % (tunnelUser, creationTimeString, creationHour, tunnelDuration, tunnelTraffic))   
+
     
-    
+    print("Hourly statistics %s" % hourlyTunnelsList)
+
 
 #--------------------------------------------------------------------------------
 def plotStatistics(workDirectory, imageWidth, imageHeight):
@@ -137,7 +150,7 @@ def plotStatistics(workDirectory, imageWidth, imageHeight):
     plot.xlabel("Time")
     plot.ylabel("Count")
 
-    plot("set term png size %s, %s" % (imageWidth, imageHeight))
+    plot("set term png enhanced font 'Ubuntu,10' size %s, %s" % (imageWidth, imageHeight))
     plot("set output '%s'" % (workDirectory + "/statistics.png"))
     plot("set xdata time")
     plot("set timefmt '%s'")
@@ -164,24 +177,32 @@ if __name__ == "__main__":
     parser.add_argument('-v','--version', action='version', version=__version__)
     parser.add_argument('-l', '--logs', metavar='DIR', type=str, default='/var/log', help='the path to the log directoy of the nymea-remoteproxy server. Default is "/var/log".')
     parser.add_argument('-d', '--days', metavar='DAYS', type=int, default='1', help='the amount of past days included into the report. Default is 1.')
-    parser.add_argument('-t', '--timezone', metavar='ZONE', type=str, default='UTC', help='the timezone the statistics should be created for. Default is UTC.')
+    parser.add_argument('--width', metavar='WIDTH', type=int, default='5000', help='the width of the plot images. Default is 5000.')
+    parser.add_argument('--height', metavar='HEIGHT', type=int, default='500', help='the height of the plot images. Default is 500.')
+    # parser.add_argument('-t', '--timezone', metavar='ZONE', type=str, default='UTC', help='the timezone the statistics should be created for. Default is UTC.')
     args = parser.parse_args()
 
     # Variables
     daysCount = args.days
+    imageWidth = args.width
+    imageHeight = args.height
     logDirectory = os.path.abspath(args.logs)
     workDirectory = os.path.abspath("/tmp/nymea-remoteproxy-statistics")
-    timezone = args.timezone
-    
+    timezone = "UTC"
+
+    print("-----------------------------------------------------------------------")
     print("Using log dir %s" % logDirectory)
     print("Using working dir %s" % workDirectory)
     print("Amount of days for report: %s" % daysCount)
+    print("Image size: %sx%s" % (imageWidth, imageHeight))
     print("Creating statistics for timezone: %s" % timezone)
+    print("-----------------------------------------------------------------------")
 
-    convertLineToTimezone("1538870830 1538870830 jenkins@guh.io 37.61.202.234 37.61.202.234 13", "Europe/Vienna")
-    
+    # TODO: convert the logs to a certain timezone is not supported yet
+    #convertLineToTimezone("1538870830 1538870830 jenkins@guh.io 37.61.202.234 37.61.202.234 13", "Europe/Vienna")
+
     prepareWorkingDirectory(workDirectory, logDirectory, daysCount, timezone)
     createStatistics(workDirectory)
-    plotStatistics(workDirectory, 5000, 500)
+    plotStatistics(workDirectory, imageWidth, imageHeight)
 
 

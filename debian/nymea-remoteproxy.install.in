@@ -1,2 +1,3 @@
 usr/bin/nymea-remoteproxy
-nymea-remoteproxy.conf etc/nymea/
+data/config/nymea-remoteproxy.conf etc/nymea/
+data/logrotate/nymea-remoteproxy etc/logrotate.d/

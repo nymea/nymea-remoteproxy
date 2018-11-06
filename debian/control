@@ -6,6 +6,7 @@ Build-depends: debhelper (>= 9.0.0),
     dh-systemd,
     libqt5websockets5-dev,
     libncurses5-dev,
+    lcov
 Standards-Version: 3.9.3
 
 Package: nymea-remoteproxy
