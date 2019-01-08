@@ -140,12 +140,17 @@ void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCWarning(dcWebSocketServer()) << "Client error occured:" << error << client->errorString();
+    qCWarning(dcWebSocketServer()) << "Client error occurred:" << error << client->errorString();
+}
+
+void WebSocketServer::onAcceptError(QAbstractSocket::SocketError error)
+{
+    qCWarning(dcWebSocketServer()) << "Server accept error occurred:" << error << m_server->errorString();
 }
 
 void WebSocketServer::onServerError(QAbstractSocket::SocketError error)
 {
-    qCWarning(dcWebSocketServer()) << "Server error occured:" << error << m_server->errorString();
+    qCWarning(dcWebSocketServer()) << "Server error occurred:" << error << m_server->errorString();
 }
 
 bool WebSocketServer::startServer()
@@ -154,7 +159,8 @@ bool WebSocketServer::startServer()
     m_server->setSslConfiguration(sslConfiguration());
 
     connect (m_server, &QWebSocketServer::newConnection, this, &WebSocketServer::onClientConnected);
-    connect (m_server, &QWebSocketServer::acceptError, this, &WebSocketServer::onServerError);
+    connect (m_server, &QWebSocketServer::acceptError, this, &WebSocketServer::onAcceptError);
+    connect (m_server, &QWebSocketServer::serverError, this, &WebSocketServer::onServerError);
 
     qCDebug(dcWebSocketServer()) << "Starting server" << m_server->serverName() << serverUrl().toString();
     if (!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(serverUrl().port()))) {
