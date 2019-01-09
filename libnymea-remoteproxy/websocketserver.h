@@ -64,6 +64,7 @@ private slots:
     void onTextMessageReceived(const QString &message);
     void onBinaryMessageReceived(const QByteArray &data);
     void onClientError(QAbstractSocket::SocketError error);
+    void onAcceptError(QAbstractSocket::SocketError error);
     void onServerError(QAbstractSocket::SocketError error);
 
 public slots:
