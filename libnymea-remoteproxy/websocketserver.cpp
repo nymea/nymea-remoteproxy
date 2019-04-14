@@ -148,9 +148,9 @@ void WebSocketServer::onAcceptError(QAbstractSocket::SocketError error)
     qCWarning(dcWebSocketServer()) << "Server accept error occurred:" << error << m_server->errorString();
 }
 
-void WebSocketServer::onServerError(QAbstractSocket::SocketError error)
+void WebSocketServer::onServerError(QWebSocketProtocol::CloseCode closeCode)
 {
-    qCWarning(dcWebSocketServer()) << "Server error occurred:" << error << m_server->errorString();
+    qCWarning(dcWebSocketServer()) << "Server error occurred:" << closeCode << m_server->errorString();
 }
 
 bool WebSocketServer::startServer()
