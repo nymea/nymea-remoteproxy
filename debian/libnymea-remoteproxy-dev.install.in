@@ -1,2 +1,2 @@
-usr/lib/@DEB_HOST_MULTIARCH@/libnymea-remoteproxy.so
+usr/lib/libnymea-remoteproxy.so usr/lib/@DEB_HOST_MULTIARCH@/
 usr/include/nymea-remoteproxy/* usr/include/nymea-remoteproxy
