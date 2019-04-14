@@ -2,7 +2,7 @@ include(../nymea-remoteproxy.pri)
 
 TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
-target.path = /usr/lib/$$system('dpkg-architecture -q DEB_HOST_MULTIARCH')
+target.path = /usr/lib/
 
 include(libnymea-remoteproxyclient.pri)
 

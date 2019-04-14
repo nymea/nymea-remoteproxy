@@ -62,5 +62,5 @@ for(header, HEADERS) {
     eval(INSTALLS *= headers_$${path})
 }
 
-target.path = /usr/lib/$$system('dpkg-architecture -q DEB_HOST_MULTIARCH')
+target.path=/usr/lib
 INSTALLS += target
