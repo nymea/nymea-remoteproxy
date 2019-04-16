@@ -65,7 +65,7 @@ private slots:
     void onBinaryMessageReceived(const QByteArray &data);
     void onClientError(QAbstractSocket::SocketError error);
     void onAcceptError(QAbstractSocket::SocketError error);
-    void onServerError(QAbstractSocket::SocketError error);
+    void onServerError(QWebSocketProtocol::CloseCode closeCode);
 
 public slots:
     bool startServer() override;
