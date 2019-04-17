@@ -2,7 +2,7 @@ include(../nymea-remoteproxy.pri)
 
 TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
-target.path = /usr/lib/
+target.path = $$[QT_INSTALL_LIBS]
 
 include(libnymea-remoteproxyclient.pri)
 

@@ -62,5 +62,5 @@ for(header, HEADERS) {
     eval(INSTALLS *= headers_$${path})
 }
 
-target.path = /usr/lib
+target.path = $$[QT_INSTALL_LIBS]
 INSTALLS += target
