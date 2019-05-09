@@ -78,6 +78,7 @@ public:
     // Actions for this client
     void sendData(const QByteArray &data);
     void killConnection(const QString &reason);
+    bool validateMethodCall(const QString &method);
 
 private:
     TransportInterface *m_interface = nullptr;
@@ -99,6 +100,8 @@ private:
 
     quint64 m_rxDataCount = 0;
     quint64 m_txDataCount = 0;
+
+    QStringList m_calledMethods;
 
 signals:
     void authenticated();

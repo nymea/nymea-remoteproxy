@@ -39,7 +39,8 @@ AuthenticationHandler::AuthenticationHandler(QObject *parent) :
                    "id the other tunnel client can understand. Once the authentication was successfull, you "
                    "can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before "
                    "getting this notification, the server will close the connection. If the tunnel client does "
-                   "not show up within 10 seconds, the server will close the connection.");
+                   "not show up within 10 seconds, the server will close the connection. This method can only be "
+                   "called once, otherwise the connection will be killed.");
     params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("token", JsonTypes::basicTypeToString(JsonTypes::String));

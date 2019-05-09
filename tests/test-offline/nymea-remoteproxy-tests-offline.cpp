@@ -166,9 +166,10 @@ void RemoteProxyOfflineTests::monitorServer()
 
     // TODO: verify monitor data
 
-    QSignalSpy disconnectedSpy(monitor, &QLocalSocket::connected);
+    QSignalSpy disconnectedSpy(monitor, &QLocalSocket::disconnected);
     monitor->disconnectFromServer();
     disconnectedSpy.wait(200);
+    QVERIFY(disconnectedSpy.count() == 1);
 
     // Clean up
     monitor->deleteLater();
@@ -247,9 +248,9 @@ void RemoteProxyOfflineTests::websocketBinaryData()
 
     // Send binary data and make sure the server disconnects this socket
     QSignalSpy spyDisconnected(client, SIGNAL(disconnected()));
-    client->sendBinaryMessage("trying to upload stuff...stuff...more stuff... other stuff");
-    spyConnection.wait(200);
-    QVERIFY(spyConnection.count() == 1);
+    client->sendBinaryMessage("Trying to upload stuff...stuff...more stuff... other stuff");
+    spyDisconnected.wait(200);
+    QVERIFY(spyDisconnected.count() == 1);
 
     // Clean up
     stopServer();
@@ -275,7 +276,7 @@ void RemoteProxyOfflineTests::websocketPing()
     qDebug() << pongSpy.at(0).at(0) << pongSpy.at(0).at(1);
 
     QVERIFY(pongSpy.at(0).at(1).toByteArray() == pingMessage);
-
+    client->deleteLater();
     // Clean up
     stopServer();
 }
@@ -352,7 +353,6 @@ void RemoteProxyOfflineTests::authenticate_data()
     QTest::addColumn<QString>("name");
     QTest::addColumn<QString>("token");
     QTest::addColumn<QString>("nonce");
-
     QTest::addColumn<int>("timeout");
     QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
 
@@ -550,6 +550,61 @@ void RemoteProxyOfflineTests::authenticateSendData()
     stopServer();
 }
 
+void RemoteProxyOfflineTests::multipleApiCall_data()
+{
+    QTest::addColumn<QString>("method");
+    QTest::addColumn<QVariantMap>("params");
+
+    QVariantMap authParams;
+    authParams.insert("uuid", "uuid");
+    authParams.insert("name", "name");
+    authParams.insert("token", "token");
+    authParams.insert("nonce", "nonce");
+
+    QTest::newRow("Hello") << "RemoteProxy.Hello" << QVariantMap();
+    QTest::newRow("Introspect") << "RemoteProxy.Introspect" << QVariantMap();
+    QTest::newRow("Authenticate") << "Authentication.Authenticate" << authParams;
+}
+
+void RemoteProxyOfflineTests::multipleApiCall()
+{
+    QFETCH(QString, method);
+    QFETCH(QVariantMap, params);
+
+    // Start the server
+    startServer();
+
+    // Make the method call
+    QWebSocket *client = new QWebSocket("bad-client");
+    connect(client, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+    QSignalSpy spyConnection(client, SIGNAL(connected()));
+    client->open(Engine::instance()->webSocketServer()->serverUrl());
+    spyConnection.wait();
+
+    m_commandCounter++;
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+    QSignalSpy dataSpy(client, SIGNAL(textMessageReceived(QString)));
+    client->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    dataSpy.wait();
+
+    // Call the same method a second time and make sure the client will be disconnected
+    QSignalSpy disconnectedSpy(client, SIGNAL(disconnected()));
+    dataSpy.clear();
+    client->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    disconnectedSpy.wait();
+    QVERIFY(disconnectedSpy.count() == 1);
+
+    // Clean up
+    client->deleteLater();
+    stopServer();
+}
+
 void RemoteProxyOfflineTests::clientConnection()
 {
     // Start the server
@@ -591,9 +646,9 @@ void RemoteProxyOfflineTests::clientConnection()
     QSignalSpy spyDisconnected(connection, &RemoteProxyConnection::disconnected);
     connection->disconnectServer();
     // FIXME: check why it waits the full time here
-    spyDisconnected.wait(500);
+    spyDisconnected.wait(200);
 
-    QVERIFY(spyDisconnected.count() >= 1);
+    QVERIFY(spyDisconnected.count() == 1);
     QVERIFY(!connection->isConnected());
 
     connection->deleteLater();
@@ -769,8 +824,8 @@ void RemoteProxyOfflineTests::trippleConnection()
     connectionOneDisconnectedSpy.wait(200);
     connectionTwoDisconnectedSpy.wait(200);
 
-    QVERIFY(connectionOneDisconnectedSpy.count() >= 1);
-    QVERIFY(connectionTwoDisconnectedSpy.count() >= 1);
+    QVERIFY(connectionOneDisconnectedSpy.count() == 1);
+    QVERIFY(connectionTwoDisconnectedSpy.count() == 1);
     QVERIFY(connectionOne->state() == RemoteProxyConnection::StateDisconnected);
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateDisconnected);
 
@@ -828,10 +883,10 @@ void RemoteProxyOfflineTests::duplicateUuid()
 
     QVERIFY(connectionTwo->authenticate(m_testToken));
     disconnectSpyOne.wait(200);
-    QVERIFY(disconnectSpyOne.count() >= 1);
+    QVERIFY(disconnectSpyOne.count() == 1);
 
     disconnectSpyTwo.wait(200);
-    QVERIFY(disconnectSpyTwo.count() >= 1);
+    QVERIFY(disconnectSpyTwo.count() == 1);
 
     connectionOne->deleteLater();
     connectionTwo->deleteLater();
@@ -912,7 +967,7 @@ void RemoteProxyOfflineTests::inactiveTimeout()
 
     // Now wait for disconnected
     connectionDisconnectedSpy.wait();
-    QVERIFY(connectionDisconnectedSpy.count() >= 1);
+    QVERIFY(connectionDisconnectedSpy.count() == 1);
 
     // Clean up
     stopServer();

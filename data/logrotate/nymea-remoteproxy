@@ -1,0 +1,10 @@
+/var/log/nymea-remoteproxy.log {
+        rotate 14
+        daily
+        dateext
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 755 root root
+}

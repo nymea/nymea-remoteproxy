@@ -61,6 +61,9 @@ private slots:
     void authenticateNonce();
     void authenticateSendData();
 
+    void multipleApiCall_data();
+    void multipleApiCall();
+
     // Client lib
     void clientConnection();
     void remoteConnection();

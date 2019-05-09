@@ -179,12 +179,23 @@ void ProxyClient::killConnection(const QString &reason)
     m_interface->killClientConnection(m_clientId, reason);
 }
 
+bool ProxyClient::validateMethodCall(const QString &method)
+{
+    // Note: each method is allowed only once. If the method was already called, return false
+    if (m_calledMethods.contains(method))
+        return false;
+
+    m_calledMethods.append(method);
+    return true;
+}
+
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
     debug.nospace() << "ProxyClient(";
     if (!proxyClient->name().isEmpty()) {
         debug.nospace() << proxyClient->name() << ", ";
     }
+
     debug.nospace() << proxyClient->interface()->serverName();
     debug.nospace() << ", " << proxyClient->clientId().toString();
     debug.nospace() << ", " << proxyClient->userName();

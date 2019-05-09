@@ -2,19 +2,21 @@ Source: nymea-remoteproxy
 Section: utils
 Priority: options
 Maintainer: Simon Stürz <simon.stürz@guh.io>
-Build-depends: debhelper (>= 0.0.0),
+Build-depends: debhelper (>= 9.0.0),
     dh-systemd,
     libqt5websockets5-dev,
     libncurses5-dev,
+    lcov
 Standards-Version: 3.9.3
 
 Package: nymea-remoteproxy
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         awscli,
          libnymea-remoteproxy (= ${binary:Version}),
-Suggests: nymea-remoteproxy-monitor (= ${binary:Version})
+Recommends: nymea-remoteproxy-monitor (= ${binary:Version}),
+         nymea-remoteproxy-statistics (= ${binary:Version})
+Suggests: nymea-remoteproxy-client (= ${binary:Version})
 Description: The nymea remote proxy server
   The nymea remote proxy server
 
@@ -94,3 +96,13 @@ Depends: ${shlibs:Depends},
          libncurses5,
 Description: The nymea remote proxy monitor tool
   The nymea remote proxy server tests
+
+Package: nymea-remoteproxy-statistics
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         python,
+         python-gnuplot,
+Description: The nymea remote proxy statistic util
+  The nymea remote proxy server statistic tool for generating
+  server statistic reports.
