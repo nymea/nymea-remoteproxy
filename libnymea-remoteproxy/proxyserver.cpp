@@ -254,6 +254,8 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
 
         // Delete the proxy client
         proxyClient->deleteLater();
+    } else {
+        qCWarning(dcProxyServer()) << "Unknown client disconnected from proxy server." << clientId.toString();
     }
 }
 

@@ -93,6 +93,10 @@ void WebSocketServer::onClientConnected()
 {
     // Got a new client connected
     QWebSocket *client = m_server->nextPendingConnection();
+    if (!client) {
+        qCWarning(dcWebSocketServer()) << "Next pending connection dissapeared. Doing nothing.";
+        return;
+    }
 
     // Check websocket version
     if (client->version() != QWebSocketProtocol::Version13) {
@@ -149,7 +153,10 @@ void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCWarning(dcWebSocketServer()) << "Client error occurred:" << error << client->errorString();
+    qCWarning(dcWebSocketServer()) << "Client error occurred:" << client << client->peerAddress().toString() << error << client->errorString() << "Closing the socket.";
+
+    // Note: on any error which can occure, make sure the socket will be closed in any case
+    client->close();
 }
 
 void WebSocketServer::onAcceptError(QAbstractSocket::SocketError error)
