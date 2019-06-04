@@ -6,6 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+Environment=QT_LOGGING_CONF=/etc/nymea/nymea-remoteproxy-logging.conf
 ExecStart=/usr/bin/nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy.conf
 StandardOutput=journal
 StandardError=journal

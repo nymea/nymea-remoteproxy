@@ -24,6 +24,7 @@
 Q_LOGGING_CATEGORY(dcApplication, "Application")
 Q_LOGGING_CATEGORY(dcEngine, "Engine")
 Q_LOGGING_CATEGORY(dcJsonRpc, "JsonRpc")
+Q_LOGGING_CATEGORY(dcTunnel, "Tunnel")
 Q_LOGGING_CATEGORY(dcJsonRpcTraffic, "JsonRpcTraffic")
 Q_LOGGING_CATEGORY(dcWebSocketServer, "WebSocketServer")
 Q_LOGGING_CATEGORY(dcWebSocketServerTraffic, "WebSocketServerTraffic")

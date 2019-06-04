@@ -56,19 +56,6 @@ static const char *const normal = "\033[0m";
 static const char *const warning = "\e[33m";
 static const char *const error = "\e[31m";
 
-static void loggingCategoryFilter(QLoggingCategory *category)
-{
-    if (s_loggingFilters.contains(category->categoryName())) {
-        bool debugEnabled = s_loggingFilters.value(category->categoryName());
-        category->setEnabled(QtDebugMsg, debugEnabled);
-        category->setEnabled(QtWarningMsg, debugEnabled || s_loggingFilters.value("Warnings"));
-    } else {
-        // Enable default debug output
-        category->setEnabled(QtDebugMsg, true);
-        category->setEnabled(QtWarningMsg, s_loggingFilters.value("Warnings"));
-    }
-}
-
 static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
     QString messageString;
@@ -112,22 +99,6 @@ int main(int argc, char *argv[])
     application.setApplicationName(SERVER_NAME_STRING);
     application.setOrganizationName("nymea");
     application.setApplicationVersion(SERVER_VERSION_STRING);
-
-    s_loggingFilters.insert("Application", true);
-    s_loggingFilters.insert("Engine", true);
-    s_loggingFilters.insert("JsonRpc", true);
-    s_loggingFilters.insert("WebSocketServer", true);
-    s_loggingFilters.insert("Authentication", true);
-    s_loggingFilters.insert("ProxyServer", true);
-    s_loggingFilters.insert("MonitorServer", true);
-    s_loggingFilters.insert("AwsCredentialsProvider", true);
-
-    // Only with verbose enabled
-    s_loggingFilters.insert("JsonRpcTraffic", false);
-    s_loggingFilters.insert("ProxyServerTraffic", false);
-    s_loggingFilters.insert("AuthenticationProcess", false);
-    s_loggingFilters.insert("WebSocketServerTraffic", false);
-    s_loggingFilters.insert("AwsCredentialsProviderTraffic", false);
 
     QString configFile = "/etc/nymea/nymea-remoteproxy.conf";
 
@@ -179,15 +150,6 @@ int main(int argc, char *argv[])
         configuration->setWriteLogFile(true);
         configuration->setLogFileName(parser.value(logfileOption));
     }
-
-    if (parser.isSet(verboseOption)) {
-        s_loggingFilters["JsonRpcTraffic"] = true;
-        s_loggingFilters["ProxyServerTraffic"] = true;
-        s_loggingFilters["AuthenticationProcess"] = true;
-        s_loggingFilters["WebSocketServerTraffic"] = true;
-        s_loggingFilters["AwsCredentialsProviderTraffic"] = true;
-    }
-    QLoggingCategory::installFilter(loggingCategoryFilter);
 
     // Open logfile if configured
     if (configuration->writeLogFile()) {

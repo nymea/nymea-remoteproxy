@@ -81,17 +81,25 @@ void WebSocketServer::killClientConnection(const QUuid &clientId, const QString 
 
     qCWarning(dcWebSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
     client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
+    client->flush();
+    client->abort();
 }
 
 void WebSocketServer::onClientConnected()
 {
     // Got a new client connected
     QWebSocket *client = m_server->nextPendingConnection();
+    if (!client) {
+        qCWarning(dcWebSocketServer()) << "Next pending connection dissapeared. Doing nothing.";
+        return;
+    }
 
     // Check websocket version
     if (client->version() != QWebSocketProtocol::Version13) {
         qCWarning(dcWebSocketServer()) << "Client with invalid protocol version" << client->version() << ". Rejecting.";
         client->close(QWebSocketProtocol::CloseCodeProtocolError, QString("invalid protocol version: %1 != Supported Version 13").arg(client->version()));
+        client->flush();
+        client->abort();
         delete client;
         return;
     }
@@ -120,6 +128,8 @@ void WebSocketServer::onClientDisconnected()
 
     // Manually close it in any case
     client->close();
+    client->flush();
+    client->abort();
 
     m_clientList.take(clientId)->deleteLater();
     emit clientDisconnected(clientId);
@@ -138,12 +148,19 @@ void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
     qCWarning(dcWebSocketServerTraffic()) << "<-- Binary message from" << client->peerAddress().toString() << ":" << data;
     // Note: this is not expected, so close this client connection.
     client->close(QWebSocketProtocol::CloseCodeBadOperation, "Binary message not expected.");
+    client->flush();
+    client->abort();
 }
 
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCWarning(dcWebSocketServer()) << "Client error occurred:" << error << client->errorString();
+    qCWarning(dcWebSocketServer()) << "Client error occurred:" << client << client->peerAddress().toString() << error << client->errorString() << "Closing the socket.";
+
+    // Note: on any error which can occure, make sure the socket will be closed in any case
+    client->close();
+    client->flush();
+    client->abort();
 }
 
 void WebSocketServer::onAcceptError(QAbstractSocket::SocketError error)
@@ -182,6 +199,8 @@ bool WebSocketServer::stopServer()
     // Clean up client connections
     foreach (QWebSocket *client, m_clientList.values()) {
         client->close(QWebSocketProtocol::CloseCodeNormal, "Stop server");
+        client->flush();
+        client->abort();
     }
 
     // Delete the server object

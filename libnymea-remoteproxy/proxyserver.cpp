@@ -179,6 +179,8 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
     secondClient->setTunnelConnected(true);
 
     qCDebug(dcProxyServer()) << tunnel;
+    qCDebug(dcTunnel()) << "Tunnel established between" << firstClient->peerAddress().toString() << firstClient->clientId()
+                        << "<-->" << secondClient->peerAddress().toString() << secondClient->clientId();
 
     m_totalTunnelCount += 1;
     saveStatistics();
@@ -234,20 +236,23 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
         // Unregister from json rpc server
         m_jsonRpcServer->unregisterClient(proxyClient);
 
-        // Check if
+        // Check if this client has a tunnel partner
         if (m_tunnels.contains(proxyClient->token())) {
-
             // There is a tunnel connection for this client, remove the tunnel and disconnect also the other client
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
             TunnelConnection tunnelConnection = m_tunnels.take(proxyClient->token());
             Engine::instance()->logEngine()->logTunnel(tunnelConnection);
             if (remoteClient) {
+                qCDebug(dcTunnel()) << "Remove tunnel between" << proxyClient->peerAddress().toString() << proxyClient->clientId()
+                                    << "<-->" << remoteClient->peerAddress().toString() << remoteClient->clientId();
                 remoteClient->killConnection("Tunnel client disconnected");
             }
         }
 
         // Delete the proxy client
         proxyClient->deleteLater();
+    } else {
+        qCWarning(dcProxyServer()) << "Unknown client disconnected from proxy server." << clientId.toString();
     }
 }
 
