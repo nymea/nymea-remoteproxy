@@ -179,8 +179,8 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
     secondClient->setTunnelConnected(true);
 
     qCDebug(dcProxyServer()) << tunnel;
-    qCDebug(dcTunnel()) << "Tunnel established between" << firstClient->peerAddress().toString() << firstClient->uuid()
-                        << "<-->" << secondClient->peerAddress().toString() << secondClient->uuid();
+    qCDebug(dcTunnel()) << "Tunnel established between" << firstClient->peerAddress().toString() << firstClient->clientId()
+                        << "<-->" << secondClient->peerAddress().toString() << secondClient->clientId();
 
     m_totalTunnelCount += 1;
     saveStatistics();
@@ -243,8 +243,8 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
             TunnelConnection tunnelConnection = m_tunnels.take(proxyClient->token());
             Engine::instance()->logEngine()->logTunnel(tunnelConnection);
             if (remoteClient) {
-                qCDebug(dcTunnel()) << "Remove tunnel between" << proxyClient->peerAddress().toString() << proxyClient->uuid()
-                                    << "<-->" << remoteClient->peerAddress().toString() << remoteClient->uuid();
+                qCDebug(dcTunnel()) << "Remove tunnel between" << proxyClient->peerAddress().toString() << proxyClient->clientId()
+                                    << "<-->" << remoteClient->peerAddress().toString() << remoteClient->clientId();
                 remoteClient->killConnection("Tunnel client disconnected");
             }
         }
