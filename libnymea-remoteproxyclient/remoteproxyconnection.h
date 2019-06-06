@@ -69,6 +69,7 @@ public:
     Q_ENUM(State)
 
     explicit RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, QObject *parent = nullptr);
+    RemoteProxyConnection(const QUuid &clientUuid, const QString &clientName, ConnectionType connectionType, QObject *parent = nullptr);
     ~RemoteProxyConnection();
 
     RemoteProxyConnection::State state() const;
@@ -94,9 +95,9 @@ public:
     QString tunnelPartnerUuid() const;
 
 private:
-    ConnectionType m_connectionType = ConnectionTypeWebSocket;
     QUuid m_clientUuid;
     QString m_clientName;
+    ConnectionType m_connectionType = ConnectionTypeWebSocket;
 
     QUrl m_serverUrl;
 

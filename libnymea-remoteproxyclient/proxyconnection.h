@@ -28,6 +28,7 @@
 #ifndef SOCKETCONNECTOR_H
 #define SOCKETCONNECTOR_H
 
+#include <QUrl>
 #include <QObject>
 #include <QSslError>
 #include <QHostAddress>
@@ -43,7 +44,7 @@ public:
 
     virtual void sendData(const QByteArray &data) = 0;
 
-    virtual QUrl serverUrl() const = 0;
+    QUrl serverUrl() const;
 
     virtual void ignoreSslErrors() = 0;
     virtual void ignoreSslErrors(const QList<QSslError> &errors) = 0;
@@ -52,9 +53,11 @@ public:
 
 private:
     bool m_connected = false;
+    QUrl m_serverUrl;
 
 protected:
     void setConnected(bool connected);
+    void setServerUrl(const QUrl &serverUrl);
 
 signals:
     void connectedChanged(bool connected);

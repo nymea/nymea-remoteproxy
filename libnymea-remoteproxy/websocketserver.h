@@ -43,7 +43,7 @@ class WebSocketServer : public TransportInterface
 {
     Q_OBJECT
 public:
-    explicit WebSocketServer(const QSslConfiguration &sslConfiguration, QObject *parent = nullptr);
+    explicit WebSocketServer(bool sslEnabled, const QSslConfiguration &sslConfiguration, QObject *parent = nullptr);
     ~WebSocketServer() override;
 
     QUrl serverUrl() const;
@@ -59,6 +59,7 @@ public:
 private:
     QUrl m_serverUrl;
     QWebSocketServer *m_server = nullptr;
+    bool m_sslEnabled;
     QSslConfiguration m_sslConfiguration;
     bool m_enabled = false;
 

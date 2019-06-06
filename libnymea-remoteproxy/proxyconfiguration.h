@@ -85,6 +85,9 @@ public:
     void setAwsCredentialsUrl(const QUrl &url);
 
     // Ssl
+    bool sslEnabled() const;
+    void setSslEnabled(bool enabled);
+
     QString sslCertificateFileName() const;
     void setSslCertificateFileName(const QString &fileName);
 
@@ -130,6 +133,7 @@ private:
     QUrl m_awsCredentialsUrl;
 
     // Ssl
+    bool m_sslEnabled = true;
     QString m_sslCertificateFileName = "/etc/ssl/certs/ssl-cert-snakeoil.pem";
     QString m_sslCertificateKeyFileName = "/etc/ssl/private/ssl-cert-snakeoil.key";
     QString m_sslCertificateChainFileName;
