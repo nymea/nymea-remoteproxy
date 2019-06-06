@@ -61,7 +61,6 @@ private:
     QWebSocketServer *m_server = nullptr;
     bool m_sslEnabled;
     QSslConfiguration m_sslConfiguration;
-    bool m_enabled = false;
 
     QHash<QUuid, QWebSocket *> m_clientList;
 

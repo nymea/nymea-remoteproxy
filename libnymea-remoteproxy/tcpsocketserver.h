@@ -19,49 +19,78 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TCPSOCKETCONNECTION_H
-#define TCPSOCKETCONNECTION_H
+#ifndef TCPSOCKETSERVER_H
+#define TCPSOCKETSERVER_H
 
 #include <QObject>
-#include <QTcpSocket>
-#include <QSslSocket>
-#include <QLoggingCategory>
+#include <QTcpServer>
+#include <QSslConfiguration>
 
-#include "proxyconnection.h"
+#include "transportinterface.h"
 
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClienTcpSocket)
+namespace remoteproxy {
 
-namespace remoteproxyclient {
 
-class TcpSocketConnection : public ProxyConnection
+class SslServer: public QTcpServer
 {
     Q_OBJECT
-
 public:
-    explicit TcpSocketConnection(QObject *parent = nullptr);
-    ~TcpSocketConnection() override;
+    SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *parent = nullptr):
+        QTcpServer(parent),
+        m_sslEnabled(sslEnabled),
+        m_config(config)
+    {
 
-    void sendData(const QByteArray &data) override;
+    }
 
-    void ignoreSslErrors() override;
-    void ignoreSslErrors(const QList<QSslError> &errors) override;
+signals:
+    void clientConnected(QSslSocket *socket);
+    void clientDisconnected(QSslSocket *socket);
+    void dataAvailable(QSslSocket *socket, const QByteArray &data);
 
-private:
-    QSslSocket *m_tcpSocket = nullptr;
+protected:
+    void incomingConnection(qintptr socketDescriptor) override;
 
 private slots:
-    void onDisconnected();
-    void onEncrypted();
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-    void onReadyRead();
+    void onClientDisconnected();
+    void onSocketReadyRead();
+
+private:
+    bool m_sslEnabled = false;
+    QSslConfiguration m_config;
+};
+
+
+class TcpSocketServer : public TransportInterface
+{
+    Q_OBJECT
+public:
+    explicit TcpSocketServer(bool sslEnabled, const QSslConfiguration &sslConfiguration, QObject *parent = nullptr);
+    ~TcpSocketServer() override;
+
+    quint16 port() const;
+    void setPort(quint16 port);
+
+    QHostAddress hostAddress() const;
+    void setHostAddress(const QHostAddress &address);
+
+    void sendData(const QUuid &clientId, const QByteArray &data) override;
+    void killClientConnection(const QUuid &clientId, const QString &killReason) override;
+
+private:
+    quint16 m_port;
+    QHostAddress m_hostAddress;
+    bool m_sslEnabled;
+    QSslConfiguration m_sslConfiguration;
+
+    QTcpServer *m_server = nullptr;
 
 public slots:
-    void connectServer(const QUrl &serverUrl) override;
-    void disconnectServer() override;
+    bool startServer() override;
+    bool stopServer() override;
 
 };
 
 }
 
-#endif // TCPSOCKETCONNECTION_H
+#endif // TCPSOCKETSERVER_H

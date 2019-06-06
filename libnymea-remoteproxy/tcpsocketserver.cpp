@@ -19,49 +19,56 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TCPSOCKETCONNECTION_H
-#define TCPSOCKETCONNECTION_H
+#include "tcpsocketserver.h"
 
-#include <QObject>
-#include <QTcpSocket>
-#include <QSslSocket>
-#include <QLoggingCategory>
+namespace remoteproxy {
 
-#include "proxyconnection.h"
-
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClienTcpSocket)
-
-namespace remoteproxyclient {
-
-class TcpSocketConnection : public ProxyConnection
+TcpSocketServer::TcpSocketServer(bool sslEnabled, const QSslConfiguration &sslConfiguration, QObject *parent) :
+    TransportInterface(parent),
+    m_sslEnabled(sslEnabled),
+    m_sslConfiguration(sslConfiguration)
 {
-    Q_OBJECT
-
-public:
-    explicit TcpSocketConnection(QObject *parent = nullptr);
-    ~TcpSocketConnection() override;
-
-    void sendData(const QByteArray &data) override;
-
-    void ignoreSslErrors() override;
-    void ignoreSslErrors(const QList<QSslError> &errors) override;
-
-private:
-    QSslSocket *m_tcpSocket = nullptr;
-
-private slots:
-    void onDisconnected();
-    void onEncrypted();
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-    void onReadyRead();
-
-public slots:
-    void connectServer(const QUrl &serverUrl) override;
-    void disconnectServer() override;
-
-};
 
 }
 
-#endif // TCPSOCKETCONNECTION_H
+quint16 TcpSocketServer::port() const
+{
+    return m_port;
+}
+
+void TcpSocketServer::setPort(quint16 port)
+{
+    m_port = port;
+}
+
+QHostAddress TcpSocketServer::hostAddress() const
+{
+    return m_hostAddress;
+}
+
+void TcpSocketServer::setHostAddress(const QHostAddress &address)
+{
+    m_hostAddress = address;
+}
+
+void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
+{
+
+}
+
+void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString &killReason)
+{
+
+}
+
+bool TcpSocketServer::startServer()
+{
+
+}
+
+bool TcpSocketServer::stopServer()
+{
+
+}
+
+}
