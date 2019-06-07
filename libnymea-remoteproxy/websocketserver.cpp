@@ -37,22 +37,12 @@ WebSocketServer::WebSocketServer(bool sslEnabled, const QSslConfiguration &sslCo
     m_sslEnabled(sslEnabled),
     m_sslConfiguration(sslConfiguration)
 {
-    m_serverName = "Websocket server";
+    m_serverName = "WebSocket";
 }
 
 WebSocketServer::~WebSocketServer()
 {
     stopServer();
-}
-
-QUrl WebSocketServer::serverUrl() const
-{
-    return m_serverUrl;
-}
-
-void WebSocketServer::setServerUrl(const QUrl &serverUrl)
-{
-    m_serverUrl = serverUrl;
 }
 
 bool WebSocketServer::running() const
@@ -215,13 +205,13 @@ bool WebSocketServer::stopServer()
     }
 
     // Delete the server object
-    if (m_server) {
-        qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
-        m_server->close();
-        delete m_server;
-        m_server = nullptr;
-    }
+    if (!m_server)
+        return true;
 
+    qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
+    m_server->close();
+    delete m_server;
+    m_server = nullptr;
     return true;
 }
 
