@@ -58,6 +58,7 @@ private:
     QHash<QString, JsonHandler *> m_handlers;
     QHash<JsonReply *, ProxyClient *> m_asyncReplies;
     QList<ProxyClient *> m_clients;
+
     int m_notificationId = 0;
 
     void sendResponse(ProxyClient *client, int commandId, const QVariantMap &params = QVariantMap());
@@ -67,6 +68,7 @@ private:
 
     void registerHandler(JsonHandler *handler);
     void unregisterHandler(JsonHandler *handler);
+    void processDataPackage(ProxyClient *proxyClient, const QByteArray &data);
 
 private slots:
     void setup();
