@@ -40,6 +40,7 @@ class MockAuthenticationReply : public QObject
     Q_OBJECT
 public:
     explicit MockAuthenticationReply(int timeout, Authenticator::AuthenticationError error, AuthenticationReply *authenticationReply, QObject *parent = nullptr);
+    ~MockAuthenticationReply();
 
     AuthenticationReply *authenticationReply() const { return m_authenticationReply; }
     Authenticator::AuthenticationError error() const { return m_error; }
@@ -66,7 +67,7 @@ public:
     void setExpectedAuthenticationError(Authenticator::AuthenticationError error = AuthenticationErrorNoError);
 
 private:
-    int m_timeoutDuration = 1000;
+    int m_timeoutDuration = 500;
     Authenticator::AuthenticationError m_expectedError;
 
 private slots:

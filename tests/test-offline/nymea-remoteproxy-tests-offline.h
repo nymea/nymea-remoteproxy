@@ -54,10 +54,7 @@ private slots:
     void websocketBinaryData();
     void websocketPing();
 
-    // TCP socket connection
-
-
-    // Api
+    // WebSocket connection API
     void getIntrospect();
     void getHello();
 
@@ -71,20 +68,21 @@ private slots:
     void authenticateSendData();
 
     // Client lib
-    void clientConnection();
+    void clientConnectionTcpSocket();
+    void clientConnectionWebSocket();
     void remoteConnection();
     void multipleRemoteConnection();
     void trippleConnection();
     void duplicateUuid();
     void sslConfigurations();
 
-    void jsonRpcTimeout();
     void inactiveTimeout();
+    void jsonRpcTimeout();
     void authenticationReplyTimeout();
     void authenticationReplyConnection();
 
     // TCP Websocket combinations
-
+    //void tcpRemoteConnection();
 
 };
 

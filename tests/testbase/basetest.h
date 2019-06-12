@@ -57,6 +57,7 @@ protected:
     ProxyConfiguration *m_configuration = nullptr;
 
     QUrl m_serverUrl = QUrl("wss://127.0.0.1:1212");
+    QUrl m_serverUrlTcp = QUrl("ssl://127.0.0.1:1213");
 
     QSslConfiguration m_sslConfiguration;
 
@@ -88,8 +89,13 @@ protected slots:
     void cleanupTestCase();
 
 public slots:
+    inline void sslSocketSslErrors(const QList<QSslError> &) {
+        QSslSocket *socket = static_cast<QSslSocket *>(sender());
+        socket->ignoreSslErrors();
+    }
+
     inline void sslErrors(const QList<QSslError> &) {
-        QWebSocket *socket = static_cast<QWebSocket*>(sender());
+        QWebSocket *socket = static_cast<QWebSocket *>(sender());
         socket->ignoreSslErrors();
     }
 

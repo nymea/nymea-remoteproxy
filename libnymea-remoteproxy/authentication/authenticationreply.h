@@ -31,6 +31,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <QObject>
+#include <QPointer>
 #include <QProcess>
 #include <QElapsedTimer>
 
@@ -44,7 +45,7 @@ class AuthenticationReply : public QObject
 public:
     friend class Authenticator;
 
-    ProxyClient *proxyClient() const;
+    QPointer<ProxyClient> proxyClient() const;
 
     bool isTimedOut() const;
     bool isFinished() const;
@@ -53,7 +54,9 @@ public:
 
 private:
     explicit AuthenticationReply(ProxyClient *proxyClient, QObject *parent = nullptr);
-    ProxyClient *m_proxyClient = nullptr;
+    ~AuthenticationReply();
+
+    QPointer<ProxyClient> m_proxyClient;
     QTimer *m_timer = nullptr;
 
     bool m_timedOut = false;
