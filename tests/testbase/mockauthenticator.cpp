@@ -85,6 +85,6 @@ MockAuthenticationReply::MockAuthenticationReply(int timeout, Authenticator::Aut
 
 MockAuthenticationReply::~MockAuthenticationReply()
 {
-    qCCritical(dcAuthentication()) << "Destroy mock authentication reply";
+
 }
 
