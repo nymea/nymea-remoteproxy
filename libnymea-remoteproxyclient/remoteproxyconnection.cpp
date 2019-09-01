@@ -52,6 +52,7 @@ QAbstractSocket::SocketError RemoteProxyConnection::error() const
     return m_error;
 }
 
+#ifndef QT_NO_SSL
 void RemoteProxyConnection::ignoreSslErrors()
 {
     m_connection->ignoreSslErrors();
@@ -61,6 +62,7 @@ void RemoteProxyConnection::ignoreSslErrors(const QList<QSslError> &errors)
 {
     m_connection->ignoreSslErrors(errors);
 }
+#endif
 
 bool RemoteProxyConnection::isConnected() const
 {
@@ -329,8 +331,9 @@ bool RemoteProxyConnection::connectServer(const QUrl &url)
     connect(m_connection, &ProxyConnection::dataReceived, this, &RemoteProxyConnection::onConnectionDataAvailable);
     connect(m_connection, &ProxyConnection::errorOccured, this, &RemoteProxyConnection::onConnectionSocketError);
     connect(m_connection, &ProxyConnection::stateChanged, this, &RemoteProxyConnection::onConnectionStateChanged);
+#ifndef QT_NO_SSL
     connect(m_connection, &ProxyConnection::sslErrors, this, &RemoteProxyConnection::sslErrors);
-
+#endif
     m_jsonClient = new JsonRpcClient(m_connection, this);
     connect(m_jsonClient, &JsonRpcClient::tunnelEstablished, this, &RemoteProxyConnection::onTunnelEstablished);
 

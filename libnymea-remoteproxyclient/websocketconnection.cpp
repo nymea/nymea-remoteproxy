@@ -55,12 +55,12 @@ void WebSocketConnection::sendData(const QByteArray &data)
 
 void WebSocketConnection::ignoreSslErrors()
 {
-    m_webSocket->ignoreSslErrors();
+//    m_webSocket->ignoreSslErrors();
 }
 
 void WebSocketConnection::ignoreSslErrors(const QList<QSslError> &errors)
 {
-    m_webSocket->ignoreSslErrors(errors);
+//    m_webSocket->ignoreSslErrors(errors);
 }
 
 void WebSocketConnection::onDisconnected()

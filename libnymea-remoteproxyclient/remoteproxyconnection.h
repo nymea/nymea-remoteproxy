@@ -68,8 +68,10 @@ public:
     RemoteProxyConnection::State state() const;
     QAbstractSocket::SocketError error() const;
 
+#ifndef QT_NO_SSL
     void ignoreSslErrors();
     void ignoreSslErrors(const QList<QSslError> &errors);
+#endif
 
     bool isConnected() const;
     bool isAuthenticated() const;
@@ -127,7 +129,9 @@ signals:
 
     void stateChanged(RemoteProxyConnection::State state);
     void errorOccured(QAbstractSocket::SocketError error);
+#ifndef QT_NO_SSL
     void sslErrors(const QList<QSslError> &errors);
+#endif
 
     void dataReady(const QByteArray &data);
 
