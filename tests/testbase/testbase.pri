@@ -3,6 +3,9 @@ RESOURCES += ../resources/resources.qrc
 CONFIG += testcase
 QT += testlib
 
+QMAKE_LFLAGS_RPATH=
+QMAKE_LFLAGS += "-Wl,-rpath,\'$${top_srcdir}/libnymea-remoteproxy\':'$${top_srcdir}/libnymea-remoteproxyclient\'"
+
 INCLUDEPATH += $${PWD} $$top_srcdir/libnymea-remoteproxy $$top_srcdir/libnymea-remoteproxyclient
 LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy \
         -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient \
