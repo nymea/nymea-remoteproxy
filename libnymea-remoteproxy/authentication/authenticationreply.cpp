@@ -65,7 +65,6 @@ void AuthenticationReply::setFinished()
 {
     m_timer->stop();
 
-    //emit finished();
     // emit in next event loop
     QTimer::singleShot(0, this, &AuthenticationReply::finished);
 }
