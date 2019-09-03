@@ -40,7 +40,7 @@ public:
 
 private:
     Authenticator::AuthenticationError m_error;
-    AuthenticationReply *m_authenticationReply;
+    AuthenticationReply *m_authenticationReply = nullptr;
 
 signals:
     void finished();

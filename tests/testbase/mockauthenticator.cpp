@@ -60,9 +60,10 @@ AuthenticationReply *MockAuthenticator::authenticate(ProxyClient *proxyClient)
 {
     qCDebug(dcAuthentication()) << name() << "Start authentication for" << proxyClient << "using token" << proxyClient->token();
 
-    AuthenticationReply *authenticationReply = createAuthenticationReply(proxyClient, this);
+    AuthenticationReply *authenticationReply = createAuthenticationReply(proxyClient, proxyClient);
 
-    MockAuthenticationReply *reply = new MockAuthenticationReply(m_timeoutDuration, m_expectedError, authenticationReply, this);
+    // Create mock authentication reply with the given configuration
+    MockAuthenticationReply *reply = new MockAuthenticationReply(m_timeoutDuration, m_expectedError, authenticationReply, proxyClient);
     connect(reply, &MockAuthenticationReply::finished, this, &MockAuthenticator::replyFinished);
 
     return authenticationReply;
