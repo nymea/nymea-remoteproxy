@@ -1,3 +1,10 @@
+nymea-remoteproxy (0.1.6) xenial; urgency=medium
+
+  [ Simon Stürz ]
+  * Fix mock authenticator for tests
+
+ -- Jenkins <jenkins@nymea.io>  Sat, 14 Sep 2019 00:58:47 +0200
+
 nymea-remoteproxy (0.1.5) xenial; urgency=medium
 
   [ Michael Zanetti ]
