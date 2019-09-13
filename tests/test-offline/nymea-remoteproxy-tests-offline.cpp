@@ -950,6 +950,14 @@ void RemoteProxyOfflineTests::authenticationReplyConnection()
     // Start the server
     startServer();
 
+    // Configure result (authentication takes longer than json rpc timeout
+    m_mockAuthenticator->setExpectedAuthenticationError();
+    m_mockAuthenticator->setTimeoutDuration(1000);
+
+    m_configuration->setAuthenticationTimeout(500);
+    m_configuration->setJsonRpcTimeout(1000);
+    m_configuration->setInactiveTimeout(1000);
+
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Sleepy test client", this);
     connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
@@ -958,14 +966,6 @@ void RemoteProxyOfflineTests::authenticationReplyConnection()
     QVERIFY(connection->connectServer(m_serverUrl));
     connectionReadySpy.wait();
     QVERIFY(connectionReadySpy.count() == 1);
-
-    // Configure result (authentication takes longer than json rpc timeout
-    m_mockAuthenticator->setExpectedAuthenticationError();
-    m_mockAuthenticator->setTimeoutDuration(1000);
-
-    m_configuration->setAuthenticationTimeout(500);
-    m_configuration->setJsonRpcTimeout(1000);
-    m_configuration->setInactiveTimeout(1000);
 
     QSignalSpy connectionErrorSpy(connection, &RemoteProxyConnection::errorOccured);
     connection->authenticate("blub");
