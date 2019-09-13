@@ -5,7 +5,7 @@ QT -= gui
 SERVER_NAME=nymea-remoteproxy
 API_VERSION_MAJOR=0
 API_VERSION_MINOR=3
-SERVER_VERSION=0.1.7
+SERVER_VERSION=0.1.8
 
 DEFINES += SERVER_NAME_STRING=\\\"$${SERVER_NAME}\\\" \
            SERVER_VERSION_STRING=\\\"$${SERVER_VERSION}\\\" \
@@ -23,7 +23,7 @@ ccache {
     QMAKE_CXX = ccache g++
 }
 
-coverage {<
+coverage {
     # Note: this works only if you build in the source dir
     OBJECTS_DIR =
     MOC_DIR =

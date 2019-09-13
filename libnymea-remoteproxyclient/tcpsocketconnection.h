@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                               *
- * Copyright (C) 2018 Simon Stürz <simon.stuerz@guh.io>                          *
+ * Copyright (C) 2019 Simon Stürz <simon.stuerz@guh.io>                          *
  *                                                                               *
  * This file is part of nymea-remoteproxy.                                       *
  *                                                                               *
@@ -19,55 +19,50 @@
  *                                                                               *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef SOCKETCONNECTOR_H
-#define SOCKETCONNECTOR_H
+#ifndef TCPSOCKETCONNECTION_H
+#define TCPSOCKETCONNECTION_H
 
-#include <QUrl>
 #include <QObject>
-#include <QSslError>
-#include <QHostAddress>
+#include <QTcpSocket>
+#include <QSslSocket>
+#include <QLoggingCategory>
+
+#include "proxyconnection.h"
+
+Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClienTcpSocket)
 
 namespace remoteproxyclient {
 
-class ProxyConnection : public QObject
+class TcpSocketConnection : public ProxyConnection
 {
     Q_OBJECT
+
 public:
-    explicit ProxyConnection(QObject *parent = nullptr);
-    virtual ~ProxyConnection() = 0;
+    explicit TcpSocketConnection(QObject *parent = nullptr);
+    ~TcpSocketConnection() override;
 
-    virtual void sendData(const QByteArray &data) = 0;
+    void sendData(const QByteArray &data) override;
 
-    QUrl serverUrl() const;
-
-    virtual void ignoreSslErrors() = 0;
-    virtual void ignoreSslErrors(const QList<QSslError> &errors) = 0;
-
-    bool connected();
+    void ignoreSslErrors() override;
+    void ignoreSslErrors(const QList<QSslError> &errors) override;
 
 private:
-    bool m_connected = false;
-    QUrl m_serverUrl;
+    QSslSocket *m_tcpSocket = nullptr;
+    bool m_ssl = false;
 
-protected:
-    void setConnected(bool connected);
-    void setServerUrl(const QUrl &serverUrl);
-
-signals:
-    void connectedChanged(bool connected);
-    void dataReceived(const QByteArray &data);
-
-    void stateChanged(QAbstractSocket::SocketState state);
-    void errorOccured(QAbstractSocket::SocketError error);
-
-    void sslErrors(const QList<QSslError> &errors);
+private slots:
+    void onDisconnected();
+    void onEncrypted();
+    void onError(QAbstractSocket::SocketError error);
+    void onStateChanged(QAbstractSocket::SocketState state);
+    void onReadyRead();
 
 public slots:
-    virtual void connectServer(const QUrl &serverUrl) = 0;
-    virtual void disconnectServer() = 0;
+    void connectServer(const QUrl &serverUrl) override;
+    void disconnectServer() override;
 
 };
 
 }
 
-#endif // SOCKETCONNECTOR_H
+#endif // TCPSOCKETCONNECTION_H
