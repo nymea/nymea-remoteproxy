@@ -1,3 +1,10 @@
+nymea-remoteproxy (0.1.7) xenial; urgency=medium
+
+  [ Michael Zanetti ]
+  * Add option to disable tests during builds
+
+ -- Jenkins <jenkins@nymea.io>  Mon, 25 Nov 2019 13:44:12 +0100
+
 nymea-remoteproxy (0.1.6) xenial; urgency=medium
 
   [ Simon Stürz ]
