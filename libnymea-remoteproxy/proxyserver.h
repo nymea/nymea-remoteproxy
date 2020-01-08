@@ -57,7 +57,7 @@ private:
     // FIXME: Token, ProxyClient
     QHash<QString, ProxyClient *> m_authenticatedClients;
 
-    // Nonce, ProxyClient
+    // TunnelIdentifier (token + nonce), ProxyClient
     QHash<QString, ProxyClient *> m_authenticatedClientsNonce;
 
     // Token, Tunnel

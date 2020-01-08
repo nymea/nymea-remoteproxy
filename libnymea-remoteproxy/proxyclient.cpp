@@ -123,6 +123,11 @@ void ProxyClient::setName(const QString &name)
     m_name = name;
 }
 
+QString ProxyClient::tunnelIdentifier() const
+{
+    return m_token + m_nonce;
+}
+
 QString ProxyClient::token() const
 {
     return m_token;

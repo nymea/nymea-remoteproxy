@@ -141,13 +141,13 @@ void ProxyServer::saveStatistics()
 
 ProxyClient *ProxyServer::getRemoteClient(ProxyClient *proxyClient)
 {
-    if (!m_tunnels.contains(proxyClient->token()))
+    if (!m_tunnels.contains(proxyClient->tunnelIdentifier()))
         return nullptr;
 
-    if (proxyClient == m_tunnels.value(proxyClient->token()).clientOne()) {
-        return m_tunnels.value(proxyClient->token()).clientTwo();
-    } else if (proxyClient == m_tunnels.value(proxyClient->token()).clientTwo()) {
-        return m_tunnels.value(proxyClient->token()).clientOne();
+    if (proxyClient == m_tunnels.value(proxyClient->tunnelIdentifier()).clientOne()) {
+        return m_tunnels.value(proxyClient->tunnelIdentifier()).clientTwo();
+    } else if (proxyClient == m_tunnels.value(proxyClient->tunnelIdentifier()).clientTwo()) {
+        return m_tunnels.value(proxyClient->tunnelIdentifier()).clientOne();
     }
 
     return nullptr;
@@ -163,7 +163,7 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
         //FIXME:
     }
 
-    m_tunnels.insert(tunnel.token(), tunnel);
+    m_tunnels.insert(tunnel.tunnelIdentifier(), tunnel);
 
     // Tell both clients the tunnel has been established
     QVariantMap notificationParamsFirst;
@@ -235,11 +235,11 @@ void ProxyServer::onClientDisconnected(const QUuid &clientId)
         m_jsonRpcServer->unregisterClient(proxyClient);
 
         // Check if
-        if (m_tunnels.contains(proxyClient->token())) {
+        if (m_tunnels.contains(proxyClient->tunnelIdentifier())) {
 
             // There is a tunnel connection for this client, remove the tunnel and disconnect also the other client
             ProxyClient *remoteClient = getRemoteClient(proxyClient);
-            TunnelConnection tunnelConnection = m_tunnels.take(proxyClient->token());
+            TunnelConnection tunnelConnection = m_tunnels.take(proxyClient->tunnelIdentifier());
             Engine::instance()->logEngine()->logTunnel(tunnelConnection);
             if (remoteClient) {
                 remoteClient->killConnection("Tunnel client disconnected");
@@ -279,7 +279,7 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
     if (proxyClient->isAuthenticated() && proxyClient->isTunnelConnected()) {
         ProxyClient *remoteClient = getRemoteClient(proxyClient);
         Q_ASSERT_X(remoteClient, "ProxyServer", "Tunnel existing but not tunnel client available");
-        Q_ASSERT_X(m_tunnels.contains(proxyClient->token()), "ProxyServer", "Tunnel connect but not existing");
+        Q_ASSERT_X(m_tunnels.contains(proxyClient->tunnelIdentifier()), "ProxyServer", "Tunnel connect but not existing");
 
         // Calculate server statisitcs
         m_troughputCounter += data.count();
@@ -304,17 +304,16 @@ void ProxyServer::onProxyClientAuthenticated()
 
     qCDebug(dcProxyServer()) << "Client authenticated" << proxyClient;
 
-    // Check if we already have a tunnel for this token
-    if (m_tunnels.contains(proxyClient->token())) {
-        // A new connection attempt with the same token, kill the old tunnel
-        // connection and allow the new connection to stablish the tunnel
-        qCWarning(dcProxyServer()) << "New authenticated client which already has a tunnel connection. Closing and clean up the old tunnel.";
+    //FIXME: limit the amount of connection with one token
 
-        TunnelConnection tunnel = m_tunnels.take(proxyClient->token());
-        qCDebug(dcProxyServer()) << "Killing " << tunnel;
-        tunnel.clientOne()->killConnection("Clean up for new connection.");
-        tunnel.clientTwo()->killConnection("Clean up for new connection.");
+    // Check if we already have a tunnel with this identifier
+    if (m_tunnels.contains(proxyClient->tunnelIdentifier())) {
+        qCWarning(dcProxyServer()) << "There is already a tunnel with this token and nonce. The client has to take a new nonce or a new token.";
+        // There is already a tunnel with this token and nonce. Reject the connection
+        proxyClient->killConnection("Tunnel already exists for this token nonce combination.");
+        return;
     }
+
 
     // FIXME: for backwards compatibility
     if (proxyClient->nonce().isEmpty()) {

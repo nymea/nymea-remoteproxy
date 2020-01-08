@@ -693,6 +693,36 @@ void RemoteProxyOfflineTests::remoteConnection()
     stopServer();
 }
 
+void RemoteProxyOfflineTests::multipleRemoteConnection()
+{
+    // Start the server
+    startServer();
+
+    // Configure moch authenticator
+    m_mockAuthenticator->setExpectedAuthenticationError();
+    m_mockAuthenticator->setTimeoutDuration(1000);
+    m_configuration->setAuthenticationTimeout(2000);
+    m_configuration->setJsonRpcTimeout(5000);
+    m_configuration->setInactiveTimeout(5000);
+
+    // Create multiple tunnels with one token, but different nonces for each connection
+    QObject *parent = new QObject(this);
+    for (int i = 0; i < 5; i++) {
+        qDebug() << "============== Create remote connection" << i;
+        bool connectionResult = createRemoteConnection(m_testToken, QUuid::createUuid().toString(), parent);
+        if (!connectionResult) {
+            qWarning() << "Test failed because could not create remote connection";
+            delete parent;
+        }
+        QVERIFY(connectionResult);
+    }
+
+    delete parent;
+
+    // Clean up
+    stopServer();
+}
+
 void RemoteProxyOfflineTests::trippleConnection()
 {
     // Start the server
@@ -701,6 +731,8 @@ void RemoteProxyOfflineTests::trippleConnection()
     // Configure moch authenticator
     m_mockAuthenticator->setTimeoutDuration(100);
     m_mockAuthenticator->setExpectedAuthenticationError();
+
+    QString nonce = QUuid::createUuid().toString();
 
     // Create two connection
     RemoteProxyConnection *connectionOne = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
@@ -714,7 +746,6 @@ void RemoteProxyOfflineTests::trippleConnection()
 
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
-    QSignalSpy connectionOneDisconnectedSpy(connectionOne, &RemoteProxyConnection::disconnected);
     QVERIFY(connectionOne->connectServer(m_serverUrl));
     connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
@@ -722,7 +753,6 @@ void RemoteProxyOfflineTests::trippleConnection()
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
-    QSignalSpy connectionTwoDisconnectedSpy(connectionTwo, &RemoteProxyConnection::disconnected);
     QVERIFY(connectionTwo->connectServer(m_serverUrl));
     connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
@@ -730,7 +760,7 @@ void RemoteProxyOfflineTests::trippleConnection()
 
     // Authenticate one
     QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
-    QVERIFY(connectionOne->authenticate(m_testToken));
+    QVERIFY(connectionOne->authenticate(m_testToken, nonce));
     connectionOneAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
@@ -742,7 +772,7 @@ void RemoteProxyOfflineTests::trippleConnection()
     // Authenticate two
     QSignalSpy remoteConnectionEstablishedTwo(connectionTwo, &RemoteProxyConnection::remoteConnectionEstablished);
     QSignalSpy connectionTwoAuthenticatedSpy(connectionTwo, &RemoteProxyConnection::authenticated);
-    QVERIFY(connectionTwo->authenticate(m_testToken));
+    QVERIFY(connectionTwo->authenticate(m_testToken, nonce));
     connectionTwoAuthenticatedSpy.wait();
     QVERIFY(connectionTwoAuthenticatedSpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
@@ -751,10 +781,11 @@ void RemoteProxyOfflineTests::trippleConnection()
     // Wait for both to be connected
     remoteConnectionEstablishedOne.wait(500);
 
-    // Now connect a third connection and make sure the tunnel gets closed
+    // Now connect a third connection and make sure the client will be closed
 
     // Connect three
     QSignalSpy connectionThreeReadySpy(connectionThree, &RemoteProxyConnection::ready);
+    QSignalSpy connectionThreeDisconnectedSpy(connectionThree, &RemoteProxyConnection::disconnected);
     QVERIFY(connectionThree->connectServer(m_serverUrl));
     connectionThreeReadySpy.wait();
     QVERIFY(connectionThreeReadySpy.count() == 1);
@@ -762,17 +793,16 @@ void RemoteProxyOfflineTests::trippleConnection()
 
     // Authenticate three
     QSignalSpy connectionThreeAuthenticatedSpy(connectionThree, &RemoteProxyConnection::authenticated);
-    QVERIFY(connectionThree->authenticate(m_testToken));
+    QVERIFY(connectionThree->authenticate(m_testToken, nonce));
     connectionThreeAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
 
-    connectionOneDisconnectedSpy.wait(200);
-    connectionTwoDisconnectedSpy.wait(200);
+    connectionThreeDisconnectedSpy.wait(200);
+    QVERIFY(connectionThreeDisconnectedSpy.count() >= 1);
 
-    QVERIFY(connectionOneDisconnectedSpy.count() >= 1);
-    QVERIFY(connectionTwoDisconnectedSpy.count() >= 1);
-    QVERIFY(connectionOne->state() == RemoteProxyConnection::StateDisconnected);
-    QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateDisconnected);
+    // Make sure the one and two are still connected
+    QVERIFY(connectionOne->state() == RemoteProxyConnection::StateRemoteConnected);
+    QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     // Clean up
     stopServer();
@@ -879,6 +909,9 @@ void RemoteProxyOfflineTests::jsonRpcTimeout()
     // Configure result (authentication takes longer than json rpc timeout
     m_mockAuthenticator->setExpectedAuthenticationError();
     m_mockAuthenticator->setTimeoutDuration(4000);
+    m_configuration->setAuthenticationTimeout(4000);
+    m_configuration->setJsonRpcTimeout(1000);
+    m_configuration->setInactiveTimeout(2000);
 
     // Create request
     QVariantMap params;

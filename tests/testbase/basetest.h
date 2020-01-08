@@ -75,6 +75,8 @@ protected:
     QVariant invokeApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
     QVariant injectSocketData(const QByteArray &data);
 
+    bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);
+
 protected slots:
     void initTestCase();
     void cleanupTestCase();

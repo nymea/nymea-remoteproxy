@@ -63,6 +63,8 @@ public:
     QString name() const;
     void setName(const QString &name);
 
+    QString tunnelIdentifier() const;
+
     QString token() const;
     void setToken(const QString &token);
 
