@@ -6,6 +6,7 @@ Build-depends: debhelper (>= 0.0.0),
     dh-systemd,
     libqt5websockets5-dev,
     libncurses5-dev,
+    qt5-default,
 Standards-Version: 3.9.3
 
 Package: nymea-remoteproxy
