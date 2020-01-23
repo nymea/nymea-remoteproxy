@@ -1,3 +1,11 @@
+nymea-remoteproxy (0.1.9) xenial; urgency=medium
+
+  [ Michael Zanetti ]
+  * Fix building in sbuild
+  * Update copyright
+
+ -- Jenkins <jenkins@nymea.io>  Thu, 23 Jan 2020 13:40:15 +0100
+
 nymea-remoteproxy (0.1.8) xenial; urgency=medium
 
   [ Michael Zanetti ]
