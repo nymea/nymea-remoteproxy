@@ -70,6 +70,7 @@ private slots:
     // Client lib
     void clientConnection();
     void remoteConnection();
+    void multipleRemoteConnection();
     void trippleConnection();
     void duplicateUuid();
     void sslConfigurations();

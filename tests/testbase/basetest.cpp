@@ -195,6 +195,119 @@ QVariant BaseTest::injectSocketData(const QByteArray &data)
     return QVariant();
 }
 
+bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce, QObject *parent)
+{
+    // Configure mock authenticator
+    m_mockAuthenticator->setTimeoutDuration(100);
+    m_mockAuthenticator->setExpectedAuthenticationError();
+
+    QString nameConnectionOne = "Test client one";
+    QUuid uuidConnectionOne = QUuid::createUuid();
+
+    QString nameConnectionTwo = "Test client two";
+    QUuid uuidConnectionTwo = QUuid::createUuid();
+
+    QByteArray dataOne = "Hello from client one :-)";
+    QByteArray dataTwo = "Hello from client two :-)";
+
+    // Create two connection
+    RemoteProxyConnection *connectionOne = new RemoteProxyConnection(uuidConnectionOne, nameConnectionOne, parent);
+    connect(connectionOne, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
+
+    RemoteProxyConnection *connectionTwo = new RemoteProxyConnection(uuidConnectionTwo, nameConnectionTwo, parent);
+    connect(connectionTwo, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
+
+    // Connect one
+    QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
+    if (!connectionOne->connectServer(m_serverUrl)) {
+        qWarning() << "Could not connect client one";
+        return false;
+    }
+
+    connectionOneReadySpy.wait();
+    if (connectionOneReadySpy.count() != 1) {
+        qWarning() << "Could not connect client one";
+        return false;
+    }
+
+    if (!connectionOne->isConnected()) {
+        qWarning() << "Could not connect client one";
+        return false;
+    }
+
+    // Connect two
+    QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
+    if (!connectionTwo->connectServer(m_serverUrl)) {
+        qWarning() << "Could not connect client two";
+        return false;
+    }
+
+    connectionTwoReadySpy.wait();
+    if (connectionTwoReadySpy.count() != 1) {
+        qWarning() << "Could not connect client two";
+        return false;
+    }
+
+    if (!connectionTwo->isConnected()) {
+        qWarning() << "Could not connect client two";
+        return false;
+    }
+
+    // Authenticate one
+    QSignalSpy remoteConnectionEstablishedOne(connectionOne, &RemoteProxyConnection::remoteConnectionEstablished);
+    QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
+    if (!connectionOne->authenticate(token, nonce)) {
+        qWarning() << "Could not authenticate client one";
+        return false;
+    }
+
+    connectionOneAuthenticatedSpy.wait(500);
+    if (connectionOneAuthenticatedSpy.count() != 1) {
+        qWarning() << "Could not authenticate client one";
+        return false;
+    }
+
+    if (connectionOne->state() != RemoteProxyConnection::StateAuthenticated) {
+        qWarning() << "Could not authenticate client one";
+        return false;
+    }
+
+    // Authenticate two
+    QSignalSpy remoteConnectionEstablishedTwo(connectionTwo, &RemoteProxyConnection::remoteConnectionEstablished);
+    QSignalSpy connectionTwoAuthenticatedSpy(connectionTwo, &RemoteProxyConnection::authenticated);
+    if (!connectionTwo->authenticate(token, nonce)) {
+        qWarning() << "Could not authenticate client two";
+        return false;
+    }
+
+    connectionTwoAuthenticatedSpy.wait(500);
+    if (connectionTwoAuthenticatedSpy.count() != 1) {
+        qWarning() << "Could not authenticate client two";
+        return false;
+    }
+
+    if (connectionTwo->state() != RemoteProxyConnection::StateAuthenticated && connectionTwo->state() != RemoteProxyConnection::StateRemoteConnected) {
+        qWarning() << "Could not authenticate client two";
+        return false;
+    }
+
+    // Wait for both to be connected
+    remoteConnectionEstablishedOne.wait(500);
+    remoteConnectionEstablishedTwo.wait(500);
+
+    if (remoteConnectionEstablishedOne.count() != 1 || remoteConnectionEstablishedTwo.count() != 1) {
+        qWarning() << "Could not establish remote connection";
+        return false;
+    }
+
+    if (connectionOne->state() != RemoteProxyConnection::StateRemoteConnected || connectionTwo->state() != RemoteProxyConnection::StateRemoteConnected) {
+        qWarning() << "Could not establish remote connection";
+        return false;
+    }
+
+    return true;
+}
+
 void BaseTest::initTestCase()
 {
     qRegisterMetaType<RemoteProxyConnection::State>();

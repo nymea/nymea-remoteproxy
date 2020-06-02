@@ -46,6 +46,22 @@ QString TunnelConnection::token() const
     return m_clientOne->token();
 }
 
+QString TunnelConnection::nonce() const
+{
+    if (!isValid())
+        return QString();
+
+    return m_clientOne->nonce();
+}
+
+QString TunnelConnection::tunnelIdentifier() const
+{
+    if (!isValid())
+        return QString();
+
+    return m_clientOne->tunnelIdentifier();
+}
+
 uint TunnelConnection::creationTime() const
 {
     return m_creationTimeStamp;

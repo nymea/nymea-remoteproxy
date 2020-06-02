@@ -38,6 +38,8 @@ public:
     TunnelConnection(ProxyClient *clientOne = nullptr, ProxyClient *clientTwo = nullptr);
 
     QString token() const;
+    QString nonce() const;
+    QString tunnelIdentifier() const;
 
     uint creationTime() const;
     QString creationTimeString() const;
