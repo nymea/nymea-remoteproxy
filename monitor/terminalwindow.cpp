@@ -102,13 +102,12 @@ const char *TerminalWindow::convertString(const QString &string)
 QString TerminalWindow::getDurationString(uint timestamp)
 {
     uint duration = QDateTime::currentDateTime().toTime_t() - timestamp;
-    QString res;
     int seconds = static_cast<int>(duration % 60);
     duration /= 60;
     int minutes = static_cast<int>(duration % 60);
     duration /= 60;
     int hours = static_cast<int>(duration % 24);
-    return res.sprintf("%02d:%02d:%02d", hours, minutes, seconds);
+    return QString::asprintf("%02d:%02d:%02d", hours, minutes, seconds);
 }
 
 QString TerminalWindow::humanReadableTraffic(int bytes)
