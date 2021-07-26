@@ -15,5 +15,5 @@ SOURCES += main.cpp \
 
 LIBS += -lncurses
 
-target.path = /usr/bin
+target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target
