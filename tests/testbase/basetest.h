@@ -82,6 +82,9 @@ protected:
     QVariant invokeWebSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
     QVariant injectWebSocketData(const QByteArray &data);
 
+    QVariant invokeTcpSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant injectTcpSocketData(const QByteArray &data);
+
     bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);
 
 protected slots:

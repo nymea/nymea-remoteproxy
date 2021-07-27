@@ -226,6 +226,66 @@ QVariant BaseTest::injectWebSocketData(const QByteArray &data)
     return QVariant();
 }
 
+QVariant BaseTest::invokeTcpSocketApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+{
+    Q_UNUSED(remainsConnected)
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+    QSslSocket *socket = new QSslSocket(this);
+    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+    QObject::connect(socket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &BaseTest::sslSocketSslErrors);
+
+    QSignalSpy spyConnection(socket, &QSslSocket::connected);
+    socket->connectToHostEncrypted(Engine::instance()->tcpSocketServer()->serverUrl().host(),
+                                   static_cast<quint16>(Engine::instance()->tcpSocketServer()->serverUrl().port()));
+    spyConnection.wait();
+    if (spyConnection.count() == 0) {
+        return QVariant();
+    }
+
+    QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
+    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
+    // FIXME: check why it waits the full time here
+    dataSpy.wait(500);
+    if (dataSpy.count() != 1) {
+        qWarning() << "No data received";
+        return QVariant();
+    }
+
+    QByteArray data = socket->readAll();
+    socket->close();
+    socket->deleteLater();
+
+    // Make sure the response ends with '}\n'
+    if (!data.endsWith("}\n")) {
+        qWarning() << "JSON data does not end with \"}\n\"";
+        return QVariant();
+    }
+
+    // Make sure the response it a valid JSON string
+    QJsonParseError error;
+    jsonDoc = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON parser error" << error.errorString();
+        return QVariant();
+    }
+
+    QVariantMap response = jsonDoc.toVariant().toMap();
+
+    if (response.value("id").toInt() == m_commandCounter) {
+        m_commandCounter++;
+        return jsonDoc.toVariant();
+    }
+
+    m_commandCounter++;
+    return QVariant();
+}
+
 bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce, QObject *parent)
 {
     // Configure mock authenticator
@@ -339,65 +399,6 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
     return true;
 }
 
-void BaseTest::initTestCase()
-{
-    Q_UNUSED(remainsConnected)
-
-    QVariantMap request;
-    request.insert("id", m_commandCounter);
-    request.insert("method", method);
-    request.insert("params", params);
-    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
-
-    QSslSocket *socket = new QSslSocket(this);
-    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
-    QObject::connect(socket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &BaseTest::sslSocketSslErrors);
-
-    QSignalSpy spyConnection(socket, &QSslSocket::connected);
-    socket->connectToHostEncrypted(Engine::instance()->tcpSocketServer()->serverUrl().host(),
-                                   static_cast<quint16>(Engine::instance()->tcpSocketServer()->serverUrl().port()));
-    spyConnection.wait();
-    if (spyConnection.count() == 0) {
-        return QVariant();
-    }
-
-    QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
-    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
-    if (dataSpy.count() != 1) {
-        qWarning() << "No data received";
-        return QVariant();
-    }
-
-    QByteArray data = socket->readAll();
-    socket->close();
-    socket->deleteLater();
-
-    // Make sure the response ends with '}\n'
-    if (!data.endsWith("}\n")) {
-        qWarning() << "JSON data does not end with \"}\n\"";
-        return QVariant();
-    }
-
-    // Make sure the response it a valid JSON string
-    QJsonParseError error;
-    jsonDoc = QJsonDocument::fromJson(data, &error);
-    if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON parser error" << error.errorString();
-        return QVariant();
-    }
-
-    QVariantMap response = jsonDoc.toVariant().toMap();
-
-    if (response.value("id").toInt() == m_commandCounter) {
-        m_commandCounter++;
-        return jsonDoc.toVariant();
-    }
-
-    m_commandCounter++;
-    return QVariant();
-}
 
 QVariant BaseTest::injectTcpSocketData(const QByteArray &data)
 {
