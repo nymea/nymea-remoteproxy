@@ -10,5 +10,5 @@ HEADERS += nymea-remoteproxy-tests-offline.h
 
 SOURCES += nymea-remoteproxy-tests-offline.cpp
 
-target.path = /usr/bin
+target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target

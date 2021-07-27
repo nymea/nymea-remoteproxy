@@ -11,7 +11,7 @@ LIBS += -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient
 SOURCES += main.cpp \
     proxyclient.cpp
 
-target.path = /usr/bin
+target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target
 
 HEADERS += \

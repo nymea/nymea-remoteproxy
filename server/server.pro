@@ -10,7 +10,7 @@ LIBS += -L$$top_builddir/libnymea-remoteproxy/ -lnymea-remoteproxy
 SOURCES += main.cpp \
     remoteproxyserverapplication.cpp
 
-target.path = /usr/bin
+target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target
 
 HEADERS += \

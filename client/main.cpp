@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
                                              "a server application as client perspective.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2018 Simon Stürz <simon.stuerz@guh.io>\n")
+                                             "Copyright %3 2021 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
