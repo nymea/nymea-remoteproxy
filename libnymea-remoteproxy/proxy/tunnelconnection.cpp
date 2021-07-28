@@ -35,7 +35,7 @@ TunnelConnection::TunnelConnection(ProxyClient *clientOne, ProxyClient *clientTw
     m_clientOne(clientOne),
     m_clientTwo(clientTwo)
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
+    m_creationTimeStamp = QDateTime::currentDateTimeUtc().toTime_t();
 }
 
 QString TunnelConnection::token() const

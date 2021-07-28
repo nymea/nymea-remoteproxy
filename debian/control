@@ -1,11 +1,12 @@
 Source: nymea-remoteproxy
 Section: utils
 Priority: options
-Maintainer: Simon Stürz <simon.stürz@guh.io>
+Maintainer: Simon Stürz <simon.stuerz@nymea.io>
 Build-depends: debhelper (>= 0.0.0),
     libqt5websockets5-dev,
     libncurses5-dev,
 Standards-Version: 3.9.3
+
 
 Package: nymea-remoteproxy
 Architecture: any
@@ -17,6 +18,7 @@ Suggests: nymea-remoteproxy-monitor (= ${binary:Version})
 Description: The nymea remote proxy server
   The nymea remote proxy server
 
+
 Package: libnymea-remoteproxy
 Architecture: any
 Section: libs
@@ -24,6 +26,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy server lib
   The nymea remote proxy server lib
+
 
 Package: libnymea-remoteproxy-dev
 Architecture: any
@@ -34,15 +37,6 @@ Depends: ${shlibs:Depends},
 Description: The nymea remote proxy server lib - development files
   The nymea remote proxy server lib - development files
 
-Package: libnymea-remoteproxy-dbg
-Architecture: any
-Section: debug
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libnymea-remoteproxy (= ${binary:Version}),
-Description: The nymea remote proxy server lib - debug symbols
-  The nymea remote proxy server lib - debug symbols
-
 
 Package: nymea-remoteproxy-client
 Architecture: any
@@ -52,6 +46,7 @@ Depends: ${shlibs:Depends},
 Description: The nymea remote proxy client for testing
   The nymea remote proxy client for testing
 
+
 Package: libnymea-remoteproxyclient
 Architecture: any
 Section: libs
@@ -59,6 +54,7 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy server client lib
   The nymea remote proxy server client lib
+
 
 Package: libnymea-remoteproxyclient-dev
 Architecture: any
@@ -69,14 +65,6 @@ Depends: ${shlibs:Depends},
 Description: The nymea remote proxy server client lib - development files
   The nymea remote proxy server client lib - development files
 
-Package: libnymea-remoteproxyclient-dbg
-Architecture: any
-Section: debug
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libnymea-remoteproxyclient (= ${binary:Version}),
-Description: The nymea remote proxy server client lib - debug symbols
-  The nymea remote proxy server client lib - debug symbols
 
 Package: nymea-remoteproxy-tests
 Architecture: any
@@ -85,6 +73,7 @@ Depends: ${shlibs:Depends},
          libnymea-remoteproxy (= ${binary:Version}),
 Description: The nymea remote proxy server tests
   The nymea remote proxy server tests
+
 
 Package: nymea-remoteproxy-monitor
 Architecture: any

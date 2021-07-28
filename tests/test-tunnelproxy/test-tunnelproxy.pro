@@ -4,11 +4,11 @@ include(../testbase/testbase.pri)
 CONFIG += testcase
 QT += testlib
 
-TARGET = nymea-remoteproxy-tests-offline
+TARGET = nymea-remoteproxy-tunnelproxy-tests
 
-HEADERS += nymea-remoteproxy-tests-offline.h
+HEADERS += remoteproxyteststunnelproxy.h
 
-SOURCES += nymea-remoteproxy-tests-offline.cpp
+SOURCES += remoteproxyteststunnelproxy.cpp
 
 target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target

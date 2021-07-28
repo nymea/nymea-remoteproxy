@@ -71,31 +71,61 @@ void Engine::start(ProxyConfiguration *configuration)
     // Make sure an authenticator was registered
     Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
 
+    // Proxy
+    // -------------------------------------
     m_proxyServer = new ProxyServer(this);
-    m_webSocketServer = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
-    m_tcpSocketServer = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+    m_webSocketServerProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+    m_tcpSocketServerProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
 
     // Configure websocket server
     QUrl websocketServerUrl;
     websocketServerUrl.setScheme(m_configuration->sslEnabled() ? "wss" : "ws");
-    websocketServerUrl.setHost(m_configuration->webSocketServerHost().toString());
-    websocketServerUrl.setPort(m_configuration->webSocketServerPort());
-    m_webSocketServer->setServerUrl(websocketServerUrl);
+    websocketServerUrl.setHost(m_configuration->webSocketServerProxyHost().toString());
+    websocketServerUrl.setPort(m_configuration->webSocketServerProxyPort());
+    m_webSocketServerProxy->setServerUrl(websocketServerUrl);
 
     // Configure tcp socket server
-    QUrl tcpSocketServerUrl;
-    tcpSocketServerUrl.setScheme(m_configuration->sslEnabled() ? "ssl" : "tcp");
-    tcpSocketServerUrl.setHost(m_configuration->tcpServerHost().toString());
-    tcpSocketServerUrl.setPort(m_configuration->tcpServerPort());
-    m_tcpSocketServer->setServerUrl(tcpSocketServerUrl);
+    QUrl tcpSocketServerProxyUrl;
+    tcpSocketServerProxyUrl.setScheme(m_configuration->sslEnabled() ? "ssl" : "tcp");
+    tcpSocketServerProxyUrl.setHost(m_configuration->tcpServerHost().toString());
+    tcpSocketServerProxyUrl.setPort(m_configuration->tcpServerPort());
+    m_tcpSocketServerProxy->setServerUrl(tcpSocketServerProxyUrl);
 
     // Register the transport interfaces in the proxy server
-    m_proxyServer->registerTransportInterface(m_webSocketServer);
-    m_proxyServer->registerTransportInterface(m_tcpSocketServer);
+    m_proxyServer->registerTransportInterface(m_webSocketServerProxy);
+    m_proxyServer->registerTransportInterface(m_tcpSocketServerProxy);
 
     // Start the server
-    qCDebug(dcEngine()) << "Starting proxy server";
+    qCDebug(dcEngine()) << "Starting the proxy servers...";
     m_proxyServer->startServer();
+
+    // Tunnel proxy
+    // -------------------------------------
+    m_tunnelProxyManager = new TunnelProxyManager(this);
+    m_webSocketServerTunnelProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+    m_tcpSocketServerTunnelProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+
+    // Configure websocket server
+    QUrl websocketServerTunnelProxyUrl;
+    websocketServerTunnelProxyUrl.setScheme(m_configuration->sslEnabled() ? "wss" : "ws");
+    websocketServerTunnelProxyUrl.setHost(m_configuration->webSocketServerTunnelProxyHost().toString());
+    websocketServerTunnelProxyUrl.setPort(m_configuration->webSocketServerTunnelProxyPort());
+    m_webSocketServerTunnelProxy->setServerUrl(websocketServerTunnelProxyUrl);
+
+    // Configure tcp socket server
+    QUrl tcpSocketServerTunnelProxyUrl;
+    tcpSocketServerTunnelProxyUrl.setScheme(m_configuration->sslEnabled() ? "ssl" : "tcp");
+    tcpSocketServerTunnelProxyUrl.setHost(m_configuration->tcpServerTunnelProxyHost().toString());
+    tcpSocketServerTunnelProxyUrl.setPort(m_configuration->tcpServerTunnelProxyPort());
+    m_tcpSocketServerTunnelProxy->setServerUrl(tcpSocketServerTunnelProxyUrl);
+
+    // Register the transport interfaces in the proxy server
+    m_tunnelProxyManager->registerTransportInterface(m_webSocketServerTunnelProxy);
+    m_tunnelProxyManager->registerTransportInterface(m_tcpSocketServerTunnelProxy);
+
+    // Start the server
+    qCDebug(dcEngine()) << "Starting the tunnel proxy manager...";
+    m_tunnelProxyManager->startServer();
 
     // Start the monitor server
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
@@ -165,14 +195,29 @@ ProxyServer *Engine::proxyServer() const
     return m_proxyServer;
 }
 
-TcpSocketServer *Engine::tcpSocketServer() const
+TunnelProxyManager *Engine::tunnelProxyManager() const
 {
-    return m_tcpSocketServer;
+    return m_tunnelProxyManager;
 }
 
-WebSocketServer *Engine::webSocketServer() const
+TcpSocketServer *Engine::tcpSocketServerProxy() const
 {
-    return m_webSocketServer;
+    return m_tcpSocketServerProxy;
+}
+
+WebSocketServer *Engine::webSocketServerProxy() const
+{
+    return m_webSocketServerProxy;
+}
+
+TcpSocketServer *Engine::tcpSocketServerTunnelProxy() const
+{
+    return m_tcpSocketServerTunnelProxy;
+}
+
+WebSocketServer *Engine::webSocketServerTunnelProxy() const
+{
+    return m_webSocketServerTunnelProxy;
 }
 
 MonitorServer *Engine::monitorServer() const
@@ -188,7 +233,7 @@ LogEngine *Engine::logEngine() const
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
-    m_lastTimeStamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    m_lastTimeStamp = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
 
     m_timer = new QTimer(this);
     m_timer->setSingleShot(false);
@@ -216,7 +261,7 @@ QVariantMap Engine::createServerStatistic()
 
 void Engine::onTimerTick()
 {
-    qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    qint64 timestamp = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     qint64 deltaTime = timestamp - m_lastTimeStamp;
     m_lastTimeStamp = timestamp;
 
@@ -249,9 +294,9 @@ void Engine::clean()
         m_proxyServer = nullptr;
     }
 
-    if (m_webSocketServer) {
-        delete m_webSocketServer;
-        m_webSocketServer = nullptr;
+    if (m_webSocketServerProxy) {
+        delete m_webSocketServerProxy;
+        m_webSocketServerProxy = nullptr;
     }
 
     if (m_configuration) {
@@ -264,6 +309,9 @@ void Engine::setRunning(bool running)
 {
     if (m_running == running)
         return;
+
+    if (m_proxyServer)
+        m_proxyServer->setRunning(running);
 
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
 

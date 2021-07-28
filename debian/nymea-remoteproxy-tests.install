@@ -1,1 +1,2 @@
-usr/bin/nymea-remoteproxy-tests-offline
+usr/bin/nymea-remoteproxy-proxy-tests
+usr/bin/nymea-remoteproxy-tunnelproxy-tests

@@ -36,10 +36,13 @@
 
 namespace remoteproxy {
 
-ProxyServer::ProxyServer(QObject *parent) : QObject(parent)
+ProxyServer::ProxyServer(QObject *parent) :
+    QObject(parent)
 {
     qRegisterMetaType<ProxyClient *>("ProxyClient *");
     m_jsonRpcServer = new JsonRpcServer(this);
+    m_jsonRpcServer->registerHandler(m_jsonRpcServer);
+    m_jsonRpcServer->registerHandler(new AuthenticationHandler(this));
 
     loadStatistics();
 }
@@ -120,7 +123,7 @@ void ProxyServer::setRunning(bool running)
     if (m_running == running)
         return;
 
-    qCDebug(dcProxyServer()) << "The proxy server is now up and running";
+    qCDebug(dcProxyServer()) << "The proxy server is" << (running ? "up and running." : "not running any more.");
     m_running = running;
     emit runningChanged();
 }
@@ -196,13 +199,13 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsFirst),
-                              Q_ARG(ProxyClient *, tunnel.clientOne()));
+                              Q_ARG(ProxyClient*, tunnel.clientOne()));
 
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsSecond),
-                              Q_ARG(ProxyClient *, tunnel.clientTwo()));
+                              Q_ARG(ProxyClient*, tunnel.clientTwo()));
 }
 
 void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)

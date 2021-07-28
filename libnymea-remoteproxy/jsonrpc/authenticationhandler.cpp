@@ -106,7 +106,7 @@ void AuthenticationHandler::onAuthenticationFinished()
         jsonReply->setData(errorToReply(authenticationReply->error()));
     }
 
-    jsonReply->finished();
+    emit jsonReply->finished();
 }
 
 }

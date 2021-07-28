@@ -1,10 +1,10 @@
 include(../nymea-remoteproxy.pri)
 
 TEMPLATE=subdirs
-SUBDIRS += test-offline
+SUBDIRS += test-proxy test-tunnelproxy
 
-online {
-    message("Online tests enabled")
-    SUBDIRS += test-online
-}
+#online {
+#    message("Online tests enabled")
+#    SUBDIRS += test-online
+#}
 

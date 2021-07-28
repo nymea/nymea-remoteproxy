@@ -31,7 +31,7 @@
 #include <QFile>
 #include <QObject>
 
-#include "tunnelconnection.h"
+#include "proxy/tunnelconnection.h"
 
 namespace remoteproxy {
 

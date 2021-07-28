@@ -65,7 +65,7 @@ static const char *const error = "\e[31m";
 static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
     QString messageString;
-    QString timeString = QDateTime::currentDateTime().toString("yyyy.MM.dd hh:mm:ss.zzz");
+    QString timeString = QDateTime::currentDateTimeUtc().toString("yyyy.MM.dd hh:mm:ss.zzz");
     switch (type) {
     case QtInfoMsg:
         messageString = QString(" I %1 | %2: %3").arg(timeString).arg(context.category).arg(message);
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
     }
 
     // Verify webserver configuration
-    if (configuration->webSocketServerHost().isNull()) {
+    if (configuration->webSocketServerProxyHost().isNull()) {
         qCCritical(dcApplication()) << "Invalid web socket host address passed.";
         exit(-1);
     }

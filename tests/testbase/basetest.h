@@ -59,6 +59,9 @@ protected:
     QUrl m_serverUrl = QUrl("wss://127.0.0.1:1212");
     QUrl m_serverUrlTcp = QUrl("ssl://127.0.0.1:1213");
 
+    QUrl m_serverUrlTunnel = QUrl("wss://127.0.0.1:2212");
+    QUrl m_serverUrlTunnelTcp = QUrl("ssl://127.0.0.1:2213");
+
     QSslConfiguration m_sslConfiguration;
 
     Authenticator *m_authenticator = nullptr;
@@ -79,11 +82,18 @@ protected:
     void startServer();
     void stopServer();
 
-    QVariant invokeWebSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
-    QVariant injectWebSocketData(const QByteArray &data);
+    QVariant invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant injectWebSocketProxyData(const QByteArray &data);
 
-    QVariant invokeTcpSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
-    QVariant injectTcpSocketData(const QByteArray &data);
+    QVariant invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant injectTcpSocketProxyData(const QByteArray &data);
+
+    QVariant invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant injectWebSocketTunnelProxyData(const QByteArray &data);
+
+    QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant injectTcpSocketTunnelProxyData(const QByteArray &data);
+
 
     bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);
 

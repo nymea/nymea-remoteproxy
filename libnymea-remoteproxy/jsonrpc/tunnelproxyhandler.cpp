@@ -25,24 +25,48 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "tunnelproxyhandler.h"
+
+#include "engine.h"
+#include "jsontypes.h"
 #include "loggingcategories.h"
 
-Q_LOGGING_CATEGORY(dcApplication, "Application")
-Q_LOGGING_CATEGORY(dcEngine, "Engine")
-Q_LOGGING_CATEGORY(dcJsonRpc, "JsonRpc")
-Q_LOGGING_CATEGORY(dcTunnel, "Tunnel")
-Q_LOGGING_CATEGORY(dcJsonRpcTraffic, "JsonRpcTraffic")
-Q_LOGGING_CATEGORY(dcTcpSocketServer, "TcpSocketServer")
-Q_LOGGING_CATEGORY(dcTcpSocketServerTraffic, "TcpSocketServerTraffic")
-Q_LOGGING_CATEGORY(dcWebSocketServer, "WebSocketServer")
-Q_LOGGING_CATEGORY(dcWebSocketServerTraffic, "WebSocketServerTraffic")
-Q_LOGGING_CATEGORY(dcAuthentication, "Authentication")
-Q_LOGGING_CATEGORY(dcAuthenticationProcess, "AuthenticationProcess")
-Q_LOGGING_CATEGORY(dcProxyServer, "ProxyServer")
-Q_LOGGING_CATEGORY(dcTunnelProxyManager, "TunnelProxyManager")
-Q_LOGGING_CATEGORY(dcProxyTunnelClient, "ProxyTunnelClient")
-Q_LOGGING_CATEGORY(dcTunnelProxyServer, "TunnelProxyServer")
-Q_LOGGING_CATEGORY(dcProxyServerTraffic, "ProxyServerTraffic")
-Q_LOGGING_CATEGORY(dcMonitorServer, "MonitorServer")
-Q_LOGGING_CATEGORY(dcAwsCredentialsProvider, "AwsCredentialsProvider")
-Q_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic, "AwsCredentialsProviderTraffic")
+#include "tunnelproxy/tunnelproxymanager.h"
+
+namespace remoteproxy {
+
+TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
+{
+    // Methods
+    QVariantMap params; QVariantMap returns;
+
+    params.clear(); returns.clear();
+    setDescription("RegisterServer", "Register a new TunnelProxy server on this instance. Multiple TunnelProxy clients can be connected to the registered server on success.");
+    params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
+    setParams("RegisterServer", params);
+    returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
+    setReturns("RegisterServer", returns);
+
+}
+
+QString TunnelProxyHandler::name() const
+{
+    return "TunnelProxy";
+}
+
+JsonReply *TunnelProxyHandler::RegisterServer(const QVariantMap &params, ProxyClient *proxyClient)
+{
+    qCDebug(dcJsonRpc()) << name() << "register server" << params << proxyClient;
+    QUuid serverUuid = params.value("uuid").toUuid();
+    QString serverName = params.value("name").toString();
+
+    TunnelProxyManager::Error error = Engine::instance()->tunnelProxyManager()->registerServer(proxyClient->clientId(), serverUuid, serverName);
+
+    QVariantMap response;
+    response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+
+    return createReply("RegisterServer", response);
+}
+
+}

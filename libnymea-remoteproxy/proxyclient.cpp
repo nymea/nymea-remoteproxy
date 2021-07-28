@@ -39,7 +39,7 @@ ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, c
     m_clientId(clientId),
     m_peerAddress(address)
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toTime_t();
+    m_creationTimeStamp = QDateTime::currentDateTimeUtc().toTime_t();
 
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &ProxyClient::timeoutOccured);

@@ -34,7 +34,7 @@
 #include <QTimer>
 #include <QHostAddress>
 
-#include "transportinterface.h"
+#include "server/transportinterface.h"
 
 namespace remoteproxy {
 

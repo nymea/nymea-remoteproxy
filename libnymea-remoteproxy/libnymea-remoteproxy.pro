@@ -6,19 +6,22 @@ TARGET = nymea-remoteproxy
 HEADERS += \
     engine.h \
     loggingcategories.h \
-    tcpsocketserver.h \
-    transportinterface.h \
-    websocketserver.h \
+    tunnelproxy/tunnelproxymanager.h \
+    tunnelproxy/tunnelproxyserver.h \
+    server/tcpsocketserver.h \
+    server/transportinterface.h \
+    server/websocketserver.h \
+    server/jsonrpcserver.h \
+    server/monitorserver.h \
     proxyclient.h \
-    proxyserver.h \
-    monitorserver.h \
+    proxy/proxyserver.h \
+    proxy/tunnelconnection.h \
     proxyconfiguration.h \
-    tunnelconnection.h \
-    jsonrpcserver.h \
     jsonrpc/jsonhandler.h \
     jsonrpc/jsonreply.h \
     jsonrpc/jsontypes.h \
     jsonrpc/authenticationhandler.h \
+    jsonrpc/tunnelproxyhandler.h \
     authentication/authenticator.h \
     authentication/authenticationreply.h \
     authentication/dummy/dummyauthenticator.h \
@@ -32,19 +35,22 @@ HEADERS += \
 SOURCES += \
     engine.cpp \
     loggingcategories.cpp \
-    tcpsocketserver.cpp \
-    transportinterface.cpp \
-    websocketserver.cpp \
+    tunnelproxy/tunnelproxymanager.cpp \
+    tunnelproxy/tunnelproxyserver.cpp \
+    server/tcpsocketserver.cpp \
+    server/transportinterface.cpp \
+    server/websocketserver.cpp \
+    server/jsonrpcserver.cpp \
+    server/monitorserver.cpp \
     proxyclient.cpp \
-    proxyserver.cpp \
-    monitorserver.cpp \
+    proxy/proxyserver.cpp \
+    proxy/tunnelconnection.cpp \
     proxyconfiguration.cpp \
-    tunnelconnection.cpp \
-    jsonrpcserver.cpp \
     jsonrpc/jsonhandler.cpp \
     jsonrpc/jsonreply.cpp \
     jsonrpc/jsontypes.cpp \
     jsonrpc/authenticationhandler.cpp \
+    jsonrpc/tunnelproxyhandler.cpp \
     authentication/authenticator.cpp \
     authentication/authenticationreply.cpp \
     authentication/dummy/dummyauthenticator.cpp \
@@ -57,7 +63,7 @@ SOURCES += \
 
 
 # install header file with relative subdirectory
-for(header, HEADERS) {
+for (header, HEADERS) {
     path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxy/$${dirname(header)}
     eval(headers_$${path}.files += $${header})
     eval(headers_$${path}.path = $${path})

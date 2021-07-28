@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2021, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,81 +25,37 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef PROXYSERVER_H
-#define PROXYSERVER_H
+#ifndef TUNNELPROXYMANAGER_H
+#define TUNNELPROXYMANAGER_H
 
-#include <QUuid>
-#include <QHash>
 #include <QObject>
 
-#include "proxyclient.h"
-#include "jsonrpcserver.h"
-#include "tunnelconnection.h"
-#include "transportinterface.h"
+#include "server/jsonrpcserver.h"
+#include "server/transportinterface.h"
+
+#include "tunnelproxyserver.h"
 
 namespace remoteproxy {
 
-class ProxyServer : public QObject
+class TunnelProxyManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit ProxyServer(QObject *parent = nullptr);
-    ~ProxyServer();
+    enum Error {
+        ErrorNoError,
+        ErrorServerNotFound
+    };
+    Q_ENUM(Error)
+
+    explicit TunnelProxyManager(QObject *parent = nullptr);
+    ~TunnelProxyManager();
 
     bool running() const;
-    void registerTransportInterface(TransportInterface *interface);
-
-    QVariantMap currentStatistics();
-
-private:
-    JsonRpcServer *m_jsonRpcServer = nullptr;
-    QList<TransportInterface *> m_transportInterfaces;
-
-    bool m_running = false;
-
-    // Transport ClientId, ProxyClient
-    QHash<QUuid, ProxyClient *> m_proxyClients;
-
-    // FIXME: Token, ProxyClient
-    QHash<QString, ProxyClient *> m_authenticatedClients;
-
-    // TunnelIdentifier (token + nonce), ProxyClient
-    QHash<QString, ProxyClient *> m_authenticatedClientsNonce;
-
-    // Token, Tunnel
-    QHash<QString, TunnelConnection> m_tunnels;
-
-    // Statistic measurments
-    int m_troughput = 0;
-    int m_troughputCounter = 0;
-
-    // Persistent statistics
-    int m_totalClientCount = 0;
-    int m_totalTunnelCount = 0;
-    int m_totalTraffic = 0;
-
-
-    // Set private properties
     void setRunning(bool running);
 
-    void loadStatistics();
-    void saveStatistics();
+    void registerTransportInterface(TransportInterface *interface);
 
-
-    // Helper methods
-    ProxyClient *getRemoteClient(ProxyClient *proxyClient);
-    void establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient);
-
-signals:
-    void runningChanged();
-
-private slots:
-    void onClientConnected(const QUuid &clientId, const QHostAddress &address);
-    void onClientDisconnected(const QUuid &clientId);
-    void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
-
-    void onProxyClientAuthenticated();
-    void onProxyClientTimeoutOccured();
+    TunnelProxyManager::Error registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName);
 
 public slots:
     void startServer();
@@ -107,8 +63,31 @@ public slots:
 
     void tick();
 
+signals:
+    void runningChanged(bool running);
+
+private slots:
+    void onClientConnected(const QUuid &clientId, const QHostAddress &address);
+    void onClientDisconnected(const QUuid &clientId);
+    void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
+
+//    void onTunnelProxyServerRegistered();
+//    void onProxyTunnelClientRegistered();
+
+private:
+    JsonRpcServer *m_jsonRpcServer = nullptr;
+    QList<TransportInterface *> m_transportInterfaces;
+
+    bool m_running = false;
+
+    QHash<QUuid, ProxyClient *> m_proxyClients; // clients
+
+    // Server connections
+    QHash<QUuid, TunnelProxyServer *> m_proxyClientsTunnelServer; // clientUuid, object
+    QHash<QUuid, TunnelProxyServer *> m_tunnelServers; // server uuid, object
+
 };
 
 }
 
-#endif // PROXYSERVER_H
+#endif // TUNNELPROXYMANAGER_H

@@ -70,7 +70,6 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
     setParams("TunnelEstablished", params);
 
-    QMetaObject::invokeMethod(this, "setup", Qt::QueuedConnection);
 }
 
 JsonRpcServer::~JsonRpcServer()
@@ -250,12 +249,6 @@ void JsonRpcServer::processDataPackage(ProxyClient *proxyClient, const QByteArra
         sendResponse(proxyClient, commandId, reply->data());
         reply->deleteLater();
     }
-}
-
-void JsonRpcServer::setup()
-{
-    registerHandler(this);
-    registerHandler(new AuthenticationHandler(this));
 }
 
 void JsonRpcServer::asyncReplyFinished()

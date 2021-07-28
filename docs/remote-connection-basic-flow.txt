@@ -1,0 +1,33 @@
+title Remote tunnel proxy
+
+nymea->proxy: RegisterProxyTunnelServer(uuid, name)
+
+note over proxy: Register the server using the uuid
+
+nymea<-proxy: Success
+
+note over nymea, proxy: Protocol from now on SLIP\nThe proxy is client 0x0000
+
+note over nymea, proxy: SLIP encoded data: 2 Bytes address + data
+
+proxy<-client: ConnectProxyTunnelClient(uuid, name, serverUuid)
+
+note over proxy: Search server using uuid
+
+note over proxy: Server: Assign address 0x0001 for this client socket
+
+proxy->nymea: SLIP:0x0000: ProxyTunnelClientConnected (address: 0x0001)
+
+proxy<-nymea: SLIP:0x0000: AckProxyTunnelClient (address: 0x0001)
+
+proxy->client: ProxyTunnelEstablished(uuid, name, serverUuid)
+
+note over proxy, client: Protocol from now on SLIP encoded\nThe proxy is client 0x0000\nThe connected server is 0xFFFF
+
+note over proxy, client: SLIP encoded data: 2 Bytes address + data
+
+note over nymea, client: Connected: The client can now communicate with nymea directly.
+
+note over nymea, client: nymea sends SLIP encoded data with address 0x0001 -> client
+
+note over nymea, client: client sends SLIP endcoded data with address 0xFFFF -> nymea

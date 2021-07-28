@@ -25,30 +25,32 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef LOGGINGCATEGORIES_H
-#define LOGGINGCATEGORIES_H
+#include "tunnelproxyserver.h"
 
-#include <QDebug>
-#include <QLoggingCategory>
+namespace remoteproxy {
 
-Q_DECLARE_LOGGING_CATEGORY(dcApplication)
-Q_DECLARE_LOGGING_CATEGORY(dcEngine)
-Q_DECLARE_LOGGING_CATEGORY(dcJsonRpc)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnel)
-Q_DECLARE_LOGGING_CATEGORY(dcJsonRpcTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcWebSocketServer)
-Q_DECLARE_LOGGING_CATEGORY(dcWebSocketServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcTcpSocketServer)
-Q_DECLARE_LOGGING_CATEGORY(dcTcpSocketServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcAuthentication)
-Q_DECLARE_LOGGING_CATEGORY(dcAuthenticationProcess)
-Q_DECLARE_LOGGING_CATEGORY(dcProxyServer)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyManager)
-Q_DECLARE_LOGGING_CATEGORY(dcProxyTunnelClient)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyServer)
-Q_DECLARE_LOGGING_CATEGORY(dcProxyServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcMonitorServer)
-Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProvider)
-Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic)
+TunnelProxyServer::TunnelProxyServer(ProxyClient *proxyClient, const QUuid &serverUuid, const QString &serverName, QObject *parent) :
+    QObject(parent),
+    m_proxyClient(proxyClient),
+    m_serverUuid(serverUuid),
+    m_serverName(serverName)
+{
 
-#endif // LOGGINGCATEGORIES_H
+}
+
+ProxyClient *TunnelProxyServer::proxyClient() const
+{
+    return m_proxyClient;
+}
+
+QUuid TunnelProxyServer::serverUuid() const
+{
+    return m_serverUuid;
+}
+
+QString TunnelProxyServer::serverName() const
+{
+    return m_serverName;
+}
+
+}

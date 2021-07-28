@@ -25,20 +25,20 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
-#define NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
+#ifndef REMOTEPROXYTESTSPROXY_H
+#define REMOTEPROXYTESTSPROXY_H
 
 #include "basetest.h"
 
 using namespace remoteproxy;
 using namespace remoteproxyclient;
 
-class RemoteProxyOfflineTests : public BaseTest
+class RemoteProxyTestsProxy : public BaseTest
 {
     Q_OBJECT
 public:
-    explicit RemoteProxyOfflineTests(QObject *parent = nullptr);
-    ~RemoteProxyOfflineTests() = default;
+    explicit RemoteProxyTestsProxy(QObject *parent = nullptr);
+    ~RemoteProxyTestsProxy() = default;
 
 private slots:
     // Basic stuff
@@ -60,6 +60,9 @@ private slots:
 
     void apiBasicCalls_data();
     void apiBasicCalls();
+
+    void apiBasicCallsTcp_data();
+    void apiBasicCallsTcp();
 
     void authenticate_data();
     void authenticate();
@@ -87,4 +90,4 @@ private slots:
 
 };
 
-#endif // NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
+#endif // REMOTEPROXYTESTSPROXY_H

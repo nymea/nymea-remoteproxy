@@ -101,7 +101,7 @@ const char *TerminalWindow::convertString(const QString &string)
 
 QString TerminalWindow::getDurationString(uint timestamp)
 {
-    uint duration = QDateTime::currentDateTime().toTime_t() - timestamp;
+    uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
     int seconds = static_cast<int>(duration % 60);
     duration /= 60;
     int minutes = static_cast<int>(duration % 60);

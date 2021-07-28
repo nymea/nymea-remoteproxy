@@ -36,12 +36,14 @@
 #include <QSslConfiguration>
 
 #include "logengine.h"
-#include "proxyserver.h"
-#include "monitorserver.h"
-#include "tcpsocketserver.h"
-#include "websocketserver.h"
+#include "proxy/proxyserver.h"
 #include "proxyconfiguration.h"
+#include "server/monitorserver.h"
+#include "server/jsonrpcserver.h"
+#include "server/tcpsocketserver.h"
+#include "server/websocketserver.h"
 #include "authentication/authenticator.h"
+#include "tunnelproxy/tunnelproxymanager.h"
 
 namespace remoteproxy {
 
@@ -67,9 +69,17 @@ public:
 
     ProxyConfiguration *configuration() const;
     Authenticator *authenticator() const;
+
     ProxyServer *proxyServer() const;
-    TcpSocketServer *tcpSocketServer() const;
-    WebSocketServer *webSocketServer() const;
+    TunnelProxyManager *tunnelProxyManager() const;
+
+    TcpSocketServer *tcpSocketServerProxy() const;
+    WebSocketServer *webSocketServerProxy() const;
+
+    TcpSocketServer *tcpSocketServerTunnelProxy() const;
+    WebSocketServer *webSocketServerTunnelProxy() const;
+
+
     MonitorServer *monitorServer() const;
     LogEngine *logEngine() const;
 
@@ -89,9 +99,16 @@ private:
 
     ProxyConfiguration *m_configuration = nullptr;
     Authenticator *m_authenticator = nullptr;
+
     ProxyServer *m_proxyServer = nullptr;
-    TcpSocketServer *m_tcpSocketServer = nullptr;
-    WebSocketServer *m_webSocketServer = nullptr;
+    TunnelProxyManager *m_tunnelProxyManager = nullptr;
+
+    TcpSocketServer *m_tcpSocketServerProxy = nullptr;
+    WebSocketServer *m_webSocketServerProxy = nullptr;
+
+    TcpSocketServer *m_tcpSocketServerTunnelProxy = nullptr;
+    WebSocketServer *m_webSocketServerTunnelProxy = nullptr;
+
     MonitorServer *m_monitorServer = nullptr;
     LogEngine *m_logEngine = nullptr;
 

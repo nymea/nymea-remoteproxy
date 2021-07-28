@@ -51,6 +51,9 @@ public:
     Q_INVOKABLE JsonReply *Hello(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
     Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params, ProxyClient *proxyClient = nullptr) const;
 
+    void registerHandler(JsonHandler *handler);
+    void unregisterHandler(JsonHandler *handler);
+
 signals:
     void TunnelEstablished(const QVariantMap &params);
 
@@ -66,12 +69,9 @@ private:
 
     QString formatAssertion(const QString &targetNamespace, const QString &method, JsonHandler *handler, const QVariantMap &data) const;
 
-    void registerHandler(JsonHandler *handler);
-    void unregisterHandler(JsonHandler *handler);
     void processDataPackage(ProxyClient *proxyClient, const QByteArray &data);
 
 private slots:
-    void setup();
     void asyncReplyFinished();
 
 public slots:
