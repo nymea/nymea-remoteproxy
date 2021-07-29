@@ -60,13 +60,6 @@ public:
     QString userName() const;
     void setUserName(const QString &userName);
 
-    // Properties from auth request
-    QString uuid() const;
-    void setUuid(const QString &uuid);
-
-    QString name() const;
-    void setName(const QString &name);
-
     QString tunnelIdentifier() const;
 
     QString token() const;
@@ -89,8 +82,6 @@ private:
     bool m_authenticated = false;
     bool m_tunnelConnected = false;
 
-    QString m_uuid;
-    QString m_name;
     QString m_token;
     QString m_nonce;
 

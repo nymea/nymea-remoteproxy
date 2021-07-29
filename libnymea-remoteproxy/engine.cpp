@@ -101,7 +101,7 @@ void Engine::start(ProxyConfiguration *configuration)
 
     // Tunnel proxy
     // -------------------------------------
-    m_tunnelProxyManager = new TunnelProxyManager(this);
+    m_tunnelProxyServer = new TunnelProxyServer(this);
     m_webSocketServerTunnelProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
     m_tcpSocketServerTunnelProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
 
@@ -120,12 +120,12 @@ void Engine::start(ProxyConfiguration *configuration)
     m_tcpSocketServerTunnelProxy->setServerUrl(tcpSocketServerTunnelProxyUrl);
 
     // Register the transport interfaces in the proxy server
-    m_tunnelProxyManager->registerTransportInterface(m_webSocketServerTunnelProxy);
-    m_tunnelProxyManager->registerTransportInterface(m_tcpSocketServerTunnelProxy);
+    m_tunnelProxyServer->registerTransportInterface(m_webSocketServerTunnelProxy);
+    m_tunnelProxyServer->registerTransportInterface(m_tcpSocketServerTunnelProxy);
 
     // Start the server
     qCDebug(dcEngine()) << "Starting the tunnel proxy manager...";
-    m_tunnelProxyManager->startServer();
+    m_tunnelProxyServer->startServer();
 
     // Start the monitor server
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
@@ -195,9 +195,9 @@ ProxyServer *Engine::proxyServer() const
     return m_proxyServer;
 }
 
-TunnelProxyManager *Engine::tunnelProxyManager() const
+TunnelProxyServer *Engine::tunnelProxyServer() const
 {
-    return m_tunnelProxyManager;
+    return m_tunnelProxyServer;
 }
 
 TcpSocketServer *Engine::tcpSocketServerProxy() const

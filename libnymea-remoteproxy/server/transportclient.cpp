@@ -66,6 +66,26 @@ TransportInterface *TransportClient::interface() const
     return m_interface;
 }
 
+QUuid TransportClient::uuid() const
+{
+    return m_uuid;
+}
+
+void TransportClient::setUuid(const QUuid &uuid)
+{
+    m_uuid = uuid;
+}
+
+QString TransportClient::name() const
+{
+    return m_name;
+}
+
+void TransportClient::setName(const QString &name)
+{
+    m_name = name;
+}
+
 quint64 TransportClient::rxDataCount() const
 {
     return m_rxDataCount;

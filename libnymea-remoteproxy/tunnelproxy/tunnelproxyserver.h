@@ -25,37 +25,43 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TUNNELPROXYMANAGER_H
-#define TUNNELPROXYMANAGER_H
+#ifndef TUNNELPROXYSERVER_H
+#define TUNNELPROXYSERVER_H
 
 #include <QObject>
 
 #include "server/jsonrpcserver.h"
 #include "server/transportinterface.h"
-
-#include "tunnelproxyserverconnection.h"
+#include "tunnelproxyclient.h"
 
 namespace remoteproxy {
 
-class TunnelProxyManager : public QObject
+class TunnelProxyServerConnection;
+class TunnelProxyClientConnection;
+
+class TunnelProxyServer : public QObject
 {
     Q_OBJECT
 public:
-    enum Error {
-        ErrorNoError,
-        ErrorServerNotFound
+    enum TunnelProxyError {
+        TunnelProxyErrorNoError,
+        TunnelProxyErrorInvalidUuid,
+        TunnelProxyErrorInternalServerError,
+        TunnelProxyErrorServerNotFound,
+        TunnelProxyErrorAlreadyRegistered
     };
-    Q_ENUM(Error)
+    Q_ENUM(TunnelProxyError)
 
-    explicit TunnelProxyManager(QObject *parent = nullptr);
-    ~TunnelProxyManager();
+    explicit TunnelProxyServer(QObject *parent = nullptr);
+    ~TunnelProxyServer();
 
     bool running() const;
     void setRunning(bool running);
 
     void registerTransportInterface(TransportInterface *interface);
 
-    TunnelProxyManager::Error registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName);
+    TunnelProxyServer::TunnelProxyError registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName);
+    TunnelProxyServer::TunnelProxyError registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
 
 public slots:
     void startServer();
@@ -71,23 +77,20 @@ private slots:
     void onClientDisconnected(const QUuid &clientId);
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
 
-//    void onTunnelProxyServerRegistered();
-//    void onProxyTunnelClientRegistered();
-
 private:
     JsonRpcServer *m_jsonRpcServer = nullptr;
     QList<TransportInterface *> m_transportInterfaces;
 
     bool m_running = false;
 
-    QHash<QUuid, ProxyClient *> m_proxyClients; // clients
+    QHash<QUuid, TunnelProxyClient *> m_proxyClients; // clientId, object
 
     // Server connections
-    QHash<QUuid, TunnelProxyServerConnection *> m_proxyClientsTunnelServer; // clientUuid, object
-    QHash<QUuid, TunnelProxyServerConnection *> m_tunnelServers; // server uuid, object
+    QHash<QUuid, TunnelProxyServerConnection *> m_tunnelProxyServerConnections; // server uuid, object
+    QHash<QUuid, TunnelProxyClientConnection *> m_tunnelProxyClientConnections; // client uuid, object
 
 };
 
 }
 
-#endif // TUNNELPROXYMANAGER_H
+#endif // TUNNELPROXYSERVER_H

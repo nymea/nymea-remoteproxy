@@ -33,7 +33,7 @@
 #include <QMetaEnum>
 #include <QStringList>
 
-#include "tunnelproxy/tunnelproxymanager.h"
+#include "tunnelproxy/tunnelproxyserver.h"
 #include "authentication/authenticator.h"
 
 namespace remoteproxy {
@@ -91,7 +91,7 @@ public:
     // Declare types
     DECLARE_TYPE(basicType, "BasicType", JsonTypes, BasicType)
     DECLARE_TYPE(authenticationError, "AuthenticationError", Authenticator, AuthenticationError)
-    DECLARE_TYPE(tunnelProxyError, "TunnelProxyError", TunnelProxyManager, Error)
+    DECLARE_TYPE(tunnelProxyError, "TunnelProxyError", TunnelProxyServer, TunnelProxyError)
 
     // Declare objects
 

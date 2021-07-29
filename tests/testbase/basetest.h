@@ -76,6 +76,9 @@ protected:
     void loadConfiguration(const QString &fileName);
     void setAuthenticator(Authenticator *authenticator);
 
+    void resetDebugCategories();
+    void addDebugCategory(const QString &debugCategory);
+
     void cleanUpEngine();
     void restartEngine();
     void startEngine();
@@ -93,6 +96,9 @@ protected:
 
     QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
     QVariant injectTcpSocketTunnelProxyData(const QByteArray &data);
+
+    QPair<QVariant, QSslSocket *> invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), QSslSocket *existingSocket = nullptr);
+    QPair<QVariant, QWebSocket *> invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), QWebSocket *existingSocket = nullptr);
 
 
     bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);
@@ -137,6 +143,13 @@ public slots:
         verifyError(response, "authenticationError", JsonTypes::authenticationErrorToString(error));
     }
 
+    inline void verifyTunnelProxyError(const QVariant &response, TunnelProxyServer::TunnelProxyError error = TunnelProxyServer::TunnelProxyErrorNoError) {
+        verifyError(response, "tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+    }
+
+private:
+    QString m_defaultDebugCategories = "*.debug=false\ndefault.debug=true\nApplication.debug=true\n";
+    QString m_currentDebugCategories;
 };
 
 #endif // BASETEST_H

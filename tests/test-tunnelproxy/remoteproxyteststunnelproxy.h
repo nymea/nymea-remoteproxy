@@ -54,6 +54,12 @@ private slots:
     void apiBasicCallsTcp_data();
     void apiBasicCallsTcp();
 
+    void registerServer_data();
+    void registerServer();
+
+    void registerServerDuplicated();
+
+
 };
 
 #endif // REMOTEPROXYTESTSTUNNELPROXY_H

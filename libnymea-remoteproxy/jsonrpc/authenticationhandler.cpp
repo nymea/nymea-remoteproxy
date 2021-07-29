@@ -63,7 +63,7 @@ QString AuthenticationHandler::name() const
 
 JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, TransportClient *transportClient)
 {
-    QString uuid = params.value("uuid").toString();
+    QUuid uuid = params.value("uuid").toUuid();
     QString name = params.value("name").toString();
     QString token = params.value("token").toString();
     QString nonce = params.value("nonce").toString();

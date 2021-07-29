@@ -62,7 +62,7 @@ void JsonTypes::init()
     // Declare types
     s_basicType = enumToStrings(JsonTypes::staticMetaObject, "BasicType");
     s_authenticationError = enumToStrings(Authenticator::staticMetaObject, "AuthenticationError");
-    s_tunnelProxyError = enumToStrings(TunnelProxyManager::staticMetaObject, "Error");
+    s_tunnelProxyError = enumToStrings(TunnelProxyServer::staticMetaObject, "TunnelProxyError");
 
     s_initialized = true;
 }

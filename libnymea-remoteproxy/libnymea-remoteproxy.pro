@@ -30,8 +30,9 @@ HEADERS += \
     server/jsonrpcserver.h \
     server/transportclient.h \
     server/monitorserver.h \
+    tunnelproxy/tunnelproxyclient.h \
     tunnelproxy/tunnelproxyclientconnection.h \
-    tunnelproxy/tunnelproxymanager.h \
+    tunnelproxy/tunnelproxyserver.h \
     tunnelproxy/tunnelproxyserverconnection.h
 
 SOURCES += \
@@ -61,8 +62,9 @@ SOURCES += \
     server/websocketserver.cpp \
     server/jsonrpcserver.cpp \
     server/monitorserver.cpp \
+    tunnelproxy/tunnelproxyclient.cpp \
     tunnelproxy/tunnelproxyclientconnection.cpp \
-    tunnelproxy/tunnelproxymanager.cpp \
+    tunnelproxy/tunnelproxyserver.cpp \
     tunnelproxy/tunnelproxyserverconnection.cpp
 
 

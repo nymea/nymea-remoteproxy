@@ -42,7 +42,7 @@
 BaseTest::BaseTest(QObject *parent) :
     QObject(parent)
 {
-
+    resetDebugCategories();
 }
 
 void BaseTest::loadConfiguration(const QString &fileName)
@@ -50,6 +50,19 @@ void BaseTest::loadConfiguration(const QString &fileName)
     qDebug() << "Load test configurations" << fileName;
     m_configuration->loadConfiguration(fileName);
     //restartEngine();
+}
+
+void BaseTest::resetDebugCategories()
+{
+    m_currentDebugCategories = m_defaultDebugCategories;
+    QLoggingCategory::setFilterRules(m_currentDebugCategories);
+}
+
+void BaseTest::addDebugCategory(const QString &debugCategory)
+{
+    m_currentDebugCategories += debugCategory + "\n";
+    //qDebug() << m_currentDebugCategories;
+    QLoggingCategory::setFilterRules(m_currentDebugCategories);
 }
 
 void BaseTest::cleanUpEngine()
@@ -87,8 +100,6 @@ void BaseTest::restartEngine()
 
 void BaseTest::startEngine()
 {
-    QLoggingCategory::setFilterRules("*.debug=false\ndefault.debug=true\nApplication.debug=true");
-
     m_configuration = new ProxyConfiguration(this);
     loadConfiguration(":/test-configuration.conf");
 
@@ -302,8 +313,8 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
     QString nameConnectionTwo = "Test client two";
     QUuid uuidConnectionTwo = QUuid::createUuid();
 
-//    QByteArray dataOne = "Hello from client one :-)";
-//    QByteArray dataTwo = "Hello from client two :-)";
+    //    QByteArray dataOne = "Hello from client one :-)";
+    //    QByteArray dataTwo = "Hello from client two :-)";
 
     // Create two connection
     RemoteProxyConnection *connectionOne = new RemoteProxyConnection(uuidConnectionOne, nameConnectionOne, parent);
@@ -466,6 +477,7 @@ QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, cons
     socket->open(Engine::instance()->webSocketServerTunnelProxy()->serverUrl());
     spyConnection.wait();
     if (spyConnection.count() == 0) {
+        qWarning() << "Failed to connect websocket on tunnel proxy";
         return QVariant();
     }
 
@@ -473,8 +485,10 @@ QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, cons
     socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
     dataSpy.wait();
 
-    socket->close();
-    socket->deleteLater();
+    if (!remainsConnected) {
+        socket->close();
+        socket->deleteLater();
+    }
 
     for (int i = 0; i < dataSpy.count(); i++) {
         // Make sure the response ends with '}\n'
@@ -649,6 +663,125 @@ QVariant BaseTest::injectTcpSocketTunnelProxyData(const QByteArray &data)
 
     m_commandCounter++;
     return jsonDoc.toVariant();
+}
+
+QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params, QSslSocket *existingSocket)
+{
+    QSslSocket *socket = nullptr;
+    if (!existingSocket) {
+        socket = new QSslSocket(this);
+        typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+        QObject::connect(socket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &BaseTest::sslSocketSslErrors);
+
+        QSignalSpy spyConnection(socket, &QSslSocket::connected);
+        socket->connectToHostEncrypted(Engine::instance()->tcpSocketServerTunnelProxy()->serverUrl().host(),
+                                       static_cast<quint16>(Engine::instance()->tcpSocketServerTunnelProxy()->serverUrl().port()));
+        spyConnection.wait();
+        if (spyConnection.count() == 0) {
+            return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+        }
+    } else {
+        socket = existingSocket;
+    }
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+
+    QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
+    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
+    // FIXME: check why it waits the full time here
+    dataSpy.wait(500);
+    if (dataSpy.count() != 1) {
+        qWarning() << "No data received";
+        return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+    }
+
+    QByteArray data = socket->readAll();
+
+    // Make sure the response ends with '}\n'
+    if (!data.endsWith("}\n")) {
+        qWarning() << "JSON data does not end with \"}\n\"";
+        return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+    }
+
+    // Make sure the response it a valid JSON string
+    QJsonParseError error;
+    jsonDoc = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "JSON parser error" << error.errorString();
+        return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+    }
+
+    QVariantMap response = jsonDoc.toVariant().toMap();
+
+    if (response.value("id").toInt() == m_commandCounter) {
+        m_commandCounter++;
+        return QPair<QVariant, QSslSocket *>(jsonDoc.toVariant(), socket);
+    }
+
+    m_commandCounter++;
+    return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+}
+
+QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params, QWebSocket *existingSocket)
+{
+    QWebSocket *socket = nullptr;
+    if (!existingSocket) {
+        socket = new QWebSocket("tunnelproxy-testclient", QWebSocketProtocol::Version13);
+        connect(socket, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+        QSignalSpy spyConnection(socket, SIGNAL(connected()));
+        socket->open(Engine::instance()->webSocketServerTunnelProxy()->serverUrl());
+        spyConnection.wait();
+        if (spyConnection.count() == 0) {
+            qWarning() << "Failed to connect websocket on tunnel proxy";
+            return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+        }
+    } else {
+        socket = existingSocket;
+    }
+
+    QVariantMap request;
+    request.insert("id", m_commandCounter);
+    request.insert("method", method);
+    request.insert("params", params);
+    QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+
+    QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
+    socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+    dataSpy.wait();
+
+    for (int i = 0; i < dataSpy.count(); i++) {
+        // Make sure the response ends with '}\n'
+        if (!dataSpy.at(i).last().toByteArray().endsWith("}\n")) {
+            qWarning() << "JSON data does not end with \"}\n\"";
+            return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+        }
+
+        // Make sure the response it a valid JSON string
+        QJsonParseError error;
+        jsonDoc = QJsonDocument::fromJson(dataSpy.at(i).last().toByteArray(), &error);
+        if (error.error != QJsonParseError::NoError) {
+            qWarning() << "JSON parser error" << error.errorString();
+            return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+        }
+        QVariantMap response = jsonDoc.toVariant().toMap();
+
+        // skip notifications
+        if (response.contains("notification"))
+            continue;
+
+        if (response.value("id").toInt() == m_commandCounter) {
+            m_commandCounter++;
+            return QPair<QVariant, QWebSocket *>(jsonDoc.toVariant(), socket);
+        }
+    }
+
+    m_commandCounter++;
+    return QPair<QVariant, QWebSocket *>(QVariant(), socket);
 }
 
 void BaseTest::initTestCase()

@@ -81,26 +81,6 @@ void ProxyClient::setUserName(const QString &userName)
     m_userName = userName;
 }
 
-QString ProxyClient::uuid() const
-{
-    return m_uuid;
-}
-
-void ProxyClient::setUuid(const QString &uuid)
-{
-    m_uuid = uuid;
-}
-
-QString ProxyClient::name() const
-{
-    return m_name;
-}
-
-void ProxyClient::setName(const QString &name)
-{
-    m_name = name;
-}
-
 QString ProxyClient::tunnelIdentifier() const
 {
     return m_token + m_nonce;

@@ -43,7 +43,7 @@
 #include "server/tcpsocketserver.h"
 #include "server/websocketserver.h"
 #include "authentication/authenticator.h"
-#include "tunnelproxy/tunnelproxymanager.h"
+#include "tunnelproxy/tunnelproxyserver.h"
 
 namespace remoteproxy {
 
@@ -71,7 +71,7 @@ public:
     Authenticator *authenticator() const;
 
     ProxyServer *proxyServer() const;
-    TunnelProxyManager *tunnelProxyManager() const;
+    TunnelProxyServer *tunnelProxyServer() const;
 
     TcpSocketServer *tcpSocketServerProxy() const;
     WebSocketServer *webSocketServerProxy() const;
@@ -101,7 +101,7 @@ private:
     Authenticator *m_authenticator = nullptr;
 
     ProxyServer *m_proxyServer = nullptr;
-    TunnelProxyManager *m_tunnelProxyManager = nullptr;
+    TunnelProxyServer *m_tunnelProxyServer = nullptr;
 
     TcpSocketServer *m_tcpSocketServerProxy = nullptr;
     WebSocketServer *m_webSocketServerProxy = nullptr;

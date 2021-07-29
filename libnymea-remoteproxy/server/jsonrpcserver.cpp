@@ -306,6 +306,7 @@ void JsonRpcServer::unregisterClient(TransportClient *transportClient)
         qCWarning(dcJsonRpc()) << "Client was not registered" << transportClient;
         return;
     }
+
     m_clients.removeAll(transportClient);
 
     if (m_asyncReplies.values().contains(transportClient)) {

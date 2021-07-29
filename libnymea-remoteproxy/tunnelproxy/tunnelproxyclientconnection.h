@@ -28,17 +28,33 @@
 #ifndef TUNNELPROXYCLIENTCONNECTION_H
 #define TUNNELPROXYCLIENTCONNECTION_H
 
+#include <QUuid>
 #include <QObject>
 
 namespace remoteproxy {
+
+class TransportClient;
 
 class TunnelProxyClientConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit TunnelProxyClientConnection(QObject *parent = nullptr);
+    explicit TunnelProxyClientConnection(TransportClient *transportClient, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent = nullptr);
+
+    TransportClient *transportClient() const;
+
+    QUuid clientUuid() const;
+    QString clientName() const;
+    QUuid serverUuid() const;
 
 signals:
+
+private:
+    TransportClient *m_transportClient = nullptr;
+
+    QUuid m_clientUuid;
+    QString m_clientName;
+    QUuid m_serverUuid;
 
 };
 

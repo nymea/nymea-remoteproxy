@@ -52,6 +52,13 @@ public:
 
     TransportInterface *interface() const;
 
+    // Properties from auth request
+    QUuid uuid() const;
+    void setUuid(const QUuid &uuid);
+
+    QString name() const;
+    void setName(const QString &name);
+
     quint64 rxDataCount() const;
     void addRxDataCount(int dataCount);
 
@@ -73,6 +80,10 @@ protected:
     QUuid m_clientId;
     QHostAddress m_peerAddress;
     uint m_creationTimeStamp = 0;
+
+    // Eveyone has to register him self everywhere with a name and a uuid
+    QString m_name;
+    QUuid m_uuid;
 
     QByteArray m_dataBuffers;
 
