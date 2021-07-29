@@ -25,7 +25,7 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "proxyclient.h"
+#include "proxy/proxyclient.h"
 #include "authenticator.h"
 #include "authenticationreply.h"
 

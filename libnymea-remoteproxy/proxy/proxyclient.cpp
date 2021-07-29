@@ -34,37 +34,12 @@
 namespace remoteproxy {
 
 ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent) :
-    QObject(parent),
-    m_interface(interface),
-    m_clientId(clientId),
-    m_peerAddress(address)
+    TransportClient(interface, clientId, address, parent)
 {
-    m_creationTimeStamp = QDateTime::currentDateTimeUtc().toTime_t();
-
     m_timer = new QTimer(this);
     connect(m_timer, &QTimer::timeout, this, &ProxyClient::timeoutOccured);
     m_timer->setSingleShot(true);
     resetTimer();
-}
-
-QUuid ProxyClient::clientId() const
-{
-    return m_clientId;
-}
-
-QHostAddress ProxyClient::peerAddress() const
-{
-    return m_peerAddress;
-}
-
-uint ProxyClient::creationTime() const
-{
-    return m_creationTimeStamp;
-}
-
-QString ProxyClient::creationTimeString() const
-{
-    return QDateTime::fromTime_t(creationTime()).toString("dd.MM.yyyy hh:mm:ss");
 }
 
 bool ProxyClient::isAuthenticated() const
@@ -104,11 +79,6 @@ QString ProxyClient::userName() const
 void ProxyClient::setUserName(const QString &userName)
 {
     m_userName = userName;
-}
-
-TransportInterface *ProxyClient::interface() const
-{
-    return m_interface;
 }
 
 QString ProxyClient::uuid() const
@@ -156,26 +126,6 @@ void ProxyClient::setNonce(const QString &nonce)
     m_nonce = nonce;
 }
 
-quint64 ProxyClient::rxDataCount() const
-{
-    return m_rxDataCount;
-}
-
-void ProxyClient::addRxDataCount(int dataCount)
-{
-    m_rxDataCount += static_cast<quint64>(dataCount);
-}
-
-quint64 ProxyClient::txDataCount() const
-{
-    return m_txDataCount;
-}
-
-void ProxyClient::addTxDataCount(int dataCount)
-{
-    m_txDataCount += static_cast<quint64>(dataCount);
-}
-
 ProxyClient::TimerWaitState ProxyClient::timerWaitState() const
 {
     return m_timerWaitState;
@@ -193,28 +143,6 @@ void ProxyClient::resetTimer()
         m_timer->start(Engine::instance()->configuration()->aloneTimeout());
         break;
     }
-}
-
-void ProxyClient::sendData(const QByteArray &data)
-{
-    if (!m_interface)
-        return;
-
-    m_interface->sendData(m_clientId, data);
-}
-
-void ProxyClient::killConnection(const QString &reason)
-{
-    if (!m_interface)
-        return;
-
-    m_interface->killClientConnection(m_clientId, reason);
-}
-
-int ProxyClient::generateMessageId()
-{
-    m_messageId++;
-    return m_messageId;
 }
 
 QList<QByteArray> ProxyClient::processData(const QByteArray &data)
@@ -235,11 +163,6 @@ QList<QByteArray> ProxyClient::processData(const QByteArray &data)
     }
 
     return packages;
-}
-
-int ProxyClient::bufferSize() const
-{
-    return m_dataBuffers.size();
 }
 
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)

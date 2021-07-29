@@ -34,6 +34,8 @@
 
 namespace remoteproxy {
 
+class TransportClient;
+
 class TunnelProxyHandler : public JsonHandler
 {
     Q_OBJECT
@@ -43,7 +45,7 @@ public:
 
     QString name() const override;
 
-    Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, ProxyClient *proxyClient);
+    Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
 
 signals:
 

@@ -33,7 +33,7 @@
 #include "server/jsonrpcserver.h"
 #include "server/transportinterface.h"
 
-#include "tunnelproxyserver.h"
+#include "tunnelproxyserverconnection.h"
 
 namespace remoteproxy {
 
@@ -83,8 +83,8 @@ private:
     QHash<QUuid, ProxyClient *> m_proxyClients; // clients
 
     // Server connections
-    QHash<QUuid, TunnelProxyServer *> m_proxyClientsTunnelServer; // clientUuid, object
-    QHash<QUuid, TunnelProxyServer *> m_tunnelServers; // server uuid, object
+    QHash<QUuid, TunnelProxyServerConnection *> m_proxyClientsTunnelServer; // clientUuid, object
+    QHash<QUuid, TunnelProxyServerConnection *> m_tunnelServers; // server uuid, object
 
 };
 

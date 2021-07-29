@@ -199,13 +199,13 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsFirst),
-                              Q_ARG(ProxyClient*, tunnel.clientOne()));
+                              Q_ARG(TransportClient*, tunnel.clientOne()));
 
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsSecond),
-                              Q_ARG(ProxyClient*, tunnel.clientTwo()));
+                              Q_ARG(TransportClient*, tunnel.clientTwo()));
 }
 
 void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
@@ -391,7 +391,7 @@ void ProxyServer::onProxyClientTimeoutOccured()
 
 void ProxyServer::startServer()
 {
-    qCDebug(dcProxyServer()) << "Start proxy server.";
+    qCDebug(dcProxyServer()) << "Starting proxy server...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->startServer();
     }
@@ -400,7 +400,7 @@ void ProxyServer::startServer()
 
 void ProxyServer::stopServer()
 {
-    qCDebug(dcProxyServer()) << "Stop proxy server.";
+    qCDebug(dcProxyServer()) << "Stopping proxy...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->stopServer();
     }

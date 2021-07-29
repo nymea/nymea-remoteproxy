@@ -28,6 +28,7 @@
 #include "jsontypes.h"
 #include "loggingcategories.h"
 #include "authenticationhandler.h"
+#include "server/transportclient.h"
 
 #include "engine.h"
 
@@ -60,7 +61,7 @@ QString AuthenticationHandler::name() const
     return "Authentication";
 }
 
-JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyClient *proxyClient)
+JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, TransportClient *transportClient)
 {
     QString uuid = params.value("uuid").toString();
     QString name = params.value("name").toString();
@@ -71,6 +72,7 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyC
     JsonReply *jsonReply = createAsyncReply("Authenticate");
 
     // Set the token for this proxy client
+    ProxyClient *proxyClient = qobject_cast<ProxyClient *>(transportClient);
     proxyClient->setUuid(uuid);
     proxyClient->setName(name);
     proxyClient->setToken(token);

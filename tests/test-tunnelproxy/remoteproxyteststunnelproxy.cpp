@@ -96,7 +96,7 @@ void RemoteProxyTestsTunnelProxy::getIntrospect()
 
     // WebSocket
     response = invokeWebSocketTunnelProxyApiCall("RemoteProxy.Introspect").toMap();
-    //qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("methods"));

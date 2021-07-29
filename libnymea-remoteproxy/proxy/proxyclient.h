@@ -34,11 +34,11 @@
 #include <QTimer>
 #include <QHostAddress>
 
-#include "server/transportinterface.h"
+#include "server/transportclient.h"
 
 namespace remoteproxy {
 
-class ProxyClient : public QObject
+class ProxyClient : public TransportClient
 {
     Q_OBJECT
 
@@ -51,12 +51,6 @@ public:
 
     explicit ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
 
-    QUuid clientId() const;
-    QHostAddress peerAddress() const;
-
-    uint creationTime() const;
-    QString creationTimeString() const;
-
     bool isAuthenticated() const;
     void setAuthenticated(bool isAuthenticated);
 
@@ -65,8 +59,6 @@ public:
 
     QString userName() const;
     void setUserName(const QString &userName);
-
-    TransportInterface *interface() const;
 
     // Properties from auth request
     QString uuid() const;
@@ -83,31 +75,16 @@ public:
     QString nonce() const;
     void setNonce(const QString &nonce);
 
-    quint64 rxDataCount() const;
-    void addRxDataCount(int dataCount);
-
-    quint64 txDataCount() const;
-    void addTxDataCount(int dataCount);
-
     // Actions for this client
     TimerWaitState timerWaitState() const;
     void resetTimer();
-    void sendData(const QByteArray &data);
-    void killConnection(const QString &reason);
 
-    // Json server methods
-    int generateMessageId();
-    QList<QByteArray> processData(const QByteArray &data);
-    int bufferSize() const;
+    // Json server methods    
+    QList<QByteArray> processData(const QByteArray &data) override;
 
 private:
-    TransportInterface *m_interface = nullptr;
     QTimer *m_timer = nullptr;
     TimerWaitState m_timerWaitState = TimerWaitStateInactive;
-
-    QUuid m_clientId;
-    QHostAddress m_peerAddress;
-    uint m_creationTimeStamp = 0;
 
     bool m_authenticated = false;
     bool m_tunnelConnected = false;
@@ -118,14 +95,6 @@ private:
     QString m_nonce;
 
     QString m_userName;
-
-    // Json data information
-    int m_messageId = 0;
-    QByteArray m_dataBuffers;
-    bool m_bufferSizeViolation = false;
-
-    quint64 m_rxDataCount = 0;
-    quint64 m_txDataCount = 0;
 
 signals:
     void authenticated();

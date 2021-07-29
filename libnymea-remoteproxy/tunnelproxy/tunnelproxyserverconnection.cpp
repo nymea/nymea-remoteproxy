@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2021, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,38 +25,32 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef AUTHENTICATIONHANDLER_H
-#define AUTHENTICATIONHANDLER_H
-
-#include <QObject>
-
-#include "jsonhandler.h"
-#include "authentication/authenticationreply.h"
+#include "tunnelproxyserverconnection.h"
 
 namespace remoteproxy {
 
-class TransportClient;
-
-class AuthenticationHandler : public JsonHandler
+TunnelProxyServerConnection::TunnelProxyServerConnection(ProxyClient *proxyClient, const QUuid &serverUuid, const QString &serverName, QObject *parent) :
+    QObject(parent),
+    m_proxyClient(proxyClient),
+    m_serverUuid(serverUuid),
+    m_serverName(serverName)
 {
-    Q_OBJECT
-public:
-    explicit AuthenticationHandler(QObject *parent = nullptr);
-    ~AuthenticationHandler() override = default;
-
-    QString name() const override;
-
-    Q_INVOKABLE JsonReply *Authenticate(const QVariantMap &params, TransportClient *transportClient);
-
-private:
-    QHash<AuthenticationReply *, JsonReply *> m_runningAuthentications;
-
-private slots:
-    void onAuthenticationFinished();
-
-
-};
 
 }
 
-#endif // AUTHENTICATIONHANDLER_H
+ProxyClient *TunnelProxyServerConnection::proxyClient() const
+{
+    return m_proxyClient;
+}
+
+QUuid TunnelProxyServerConnection::serverUuid() const
+{
+    return m_serverUuid;
+}
+
+QString TunnelProxyServerConnection::serverName() const
+{
+    return m_serverName;
+}
+
+}

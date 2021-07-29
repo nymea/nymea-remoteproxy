@@ -54,8 +54,6 @@ QVariantMap JsonTypes::allTypes()
     allTypes.insert("AuthenticationError", authenticationError());
     allTypes.insert("TunnelProxyError", tunnelProxyError());
 
-    // Types
-
     return allTypes;
 }
 

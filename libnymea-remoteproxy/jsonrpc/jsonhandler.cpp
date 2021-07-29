@@ -75,7 +75,7 @@ QVariantMap JsonHandler::introspect(const QMetaMethod::MethodType &type)
             }
             break;
         default:
-            ;;// Nothing to do for slots
+            break; // Nothing to do for slots
         }
         }
     }

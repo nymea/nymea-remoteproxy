@@ -25,35 +25,66 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TUNNELPROXYSERVER_H
-#define TUNNELPROXYSERVER_H
+#ifndef TRANSPORTCLIENT_H
+#define TRANSPORTCLIENT_H
 
 #include <QObject>
-
-#include "proxyclient.h"
+#include <QUuid>
+#include <QDebug>
+#include <QHostAddress>
 
 namespace remoteproxy {
 
-class TunnelProxyServer : public QObject
+class TransportInterface;
+
+class TransportClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit TunnelProxyServer(ProxyClient *proxyClient, const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
+    explicit TransportClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
+    virtual ~TransportClient() = default;
 
-    ProxyClient *proxyClient() const;
+    QUuid clientId() const;
+    QHostAddress peerAddress() const;
 
-    QUuid serverUuid() const;
-    QString serverName() const;
+    uint creationTime() const;
+    QString creationTimeString() const;
 
-signals:
+    TransportInterface *interface() const;
 
-private:
-    ProxyClient *m_proxyClient = nullptr;
+    quint64 rxDataCount() const;
+    void addRxDataCount(int dataCount);
 
-    QUuid m_serverUuid;
-    QString m_serverName;
+    quint64 txDataCount() const;
+    void addTxDataCount(int dataCount);
+
+    int bufferSize() const;
+
+    int generateMessageId();
+
+    virtual void sendData(const QByteArray &data);
+    virtual void killConnection(const QString &reason);
+
+    virtual QList<QByteArray> processData(const QByteArray &data) = 0;
+
+protected:
+    TransportInterface *m_interface = nullptr;
+
+    QUuid m_clientId;
+    QHostAddress m_peerAddress;
+    uint m_creationTimeStamp = 0;
+
+    QByteArray m_dataBuffers;
+
+    // Json data information
+    int m_messageId = 0;
+
+    // Statistics info
+    quint64 m_rxDataCount = 0;
+    quint64 m_txDataCount = 0;
+
 };
 
 }
 
-#endif // TUNNELPROXYSERVER_H
+#endif // TRANSPORTCLIENT_H

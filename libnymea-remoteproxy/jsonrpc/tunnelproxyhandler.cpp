@@ -55,17 +55,16 @@ QString TunnelProxyHandler::name() const
     return "TunnelProxy";
 }
 
-JsonReply *TunnelProxyHandler::RegisterServer(const QVariantMap &params, ProxyClient *proxyClient)
+JsonReply *TunnelProxyHandler::RegisterServer(const QVariantMap &params, TransportClient *transportClient)
 {
-    qCDebug(dcJsonRpc()) << name() << "register server" << params << proxyClient;
+    qCDebug(dcJsonRpc()) << name() << "register server" << params << transportClient;
     QUuid serverUuid = params.value("uuid").toUuid();
     QString serverName = params.value("name").toString();
 
-    TunnelProxyManager::Error error = Engine::instance()->tunnelProxyManager()->registerServer(proxyClient->clientId(), serverUuid, serverName);
+    TunnelProxyManager::Error error = Engine::instance()->tunnelProxyManager()->registerServer(transportClient->clientId(), serverUuid, serverName);
 
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
-
     return createReply("RegisterServer", response);
 }
 

@@ -38,7 +38,6 @@ TunnelProxyManager::TunnelProxyManager(QObject *parent) :
     m_jsonRpcServer = new JsonRpcServer(this);
     m_jsonRpcServer->registerHandler(m_jsonRpcServer);
     m_jsonRpcServer->registerHandler(new TunnelProxyHandler(this));
-
 }
 
 TunnelProxyManager::~TunnelProxyManager()
@@ -86,7 +85,7 @@ TunnelProxyManager::Error TunnelProxyManager::registerServer(const QUuid &client
     // Check if requested already as client
 
 
-    TunnelProxyServer *proxyServer = new TunnelProxyServer(m_proxyClients.value(clientId), serverUuid, serverName);
+    TunnelProxyServerConnection *proxyServer = new TunnelProxyServerConnection(m_proxyClients.value(clientId), serverUuid, serverName);
     m_proxyClientsTunnelServer.insert(clientId, proxyServer);
     m_tunnelServers.insert(proxyServer->serverUuid(), proxyServer);
 
@@ -95,7 +94,7 @@ TunnelProxyManager::Error TunnelProxyManager::registerServer(const QUuid &client
 
 void TunnelProxyManager::startServer()
 {
-    qCDebug(dcTunnelProxyManager()) << "Starting tunnel proxy manager...";
+    qCDebug(dcTunnelProxyManager()) << "Starting tunnel proxy...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->startServer();
     }
@@ -104,7 +103,7 @@ void TunnelProxyManager::startServer()
 
 void TunnelProxyManager::stopServer()
 {
-    qCDebug(dcTunnelProxyManager()) << "Stopping tunnel proxy server...";
+    qCDebug(dcTunnelProxyManager()) << "Stopping tunnel proxy...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->stopServer();
     }
@@ -123,19 +122,42 @@ void TunnelProxyManager::onClientConnected(const QUuid &clientId, const QHostAdd
     qCDebug(dcTunnelProxyManager()) << "New client connected"  << interface->serverName() << clientId.toString() << address.toString();
 
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
+
     m_proxyClients.insert(clientId, proxyClient);
     m_jsonRpcServer->registerClient(proxyClient);
 }
 
 void TunnelProxyManager::onClientDisconnected(const QUuid &clientId)
 {
-    Q_UNUSED(clientId)
+    TransportInterface *interface = static_cast<TransportInterface *>(sender());
+    qCDebug(dcProxyServer()) << "Client disconnected" << interface->serverName() << clientId.toString();
+
+    if (!m_proxyClients.contains(clientId)) {
+        qCWarning(dcProxyServer()) << "Unknown client disconnected from proxy server." << clientId.toString();
+        return;
+    }
+    ProxyClient *proxyClient = m_proxyClients.take(clientId);
+
+    // Unregister from json rpc server
+    m_jsonRpcServer->unregisterClient(proxyClient);
+
+    // Delete the proxy client
+    proxyClient->deleteLater();
 }
 
 void TunnelProxyManager::onClientDataAvailable(const QUuid &clientId, const QByteArray &data)
 {
     Q_UNUSED(clientId)
     Q_UNUSED(data)
+
+    ProxyClient *proxyClient = m_proxyClients.value(clientId);
+    if (!proxyClient) {
+        qCWarning(dcProxyServer()) << "Could not find client for uuid" << clientId;
+        return;
+    }
+
+    qCDebug(dcProxyServerTraffic()) << "Client data available" << proxyClient << qUtf8Printable(data);
+    m_jsonRpcServer->processData(proxyClient, data);
 }
 
 }

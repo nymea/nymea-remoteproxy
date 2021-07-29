@@ -25,32 +25,13 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "tunnelproxyserver.h"
+#include "tunnelproxyclientconnection.h"
 
 namespace remoteproxy {
 
-TunnelProxyServer::TunnelProxyServer(ProxyClient *proxyClient, const QUuid &serverUuid, const QString &serverName, QObject *parent) :
-    QObject(parent),
-    m_proxyClient(proxyClient),
-    m_serverUuid(serverUuid),
-    m_serverName(serverName)
+TunnelProxyClientConnection::TunnelProxyClientConnection(QObject *parent) : QObject(parent)
 {
 
-}
-
-ProxyClient *TunnelProxyServer::proxyClient() const
-{
-    return m_proxyClient;
-}
-
-QUuid TunnelProxyServer::serverUuid() const
-{
-    return m_serverUuid;
-}
-
-QString TunnelProxyServer::serverName() const
-{
-    return m_serverName;
 }
 
 }
