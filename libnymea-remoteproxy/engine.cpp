@@ -66,7 +66,7 @@ void Engine::start(ProxyConfiguration *configuration)
     clean();
 
     m_configuration = configuration;
-    qCDebug(dcApplication()) << "Using configuration" << m_configuration;
+    qCDebug(dcEngine()) << "Using configuration" << m_configuration;
 
     // Make sure an authenticator was registered
     Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");

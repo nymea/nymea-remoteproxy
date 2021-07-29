@@ -118,8 +118,7 @@ public slots:
         connection->ignoreSslErrors();
     }
 
-    inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error)
-    {
+    inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error) {
         QJsonDocument jsonDoc = QJsonDocument::fromVariant(response);
         QVERIFY2(response.toMap().value("status").toString() == QString("success"),
                  QString("\nExpected status: \"success\"\nGot: %2\nFull message: %3")

@@ -87,6 +87,8 @@ void BaseTest::restartEngine()
 
 void BaseTest::startEngine()
 {
+    QLoggingCategory::setFilterRules("*.debug=false\ndefault.debug=true\nApplication.debug=true");
+
     m_configuration = new ProxyConfiguration(this);
     loadConfiguration(":/test-configuration.conf");
 
