@@ -44,7 +44,7 @@ private slots:
     // Basic stuff
     void startStopServer();
 
-    // WebSocket connection API
+    // Raw api calls
     void getIntrospect();
     void getHello();
 
@@ -60,10 +60,12 @@ private slots:
     void registerClient_data();
     void registerClient();
 
-
     void registerServerDuplicated();
     void registerClientDuplicated();
     void crossRegisterServerClient();
+
+    // Client classes
+    void testTunnelProxyServer();
 
 };
 

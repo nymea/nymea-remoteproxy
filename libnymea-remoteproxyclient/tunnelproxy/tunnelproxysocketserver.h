@@ -25,14 +25,14 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TUNNELPROXYSERVER_H
-#define TUNNELPROXYSERVER_H
+#ifndef TUNNELPROXYSOCKETSERVER_H
+#define TUNNELPROXYSOCKETSERVER_H
 
 #include <QUuid>
 #include <QObject>
 #include <QLoggingCategory>
 
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyTunnelProxyServer)
+Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServer)
 
 #include "proxyconnection.h"
 #include "tunnelproxysocket.h"
@@ -40,21 +40,33 @@ Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyTunnelProxyServer)
 namespace remoteproxyclient {
 
 class ProxyConnection;
-class TunnelProxyJsonRpcClient;
+class JsonRpcClient;
 
-class TunnelProxyServer : public QObject
+class TunnelProxySocketServer : public QObject
 {
     Q_OBJECT
 public:
+    enum State {
+        StateConnecting,
+        StateHostLookup,
+        StateConnected,
+        StateInitializing,
+        StateRegister,
+        StateRunning,
+        StateDiconnecting,
+        StateDisconnected,
+    };
+    Q_ENUM(State)
+
     enum ConnectionType {
         ConnectionTypeWebSocket,
         ConnectionTypeTcpSocket
     };
     Q_ENUM(ConnectionType)
 
-    explicit TunnelProxyServer(const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
-    explicit TunnelProxyServer(const QUuid &serverUuid, const QString &serverName, ConnectionType connectionType, QObject *parent = nullptr);
-    ~TunnelProxyServer();
+    explicit TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
+    explicit TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, ConnectionType connectionType, QObject *parent = nullptr);
+    ~TunnelProxySocketServer();
 
     bool running() const;
 
@@ -69,22 +81,50 @@ public slots:
 
 signals:
     void runningChanged(bool running);
+
+    void stateChanged(TunnelProxySocketServer::State state);
+    void errorOccured(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
+
+private slots:
+    void onConnectionChanged(bool connected);
+    void onConnectionDataAvailable(const QByteArray &data);
+
+    void onConnectionSocketError(QAbstractSocket::SocketError error);
+    void onConnectionStateChanged(QAbstractSocket::SocketState state);
+
+    // Initialization calls
+    void onHelloFinished();
+    void onServerRegistrationFinished();
+
 private:
+    // This server information
     QUuid m_serverUuid;
     QString m_serverName;
     ConnectionType m_connectionType = ConnectionTypeTcpSocket;
 
+    // Remote proxy server information
+    QString m_remoteProxyServer;
+    QString m_remoteProxyServerName;
+    QString m_remoteProxyServerVersion;
+    QString m_remoteProxyApiVersion;
+
     bool m_running = false;
     QUrl m_serverUrl;
     QAbstractSocket::SocketError m_error = QAbstractSocket::UnknownSocketError;
+    State m_state = StateDisconnected;
 
     ProxyConnection *m_connection = nullptr;
-    TunnelProxyJsonRpcClient *m_jsonClient = nullptr;
+    JsonRpcClient *m_jsonClient = nullptr;
 
+    void setState(State state);
+    void setRunning(bool running);
+    void setError(QAbstractSocket::SocketError error);
+
+    void cleanUp();
 };
 
 }
 
-#endif // TUNNELPROXYSERVER_H
+#endif // TUNNELPROXYSOCKETSERVER_H

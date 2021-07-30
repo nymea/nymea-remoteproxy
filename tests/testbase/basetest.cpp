@@ -322,7 +322,7 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
 
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
-    if (!connectionOne->connectServer(m_serverUrl)) {
+    if (!connectionOne->connectServer(m_serverUrlProxyWebSocket)) {
         qWarning() << "Could not connect client one";
         return false;
     }
@@ -340,7 +340,7 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
-    if (!connectionTwo->connectServer(m_serverUrl)) {
+    if (!connectionTwo->connectServer(m_serverUrlProxyWebSocket)) {
         qWarning() << "Could not connect client two";
         return false;
     }

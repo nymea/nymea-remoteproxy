@@ -56,11 +56,11 @@ public:
 protected:
     ProxyConfiguration *m_configuration = nullptr;
 
-    QUrl m_serverUrl = QUrl("wss://127.0.0.1:1212");
-    QUrl m_serverUrlTcp = QUrl("ssl://127.0.0.1:1213");
+    QUrl m_serverUrlProxyWebSocket = QUrl("wss://127.0.0.1:1212");
+    QUrl m_serverUrlProxyTcp = QUrl("ssl://127.0.0.1:1213");
 
-    QUrl m_serverUrlTunnel = QUrl("wss://127.0.0.1:2212");
-    QUrl m_serverUrlTunnelTcp = QUrl("ssl://127.0.0.1:2213");
+    QUrl m_serverUrlTunnelProxyWebSocket = QUrl("wss://127.0.0.1:2212");
+    QUrl m_serverUrlTunnelProxyTcp = QUrl("ssl://127.0.0.1:2213");
 
     QSslConfiguration m_sslConfiguration;
 

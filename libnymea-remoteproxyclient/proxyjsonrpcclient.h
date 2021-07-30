@@ -47,8 +47,14 @@ class JsonRpcClient : public QObject
 public:
     explicit JsonRpcClient(ProxyConnection *connection, QObject *parent = nullptr);
 
+    // General
     JsonReply *callHello();
+
+    // Proxy
     JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token, const QString &nonce);
+
+    // Tunnel proxy
+    JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);
 
 private:
     ProxyConnection *m_connection = nullptr;

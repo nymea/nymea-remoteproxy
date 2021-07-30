@@ -31,6 +31,9 @@
 #include "loggingcategories.h"
 #include "remoteproxyconnection.h"
 
+// Client
+#include "tunnelproxy/tunnelproxysocketserver.h"
+
 #include <QMetaType>
 #include <QSignalSpy>
 #include <QWebSocket>
@@ -534,6 +537,45 @@ void RemoteProxyTestsTunnelProxy::crossRegisterServerClient()
 
     serverSocket->close();
     delete serverSocket;
+
+    resetDebugCategories();
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
+{
+    // Start the server
+    startServer();
+
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("JsonRpcTraffic.debug=true");
+    addDebugCategory("TunnelProxySocketServer.debug=true");
+
+    // Tunnel proxy socket server
+    QString serverName = "SuperDuper server name";
+    QUuid serverUuid = QUuid::createUuid();
+
+    TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
+    connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        tunnelProxyServer->ignoreSslErrors(errors);
+    });
+
+    tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
+
+    QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
+    serverRunningSpy.wait();
+    QVERIFY(serverRunningSpy.count() == 1);
+    QList<QVariant> arguments = serverRunningSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(tunnelProxyServer->running());
+
+
+    // Tunnel proxy client connection
+
+
 
     resetDebugCategories();
 
