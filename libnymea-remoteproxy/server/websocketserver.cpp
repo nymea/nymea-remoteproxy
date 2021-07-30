@@ -77,6 +77,7 @@ void WebSocketServer::killClientConnection(const QUuid &clientId, const QString 
         return;
 
     qCWarning(dcWebSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+    client->flush();
     client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
 }
 

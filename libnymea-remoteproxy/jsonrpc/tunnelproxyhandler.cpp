@@ -40,6 +40,7 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     // Methods
     QVariantMap params; QVariantMap returns;
 
+    // Server
     params.clear(); returns.clear();
     setDescription("RegisterServer", "Register a new TunnelProxy server on this instance. Multiple TunnelProxy clients can be connected to the registered server on success.");
     params.insert("serverName", JsonTypes::basicTypeToString(JsonTypes::String));
@@ -48,6 +49,7 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
     setReturns("RegisterServer", returns);
 
+    // Client
     params.clear(); returns.clear();
     setDescription("RegisterClient", "Register a new TunnelProxy client on TunnelProxy server with the given serverUuid..");
     params.insert("clientName", JsonTypes::basicTypeToString(JsonTypes::String));
@@ -58,6 +60,8 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     setReturns("RegisterClient", returns);
 
     // Notifications
+
+    // Server
     params.clear(); returns.clear();
     setDescription("ClientConnected", "Emitted whenever a new client has been connected to a registered server. "
                    "Only tunnel proxy clients registered as server will receive this notification.");

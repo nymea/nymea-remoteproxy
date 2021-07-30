@@ -23,6 +23,9 @@ public:
     Type type() const;
     void setType(Type type);
 
+    bool slipEnabled() const;
+    void setSlipEnabled(bool slipEnabled);
+
     // Json server methods
     QList<QByteArray> processData(const QByteArray &data) override;
 
@@ -31,6 +34,7 @@ signals:
 
 private:
     Type m_type = TypeNone;
+    bool m_slipEnabled = false;
 
 };
 

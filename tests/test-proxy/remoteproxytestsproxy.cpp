@@ -45,12 +45,24 @@ RemoteProxyTestsProxy::RemoteProxyTestsProxy(QObject *parent) :
 
 void RemoteProxyTestsProxy::startStopServer()
 {
+    resetDebugCategories();
+    addDebugCategory("ProxyServer.debug=true");
+    addDebugCategory("Engine.debug=true");
+    addDebugCategory("JsonRpc.debug=true");
+    addDebugCategory("TcpSocketServer.debug=true");
+    addDebugCategory("WebSocketServer.debug=true");
+
     startServer();
     stopServer();
+
+    resetDebugCategories();
 }
 
 void RemoteProxyTestsProxy::dummyAuthenticator()
 {
+    resetDebugCategories();
+    addDebugCategory("ProxyServer.debug=true");
+
     cleanUpEngine();
 
     m_configuration = new ProxyConfiguration(this);
@@ -411,7 +423,7 @@ void RemoteProxyTestsProxy::getHello()
 
     // WebSocket
     response = invokeWebSocketProxyApiCall("RemoteProxy.Hello").toMap();
-    //qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
 
     // Verify data
     QVERIFY(!response.isEmpty());
@@ -423,7 +435,7 @@ void RemoteProxyTestsProxy::getHello()
     // TCP
     response.clear();
     response = invokeTcpSocketProxyApiCall("RemoteProxy.Hello").toMap();
-    //qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
+    qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
 
     // Verify data
     QVERIFY(!response.isEmpty());

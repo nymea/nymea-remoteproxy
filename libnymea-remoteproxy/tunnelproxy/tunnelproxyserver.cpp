@@ -99,6 +99,9 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
     tunnelProxyClient->setUuid(serverUuid);
     tunnelProxyClient->setName(serverName);
 
+    // Enable SLIP from now on
+//    tunnelProxyClient->setSlipEnabled(true);
+
     TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, this);
     m_tunnelProxyServerConnections.insert(serverUuid, serverConnection);
 
@@ -121,6 +124,11 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
         return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
     }
 
+    if (m_tunnelProxyClientConnections.contains(clientUuid)) {
+        qCWarning(dcTunnelProxyServer()) << "There is a client already registered with client uuid" << clientUuid.toString();
+        return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
+    }
+
     // Get the desired server connection
     TunnelProxyServerConnection *serverConnection = m_tunnelProxyServerConnections.value(serverUuid);
     if (!serverConnection) {
@@ -128,20 +136,18 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
         return TunnelProxyServer::TunnelProxyErrorServerNotFound;
     }
 
-    if (m_tunnelProxyClientConnections.contains(clientUuid)) {
-        qCWarning(dcTunnelProxyServer()) << "There is a client already registered with client uuid" << clientUuid.toString();
-        return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
-    }
-
     // Not registered yet, we have a connected server for the requested server uuid
     tunnelProxyClient->setType(TunnelProxyClient::TypeClient);
     tunnelProxyClient->setUuid(clientUuid);
     tunnelProxyClient->setName(clientName);
 
-    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, clientUuid, clientName, serverUuid);
+    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, serverConnection, clientUuid, clientName, serverUuid);
     m_tunnelProxyClientConnections.insert(clientUuid, clientConnection);
 
-    // TODO: register on the server and wait for te aprovement from the server
+    qCDebug(dcTunnelProxyServer()) << "Register client" << clientConnection << "-->" << serverConnection;
+    serverConnection->registerClientConnection(clientConnection);
+
+    // TODO: wait for te aprovement from the server
 
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
@@ -195,6 +201,8 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
         if (!serverConnection) {
             qCWarning(dcTunnelProxyServer()) << "Could not find server connection for disconnected tunnel proxy client claiming to be a server.";
         } else {
+
+
             // TODO: kill all related clients
 
             serverConnection->deleteLater();
@@ -203,11 +211,13 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
 
     if (tunnelProxyClient->type() == TunnelProxyClient::TypeClient) {
         TunnelProxyClientConnection *clientConnection = m_tunnelProxyClientConnections.take(tunnelProxyClient->uuid());
-
         if (!clientConnection) {
             qCWarning(dcTunnelProxyServer()) << "Could not find client connection for disconnected tunnel proxy client claiming to be a client.";
         } else {
-            // TODO: remove from server
+            if (clientConnection->serverConnection()) {
+                clientConnection->serverConnection()->unregisterClientConnection(clientConnection);
+                // TODO: Send client disconnected to the server
+            }
 
             clientConnection->deleteLater();
         }
@@ -229,10 +239,23 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
     }
 
     qCDebug(dcTunnelProxyServerTraffic()) << "Client data available" << tunnelProxyClient << qUtf8Printable(data);
+    if (tunnelProxyClient->type() == TunnelProxyClient::TypeClient) {
+        // Send the data to the server using slip + frame
 
-    // TODO: verify if encoded and for whom this data is... 0x0000 is for the json rpc handler...
 
-    m_jsonRpcServer->processData(tunnelProxyClient, data);
+    } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
+        if (tunnelProxyClient->slipEnabled()) {
+
+        } else {
+            m_jsonRpcServer->processData(tunnelProxyClient, data);
+        }
+        // Unpack SLIP data, get address, pipe to client or give it to the json rpc server if address 0x0000
+
+    } else {
+        // Not registered yet or doing other stuff...let the JSON RPC handle this data
+        m_jsonRpcServer->processData(tunnelProxyClient, data);
+    }
+
 }
 
 }

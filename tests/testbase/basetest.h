@@ -85,16 +85,16 @@ protected:
     void startServer();
     void stopServer();
 
-    QVariant invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectWebSocketProxyData(const QByteArray &data);
 
-    QVariant invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectTcpSocketProxyData(const QByteArray &data);
 
-    QVariant invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectWebSocketTunnelProxyData(const QByteArray &data);
 
-    QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
+    QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectTcpSocketTunnelProxyData(const QByteArray &data);
 
     QPair<QVariant, QSslSocket *> invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), QSslSocket *existingSocket = nullptr);

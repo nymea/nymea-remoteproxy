@@ -83,7 +83,6 @@ public:
     MonitorServer *monitorServer() const;
     LogEngine *logEngine() const;
 
-
 private:
     explicit Engine(QObject *parent = nullptr);
     ~Engine();

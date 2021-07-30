@@ -27,6 +27,7 @@
 
 #include "tunnelproxyserverconnection.h"
 #include "server/transportclient.h"
+#include "tunnelproxyclientconnection.h"
 
 namespace remoteproxy {
 
@@ -52,6 +53,25 @@ QUuid TunnelProxyServerConnection::serverUuid() const
 QString TunnelProxyServerConnection::serverName() const
 {
     return m_serverName;
+}
+
+void TunnelProxyServerConnection::registerClientConnection(TunnelProxyClientConnection *clientConnection)
+{
+    m_clientConnections.insert(clientConnection->clientUuid(), clientConnection);
+}
+
+void TunnelProxyServerConnection::unregisterClientConnection(TunnelProxyClientConnection *clientConnection)
+{
+    m_clientConnections.remove(clientConnection->clientUuid());
+}
+
+QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection)
+{
+    debug.nospace() << "TunnelProxyServerConnection(";
+    debug.nospace() << serverConnection->serverName() << ", ";
+    debug.nospace() << serverConnection->serverUuid().toString() << ", ";
+    debug.nospace() << serverConnection->transportClient() << ")";
+    return debug.space();
 }
 
 }

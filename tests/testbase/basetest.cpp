@@ -87,7 +87,6 @@ void BaseTest::cleanUpEngine()
     m_authenticator = nullptr;
 
     if (m_configuration) {
-        delete  m_configuration;
         m_configuration = nullptr;
     }
 }
@@ -132,6 +131,8 @@ void BaseTest::startServer()
     QVERIFY(Engine::instance()->tcpSocketServerProxy()->running());
     QVERIFY(Engine::instance()->webSocketServerTunnelProxy()->running());
     QVERIFY(Engine::instance()->tcpSocketServerTunnelProxy()->running());
+    QVERIFY(Engine::instance()->proxyServer()->running());
+    QVERIFY(Engine::instance()->tunnelProxyServer()->running());
     QVERIFY(Engine::instance()->monitorServer()->running());
 }
 
@@ -146,10 +147,8 @@ void BaseTest::stopServer()
     cleanUpEngine();
 }
 
-QVariant BaseTest::invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+QVariant BaseTest::invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params)
 {
-    Q_UNUSED(remainsConnected)
-
     QVariantMap request;
     request.insert("id", m_commandCounter);
     request.insert("method", method);
@@ -241,10 +240,8 @@ QVariant BaseTest::injectWebSocketProxyData(const QByteArray &data)
     return QVariant();
 }
 
-QVariant BaseTest::invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+QVariant BaseTest::invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params)
 {
-    Q_UNUSED(remainsConnected)
-
     QVariantMap request;
     request.insert("id", m_commandCounter);
     request.insert("method", method);
@@ -461,10 +458,8 @@ QVariant BaseTest::injectTcpSocketProxyData(const QByteArray &data)
     return jsonDoc.toVariant();
 }
 
-QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params)
 {
-    Q_UNUSED(remainsConnected)
-
     QVariantMap request;
     request.insert("id", m_commandCounter);
     request.insert("method", method);
@@ -485,10 +480,8 @@ QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, cons
     socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
     dataSpy.wait();
 
-    if (!remainsConnected) {
-        socket->close();
-        socket->deleteLater();
-    }
+    socket->close();
+    socket->deleteLater();
 
     for (int i = 0; i < dataSpy.count(); i++) {
         // Make sure the response ends with '}\n'
@@ -559,10 +552,8 @@ QVariant BaseTest::injectWebSocketTunnelProxyData(const QByteArray &data)
     return QVariant();
 }
 
-QVariant BaseTest::invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params, bool remainsConnected)
+QVariant BaseTest::invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params)
 {
-    Q_UNUSED(remainsConnected)
-
     QVariantMap request;
     request.insert("id", m_commandCounter);
     request.insert("method", method);

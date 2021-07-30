@@ -294,12 +294,34 @@ void Engine::clean()
         m_proxyServer = nullptr;
     }
 
+    if (m_tunnelProxyServer) {
+        m_tunnelProxyServer->stopServer();
+        delete m_tunnelProxyServer;
+        m_tunnelProxyServer = nullptr;
+    }
+
+    if (m_tcpSocketServerProxy) {
+        delete m_tcpSocketServerProxy;
+        m_tcpSocketServerProxy = nullptr;
+    }
+
     if (m_webSocketServerProxy) {
         delete m_webSocketServerProxy;
         m_webSocketServerProxy = nullptr;
     }
 
+    if (m_tcpSocketServerTunnelProxy) {
+        delete m_tcpSocketServerTunnelProxy;
+        m_tcpSocketServerTunnelProxy = nullptr;
+    }
+
+    if (m_webSocketServerTunnelProxy) {
+        delete m_webSocketServerTunnelProxy;
+        m_webSocketServerTunnelProxy = nullptr;
+    }
+
     if (m_configuration) {
+        delete m_configuration;
         m_configuration = nullptr;
     }
 }

@@ -57,8 +57,13 @@ private slots:
     void registerServer_data();
     void registerServer();
 
-    void registerServerDuplicated();
+    void registerClient_data();
+    void registerClient();
 
+
+    void registerServerDuplicated();
+    void registerClientDuplicated();
+    void crossRegisterServerClient();
 
 };
 

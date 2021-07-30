@@ -30,10 +30,12 @@
 
 #include <QUuid>
 #include <QObject>
+#include <QDebug>
 
 namespace remoteproxy {
 
 class TransportClient;
+class TunnelProxyClientConnection;
 
 class TunnelProxyServerConnection : public QObject
 {
@@ -46,16 +48,21 @@ public:
     QUuid serverUuid() const;
     QString serverName() const;
 
-
+    void registerClientConnection(TunnelProxyClientConnection *clientConnection);
+    void unregisterClientConnection(TunnelProxyClientConnection *clientConnection);
 
 signals:
 
 private:
     TransportClient *m_transportClient = nullptr;
-
     QUuid m_serverUuid;
     QString m_serverName;
+
+    QHash<QUuid, TunnelProxyClientConnection *> m_clientConnections;
+
 };
+
+QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection);
 
 }
 

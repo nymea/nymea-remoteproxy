@@ -247,6 +247,9 @@ void JsonRpcServer::processDataPackage(TransportClient *transportClient, const Q
         reply->setClientId(transportClient->clientId());
         reply->setCommandId(commandId);
         sendResponse(transportClient, commandId, reply->data());
+
+        // TODO: check if the client should be disconnected after this response
+
         reply->deleteLater();
     }
 }

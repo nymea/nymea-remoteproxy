@@ -65,6 +65,7 @@ void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString 
         return;
 
     qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+    client->flush();
     client->close();
 }
 
@@ -139,7 +140,6 @@ SslServer::SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *
     QTcpServer(parent),
     m_sslEnabled(sslEnabled),
     m_config(config)
-
 {
 
 }

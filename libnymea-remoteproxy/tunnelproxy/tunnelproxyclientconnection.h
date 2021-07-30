@@ -30,33 +30,38 @@
 
 #include <QUuid>
 #include <QObject>
+#include <QDebug>
 
 namespace remoteproxy {
 
 class TransportClient;
+class TunnelProxyServerConnection;
 
 class TunnelProxyClientConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit TunnelProxyClientConnection(TransportClient *transportClient, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent = nullptr);
+    explicit TunnelProxyClientConnection(TransportClient *transportClient, TunnelProxyServerConnection *serverConnection, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent = nullptr);
 
     TransportClient *transportClient() const;
+
+    TunnelProxyServerConnection *serverConnection() const;
 
     QUuid clientUuid() const;
     QString clientName() const;
     QUuid serverUuid() const;
 
-signals:
-
 private:
     TransportClient *m_transportClient = nullptr;
+    TunnelProxyServerConnection *m_serverConnection = nullptr;
 
     QUuid m_clientUuid;
     QString m_clientName;
     QUuid m_serverUuid;
 
 };
+
+QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection);
 
 }
 

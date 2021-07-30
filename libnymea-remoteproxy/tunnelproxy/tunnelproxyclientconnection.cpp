@@ -30,9 +30,10 @@
 
 namespace remoteproxy {
 
-TunnelProxyClientConnection::TunnelProxyClientConnection(TransportClient *transportClient, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent) :
+TunnelProxyClientConnection::TunnelProxyClientConnection(TransportClient *transportClient, TunnelProxyServerConnection *serverConnection, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent) :
     QObject(parent),
     m_transportClient(transportClient),
+    m_serverConnection(serverConnection),
     m_clientUuid(clientUuid),
     m_clientName(clientName),
     m_serverUuid(serverUuid)
@@ -43,6 +44,11 @@ TunnelProxyClientConnection::TunnelProxyClientConnection(TransportClient *transp
 TransportClient *TunnelProxyClientConnection::transportClient() const
 {
     return m_transportClient;
+}
+
+TunnelProxyServerConnection *TunnelProxyClientConnection::serverConnection() const
+{
+    return m_serverConnection;
 }
 
 QUuid TunnelProxyClientConnection::clientUuid() const
@@ -58,6 +64,15 @@ QString TunnelProxyClientConnection::clientName() const
 QUuid TunnelProxyClientConnection::serverUuid() const
 {
     return m_serverUuid;
+}
+
+QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection)
+{
+    debug.nospace() << "TunnelProxyClientConnection(";
+    debug.nospace() << clientConnection->clientName() << ", ";
+    debug.nospace() << clientConnection->clientUuid().toString() << ", ";
+    debug.nospace() << clientConnection->transportClient() << ")";
+    return debug.space();
 }
 
 }
