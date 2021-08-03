@@ -55,14 +55,44 @@ QString TunnelProxyServerConnection::serverName() const
     return m_serverName;
 }
 
+QList<TunnelProxyClientConnection *> TunnelProxyServerConnection::clientConnections() const
+{
+    return m_clientConnections.values();
+}
+
 void TunnelProxyServerConnection::registerClientConnection(TunnelProxyClientConnection *clientConnection)
 {
     m_clientConnections.insert(clientConnection->clientUuid(), clientConnection);
+    quint16 socketAddress = getFreeAddress();
+    clientConnection->setSocketAddress(socketAddress);
+    m_clientConnectionsAddresses.insert(socketAddress, clientConnection);
 }
 
 void TunnelProxyServerConnection::unregisterClientConnection(TunnelProxyClientConnection *clientConnection)
 {
     m_clientConnections.remove(clientConnection->clientUuid());
+    m_clientConnectionsAddresses.remove(clientConnection->socketAddress());
+}
+
+TunnelProxyClientConnection *TunnelProxyServerConnection::getClientConnection(quint16 socketAddress)
+{
+    return m_clientConnectionsAddresses.value(socketAddress);
+}
+
+quint16 TunnelProxyServerConnection::getFreeAddress()
+{
+    m_currentAddressCounter += 1;
+    quint16 address = m_currentAddressCounter;
+    for (int i = 0; i < m_connectionLimit; i++) {
+        if (m_clientConnectionsAddresses.contains(address) || address == 0x0000 || address == 0xFFFF) {
+            address++;
+        } else {
+            break;
+        }
+    }
+
+    Q_ASSERT_X(!m_clientConnectionsAddresses.contains(address), "TunnelProxyServerConnection", "no free address but the maximum of connections has been reached.");
+    return address;
 }
 
 QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection)

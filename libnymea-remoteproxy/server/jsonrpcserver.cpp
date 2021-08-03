@@ -29,6 +29,8 @@
 #include "jsonrpcserver.h"
 #include "loggingcategories.h"
 #include "jsonrpc/jsontypes.h"
+#include "transportclient.h"
+#include "slipdataprocessor.h"
 
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -135,7 +137,14 @@ void JsonRpcServer::sendResponse(TransportClient *client, int commandId, const Q
 
     QByteArray data = QJsonDocument::fromVariant(response).toJson(QJsonDocument::Compact);
     qCDebug(dcJsonRpcTraffic()) << "Sending data:" << data;
-    client->sendData(data);
+    if (client->slipEnabled()) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = data;
+        client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+    } else {
+        client->sendData(data);
+    }
 }
 
 void JsonRpcServer::sendErrorResponse(TransportClient *client, int commandId, const QString &error)
@@ -147,7 +156,14 @@ void JsonRpcServer::sendErrorResponse(TransportClient *client, int commandId, co
 
     QByteArray data = QJsonDocument::fromVariant(errorResponse).toJson(QJsonDocument::Compact);
     qCDebug(dcJsonRpcTraffic()) << "Sending data:" << data;
-    client->sendData(data);
+    if (client->slipEnabled()) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = data;
+        client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+    } else {
+        client->sendData(data);
+    }
 }
 
 QString JsonRpcServer::formatAssertion(const QString &targetNamespace, const QString &method, JsonHandler *handler, const QVariantMap &data) const
@@ -239,18 +255,21 @@ void JsonRpcServer::processDataPackage(TransportClient *transportClient, const Q
         Q_ASSERT_X((targetNamespace == "RemoteProxy" && method == "Introspect") || handler->validateReturns(method, reply->data()).first
                    ,"validating return value", formatAssertion(targetNamespace, method, handler, reply->data()).toLatin1().data());
 
-//        QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
-//        if (!returnValidation.first) {
-//            qCWarning(dcJsonRpc()) << "Return value validation failed of sync reply. This should never happen. Please check the source code.";
-//        }
-
         reply->setClientId(transportClient->clientId());
         reply->setCommandId(commandId);
         sendResponse(transportClient, commandId, reply->data());
-
-        // TODO: check if the client should be disconnected after this response
-
         reply->deleteLater();
+
+        // If the server decided to kill the connection after the response, do it now
+        if (transportClient->killConnectionRequested()) {
+            transportClient->killConnection(transportClient->killConnectionReason());
+            return;
+        }
+
+        // Enable SLIP from now on since requested
+        if (transportClient->slipAfterResponseEnabled()) {
+            transportClient->setSlipEnabled(true);
+        }
     }
 }
 
@@ -325,7 +344,7 @@ void JsonRpcServer::processData(TransportClient *transportClient, const QByteArr
     if (!m_clients.contains(transportClient))
         return;
 
-    qCDebug(dcJsonRpcTraffic()) << "Incoming data from" << transportClient << ": " << data;
+    qCDebug(dcJsonRpcTraffic()) << "Incoming data from" << transportClient << ": " << qUtf8Printable(data);
 
     // Handle package fragmentation
     QList<QByteArray> packages = transportClient->processData(data);
@@ -350,8 +369,16 @@ void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &me
     notification.insert("params", params);
 
     QByteArray data = QJsonDocument::fromVariant(notification).toJson(QJsonDocument::Compact);
-    qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
-    transportClient->sendData(data);
+    if (transportClient->slipEnabled()) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = data;
+        qCDebug(dcJsonRpcTraffic()) << "Sending notification frame:" <<frame.socketAddress << qUtf8Printable(frame.data);
+        transportClient->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+    } else {
+        qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
+        transportClient->sendData(data);
+    }
 }
 
 }

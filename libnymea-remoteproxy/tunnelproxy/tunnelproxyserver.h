@@ -48,7 +48,10 @@ public:
         TunnelProxyErrorInvalidUuid,
         TunnelProxyErrorInternalServerError,
         TunnelProxyErrorServerNotFound,
-        TunnelProxyErrorAlreadyRegistered
+        TunnelProxyErrorForbiddenCall,
+        TunnelProxyErrorAlreadyRegistered,
+        TunnelProxyErrorNotRegistered,
+        TunnelProxyErrorUnknownSocketAddress
     };
     Q_ENUM(TunnelProxyError)
 
@@ -62,6 +65,7 @@ public:
 
     TunnelProxyServer::TunnelProxyError registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName);
     TunnelProxyServer::TunnelProxyError registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
+    TunnelProxyServer::TunnelProxyError disconnectClient(const QUuid &clientId, quint16 socketAddress);
 
 public slots:
     void startServer();

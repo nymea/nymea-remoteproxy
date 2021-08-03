@@ -33,6 +33,7 @@
 
 // Client
 #include "tunnelproxy/tunnelproxysocketserver.h"
+#include "tunnelproxy/tunnelproxyremoteconnection.h"
 
 #include <QMetaType>
 #include <QSignalSpy>
@@ -296,6 +297,8 @@ void RemoteProxyTestsTunnelProxy::registerClient()
         QVERIFY(!response.isEmpty());
         QVERIFY(response.value("status").toString() == "success");
         QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+        QVERIFY(response.value("params").toMap().contains("slipEnabled"));
+        //QVERIFY(response.value("params").toMap().value("slipEnabled").toBool()));
         verifyTunnelProxyError(response, expectedServerError);
     }
 
@@ -358,27 +361,24 @@ void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+    QVERIFY(response.value("params").toMap().contains("slipEnabled"));
+    QVERIFY(response.value("params").toMap().value("slipEnabled").toBool());
     verifyTunnelProxyError(response);
 
+    // SLIP Should be enabled now
+
     // Try to register again with the same uuid on the same socket
-    result = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params, socket);
+    result = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params, true, socket);
     response = result.first.toMap();
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
 
-    // Try to register an invalid server uuid
-    QVariantMap paramsInvalidUuid;
-    paramsInvalidUuid.insert("serverName", serverName);
-    paramsInvalidUuid.insert("serverUuid", QUuid().toString());
-    result = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", paramsInvalidUuid, socket);
-    response = result.first.toMap();
-    QVERIFY(response.value("status").toString() == "success");
-    QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
-    verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorInvalidUuid);
+    QSignalSpy disconnectedTcpSpy(socket, &QSslSocket::disconnected);
+    QVERIFY(disconnectedTcpSpy.wait());
+    QVERIFY(disconnectedTcpSpy.count() == 1);
 
     // Close the tcp socket
-    socket->close();
     delete socket;
 
     QTest::qWait(100);
@@ -394,18 +394,16 @@ void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
     verifyTunnelProxyError(response);
 
     // Try to register again with the same uuid on the same socket
-    resultWebSocket = invokeWebSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params, webSocket);
+    resultWebSocket = invokeWebSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params, true, webSocket);
     response = resultWebSocket.first.toMap();
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
 
-    // Try to register an invalid server uuid
-    resultWebSocket = invokeWebSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", paramsInvalidUuid, webSocket);
-    response = resultWebSocket.first.toMap();
-    QVERIFY(response.value("status").toString() == "success");
-    QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
-    verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorInvalidUuid);
+
+    QSignalSpy disconnectedWebSocketSpy(webSocket, &QWebSocket::disconnected);
+    QVERIFY(disconnectedWebSocketSpy.wait());
+    QVERIFY(disconnectedWebSocketSpy.count() == 1);
 
     webSocket->close();
     delete webSocket;
@@ -470,7 +468,6 @@ void RemoteProxyTestsTunnelProxy::registerClientDuplicated()
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
 
-
     // CleanUp
     if (clientSocketTcp) {
         // Close the tcp socket
@@ -502,7 +499,9 @@ void RemoteProxyTestsTunnelProxy::crossRegisterServerClient()
     startServer();
 
     resetDebugCategories();
+    resetDebugCategories();
     addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("TunnelProxyServerTraffic.debug=true");
     addDebugCategory("JsonRpcTraffic.debug=true");
 
     // Create the server and keep it up
@@ -512,7 +511,7 @@ void RemoteProxyTestsTunnelProxy::crossRegisterServerClient()
     serverParams.insert("serverName", serverName);
     serverParams.insert("serverUuid", serverUuid.toString());
 
-    // TCP socket
+    // TCP server
     QPair<QVariant, QSslSocket *> serverResult = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", serverParams);
     QVariantMap response = serverResult.first.toMap();
     QSslSocket *serverSocket = serverResult.second;
@@ -521,6 +520,7 @@ void RemoteProxyTestsTunnelProxy::crossRegisterServerClient()
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response);
 
+    // SLIP is enabled now
 
     // Now try to register as client
     QVariantMap clientParams;
@@ -528,12 +528,16 @@ void RemoteProxyTestsTunnelProxy::crossRegisterServerClient()
     clientParams.insert("clientUuid", QUuid::createUuid().toString());
     clientParams.insert("serverUuid", serverUuid.toString());
 
-    QPair<QVariant, QSslSocket *> result = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterClient", clientParams, serverSocket);
+    QPair<QVariant, QSslSocket *> result = invokeTcpSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterClient", clientParams, true, serverSocket);
     response = result.first.toMap();
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
+
+    QSignalSpy disconnectedSpy(serverSocket, &QSslSocket::disconnected);
+    QVERIFY(disconnectedSpy.wait());
+    QVERIFY(disconnectedSpy.count() == 1);
 
     serverSocket->close();
     delete serverSocket;
@@ -551,8 +555,79 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
 
     resetDebugCategories();
     addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("TunnelProxyServerTraffic.debug=true");
     addDebugCategory("JsonRpcTraffic.debug=true");
     addDebugCategory("TunnelProxySocketServer.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnection.debug=true");
+    addDebugCategory("RemoteProxyClientJsonRpcTraffic.debug=true");
+
+    // Tunnel proxy socket server
+    QString serverName = "SuperDuper server name";
+    QUuid serverUuid = QUuid::createUuid();
+
+    TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
+    connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        tunnelProxyServer->ignoreSslErrors(errors);
+    });
+
+    tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
+
+    QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
+    serverRunningSpy.wait();
+    QVERIFY(serverRunningSpy.count() == 1);
+    QList<QVariant> arguments = serverRunningSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(tunnelProxyServer->running());
+
+    // Tunnel proxy client connection
+    QString clientName = "Awesome client name";
+    QUuid clientUuid = QUuid::createUuid();
+
+    TunnelProxyRemoteConnection *clientConnection = new TunnelProxyRemoteConnection(clientUuid, clientName, this);
+    connect(clientConnection, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        clientConnection->ignoreSslErrors(errors);
+    });
+
+    clientConnection->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    QSignalSpy clientConnectedSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(clientConnectedSpy.wait());
+    QVERIFY(clientConnectedSpy.count() == 1);
+    arguments = clientConnectedSpy.takeFirst();
+    TunnelProxySocket *tunnelProxySocket = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocket->clientName() == clientName);
+    QVERIFY(tunnelProxySocket->clientUuid() == clientUuid);
+
+    // Stop the server connection and verify the client gets disconnected
+
+    tunnelProxyServer->stopServer();
+
+    QSignalSpy disconnectedSpy(clientConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged);
+    QVERIFY(disconnectedSpy.wait());
+    QVERIFY(disconnectedSpy.count() == 1);
+    arguments = disconnectedSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == false);
+    QVERIFY(!clientConnection->remoteConnected());
+
+
+    resetDebugCategories();
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::testTunnelProxyClient()
+{
+    // Start the server
+    startServer();
+
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("TunnelProxyServerTraffic.debug=true");
+    addDebugCategory("JsonRpcTraffic.debug=true");
+    addDebugCategory("TunnelProxySocketServer.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnection.debug=true");
+    addDebugCategory("RemoteProxyClientJsonRpcTraffic.debug=true");
 
     // Tunnel proxy socket server
     QString serverName = "SuperDuper server name";
@@ -574,6 +649,24 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
 
 
     // Tunnel proxy client connection
+    QString clientName = "Awesome client name";
+    QUuid clientUuid = QUuid::createUuid();
+
+    TunnelProxyRemoteConnection *clientConnection = new TunnelProxyRemoteConnection(clientUuid, clientName, this);
+    connect(clientConnection, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        clientConnection->ignoreSslErrors(errors);
+    });
+
+    clientConnection->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    QSignalSpy clientRemoteConnectedSpy(clientConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged);
+    QVERIFY(clientRemoteConnectedSpy.wait());
+    QVERIFY(clientRemoteConnectedSpy.count() == 1);
+    arguments = clientRemoteConnectedSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(clientConnection->remoteConnected());
+
+    // Verify server socket connected
 
 
 

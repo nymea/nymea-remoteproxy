@@ -25,51 +25,40 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TUNNELPROXYSOCKET_H
-#define TUNNELPROXYSOCKET_H
+#ifndef SLIPDATAPROCESSOR_H
+#define SLIPDATAPROCESSOR_H
 
-#include <QUuid>
 #include <QObject>
-#include <QHostAddress>
+#include <QDataStream>
 
-namespace remoteproxyclient {
+// SLIP: https://tools.ietf.org/html/rfc1055
 
-class ProxyConnection;
-
-class TunnelProxySocket : public QObject
+class SlipDataProcessor
 {
-    Q_OBJECT
-    friend class TunnelProxySocketServer;
+    Q_GADGET
 
 public:
-    QUuid clientUuid() const;
-    QString clientName() const;
-    QHostAddress clientPeerAddress() const;
-    quint16 socketAddress() const;
+    enum ProtocolByte {
+        ProtocolByteEnd = 0xC0,
+        ProtocolByteEsc = 0xDB,
+        ProtocolByteTransposedEnd = 0xDC,
+        ProtocolByteTransposedEsc = 0xDD
+    };
+    Q_ENUM(ProtocolByte)
 
-    void writeData(const QByteArray &data);
+    typedef struct Frame {
+        quint16 socketAddress;
+        QByteArray data;
+    } Frame;
 
-    void disconnectSocket();
+    explicit SlipDataProcessor() = default;
 
-signals:
-    void dataReceived(const QByteArray &data);
-    void disconnected();
+    static QByteArray deserializeData(const QByteArray &data);
+    static QByteArray serializeData(const QByteArray &data);
 
-private:
-    explicit TunnelProxySocket(ProxyConnection *connection, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent = nullptr);
-    ~TunnelProxySocket() = default;
-
-    ProxyConnection *m_connection = nullptr;
-
-    QString m_clientName;
-    QUuid m_clientUuid;
-    QHostAddress m_clientPeerAddress;
-    quint16 m_socketAddress = 0xFFFF;
+    static Frame parseFrame(const QByteArray &data);
+    static QByteArray buildFrame(const Frame &frame);
 
 };
 
-QDebug operator<<(QDebug debug, TunnelProxySocket *tunnelProxySocket);
-
-}
-
-#endif // TUNNELPROXYSOCKET_H
+#endif // SLIPDATAPROCESSOR_H

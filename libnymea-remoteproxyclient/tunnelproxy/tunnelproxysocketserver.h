@@ -32,14 +32,14 @@
 #include <QObject>
 #include <QLoggingCategory>
 
-Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServer)
-
 #include "proxyconnection.h"
 #include "tunnelproxysocket.h"
 
+Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServer)
+Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic)
+
 namespace remoteproxyclient {
 
-class ProxyConnection;
 class JsonRpcClient;
 
 class TunnelProxySocketServer : public QObject
@@ -64,6 +64,15 @@ public:
     };
     Q_ENUM(ConnectionType)
 
+    enum Error {
+        ErrorNoError,
+        ErrorConnectionError,
+        ErrorInvalidAddress,
+        ErrorNotConnected,
+        ErrorNotRegistered
+    };
+    Q_ENUM(Error)
+
     explicit TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
     explicit TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, ConnectionType connectionType, QObject *parent = nullptr);
     ~TunnelProxySocketServer();
@@ -71,21 +80,32 @@ public:
     bool running() const;
 
     QAbstractSocket::SocketError error() const;
+    Error serverError() const;
 
     void ignoreSslErrors();
     void ignoreSslErrors(const QList<QSslError> &errors);
+
+    QUrl serverUrl() const;
+
+    QString remoteProxyServer() const;
+    QString remoteProxyServerName() const;
+    QString remoteProxyServerVersion() const;
+    QString remoteProxyApiVersion() const;
 
 public slots:
     void startServer(const QUrl &serverUrl);
     void stopServer();
 
 signals:
-    void runningChanged(bool running);
-
     void stateChanged(TunnelProxySocketServer::State state);
     void errorOccured(QAbstractSocket::SocketError error);
+    void serverErrorOccured(Error error);
     void sslErrors(const QList<QSslError> &errors);
 
+    void runningChanged(bool running);
+
+    void clientConnected(TunnelProxySocket *tunnelProxySocket);
+    void clientDisconnected(TunnelProxySocket *tunnelProxySocket);
 
 private slots:
     void onConnectionChanged(bool connected);
@@ -97,6 +117,10 @@ private slots:
     // Initialization calls
     void onHelloFinished();
     void onServerRegistrationFinished();
+
+    // Client notifications
+    void onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress);
+    void onTunnelProxyClientDisconnected(quint16 socketAddress);
 
 private:
     // This server information
@@ -113,14 +137,20 @@ private:
     bool m_running = false;
     QUrl m_serverUrl;
     QAbstractSocket::SocketError m_error = QAbstractSocket::UnknownSocketError;
+    Error m_serverError = ErrorNoError;
     State m_state = StateDisconnected;
 
     ProxyConnection *m_connection = nullptr;
     JsonRpcClient *m_jsonClient = nullptr;
 
+    QHash<quint16, TunnelProxySocket *> m_tunnelProxySockets;
+
+    QByteArray m_dataBuffer;
+
     void setState(State state);
     void setRunning(bool running);
     void setError(QAbstractSocket::SocketError error);
+    void setServerError(Error error);
 
     void cleanUp();
 };

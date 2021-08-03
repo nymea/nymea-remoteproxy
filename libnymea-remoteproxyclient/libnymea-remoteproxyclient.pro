@@ -4,6 +4,7 @@ TEMPLATE = lib
 TARGET = nymea-remoteproxyclient
 target.path = $$[QT_INSTALL_LIBS]
 
+include(../common/common.pri)
 include(libnymea-remoteproxyclient.pri)
 
 installheaders.files = remoteproxyconnection.h

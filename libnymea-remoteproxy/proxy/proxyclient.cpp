@@ -130,16 +130,16 @@ QList<QByteArray> ProxyClient::processData(const QByteArray &data)
     QList<QByteArray> packages;
 
     // Handle packet fragmentation
-    m_dataBuffers.append(data);
-    int splitIndex = m_dataBuffers.indexOf("}\n{");
+    m_dataBuffer.append(data);
+    int splitIndex = m_dataBuffer.indexOf("}\n{");
     while (splitIndex > -1) {
-        packages.append(m_dataBuffers.left(splitIndex + 1));
-        m_dataBuffers = m_dataBuffers.right(m_dataBuffers.length() - splitIndex - 2);
-        splitIndex = m_dataBuffers.indexOf("}\n{");
+        packages.append(m_dataBuffer.left(splitIndex + 1));
+        m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
+        splitIndex = m_dataBuffer.indexOf("}\n{");
     }
-    if (m_dataBuffers.trimmed().endsWith("}")) {
-        packages.append(m_dataBuffers);
-        m_dataBuffers.clear();
+    if (m_dataBuffer.trimmed().endsWith("}")) {
+        packages.append(m_dataBuffer);
+        m_dataBuffer.clear();
     }
 
     return packages;

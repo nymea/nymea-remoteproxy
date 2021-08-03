@@ -47,11 +47,21 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     params.insert("serverUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
     setParams("RegisterServer", params);
     returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
+    returns.insert("slipEnabled", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setReturns("RegisterServer", returns);
+
+    params.clear(); returns.clear();
+    setDescription("DisconnectClient", "A registered server can ask the remote proxy connection to disconnect a client for whatever reason.");
+    params.insert("socketAddress", JsonTypes::basicTypeToString(JsonTypes::UInt));
+    setParams("DisconnectClient", params);
+    returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
+    setReturns("DisconnectClient", returns);
+
 
     // Client
     params.clear(); returns.clear();
-    setDescription("RegisterClient", "Register a new TunnelProxy client on TunnelProxy server with the given serverUuid..");
+    setDescription("RegisterClient", "Register a new TunnelProxy client on TunnelProxy server with the given serverUuid. "
+                                     "On success, the remote connection has been accepted and any further data will come from the connected server.");
     params.insert("clientName", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("clientUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
     params.insert("serverUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
@@ -64,10 +74,11 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     // Server
     params.clear(); returns.clear();
     setDescription("ClientConnected", "Emitted whenever a new client has been connected to a registered server. "
-                   "Only tunnel proxy clients registered as server will receive this notification.");
-    params.insert("clientId", JsonTypes::basicTypeToString(JsonTypes::UInt));
-    params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
-    params.insert("address", JsonTypes::basicTypeToString(JsonTypes::String));
+                   "Only tunnel proxy clients registered as server will receive this notification. The socket address will be used for framing.");
+    params.insert("clientName", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("clientUuid", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("clientPeerAddress", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("socketAddress", JsonTypes::basicTypeToString(JsonTypes::UInt));
     setParams("ClientConnected", params);
 
     params.clear(); returns.clear();
@@ -100,7 +111,19 @@ JsonReply *TunnelProxyHandler::RegisterServer(const QVariantMap &params, Transpo
 
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+    response.insert("slipEnabled", error == TunnelProxyServer::TunnelProxyErrorNoError);
     return createReply("RegisterServer", response);
+}
+
+JsonReply *TunnelProxyHandler::DisconnectClient(const QVariantMap &params, TransportClient *transportClient)
+{
+    qCDebug(dcJsonRpc()) << name() << "disconnect client requested" << params << transportClient;
+    quint16 socketAddress = static_cast<quint16>(params.value("socketAddress").toUInt());
+    TunnelProxyServer::TunnelProxyError error = Engine::instance()->tunnelProxyServer()->disconnectClient(transportClient->clientId(), socketAddress);
+
+    QVariantMap response;
+    response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+    return createReply("DisconnectClient", response);
 }
 
 JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, TransportClient *transportClient)
@@ -122,8 +145,9 @@ JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, Transpo
 
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
-    return createReply("RegisterServer", response);
+    return createReply("RegisterClient", response);
 }
+
 
 //JsonReply *TunnelProxyHandler::RemoveClient(const QVariantMap &params, TransportClient *transportClient)
 //{

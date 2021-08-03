@@ -30,8 +30,10 @@
 #include "tcpsocketconnection.h"
 #include "websocketconnection.h"
 #include "proxyjsonrpcclient.h"
+#include "../common/slipdataprocessor.h"
 
 Q_LOGGING_CATEGORY(dcTunnelProxySocketServer, "dcTunnelProxySocketServer")
+Q_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic, "dcTunnelProxySocketServerTraffic")
 
 namespace remoteproxyclient {
 
@@ -67,16 +69,46 @@ QAbstractSocket::SocketError TunnelProxySocketServer::error() const
     return m_error;
 }
 
+TunnelProxySocketServer::Error TunnelProxySocketServer::serverError() const
+{
+    return m_serverError;
+}
+
 void TunnelProxySocketServer::ignoreSslErrors()
 {
     m_connection->ignoreSslErrors();
-
 }
 
 void TunnelProxySocketServer::ignoreSslErrors(const QList<QSslError> &errors)
 {
     m_connection->ignoreSslErrors(errors);
 }
+
+QUrl TunnelProxySocketServer::serverUrl() const
+{
+    return m_serverUrl;
+}
+
+QString TunnelProxySocketServer::remoteProxyServer() const
+{
+    return m_remoteProxyServer;
+}
+
+QString TunnelProxySocketServer::remoteProxyServerName() const
+{
+    return m_remoteProxyServerName;
+}
+
+QString TunnelProxySocketServer::remoteProxyServerVersion() const
+{
+    return m_remoteProxyServerVersion;
+}
+
+QString TunnelProxySocketServer::remoteProxyApiVersion() const
+{
+    return m_remoteProxyApiVersion;
+}
+
 
 void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 {
@@ -103,7 +135,8 @@ void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
     connect(m_connection, &ProxyConnection::sslErrors, this, &TunnelProxySocketServer::sslErrors);
 
     m_jsonClient = new JsonRpcClient(m_connection, this);
-//    connect(m_jsonClient, &JsonRpcClient::tunnelEstablished, this, &RemoteProxyConnection::onTunnelEstablished);
+    connect(m_jsonClient, &JsonRpcClient::tunnelProxyClientConnected, this, &TunnelProxySocketServer::onTunnelProxyClientConnected);
+    connect(m_jsonClient, &JsonRpcClient::tunnelProxyClientDisonnected, this, &TunnelProxySocketServer::onTunnelProxyClientDisconnected);
 
     qCDebug(dcTunnelProxySocketServer()) << "Connecting to" << m_serverUrl.toString();
     m_connection->connectServer(m_serverUrl);
@@ -111,7 +144,10 @@ void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 
 void TunnelProxySocketServer::stopServer()
 {
-    // Close the server connection and all related sockets
+    if (m_connection) {
+        qCDebug(dcTunnelProxySocketServer()) << "Disconnecting from" << m_connection->serverUrl().toString();
+        m_connection->disconnectServer();
+    }
 }
 
 void TunnelProxySocketServer::onConnectionChanged(bool connected)
@@ -119,6 +155,7 @@ void TunnelProxySocketServer::onConnectionChanged(bool connected)
     if (connected) {
         qCDebug(dcTunnelProxySocketServer()) << "Connected to remote proxy server.";
         setState(StateConnected);
+        m_serverError = TunnelProxySocketServer::ErrorNoError;
 
         setState(StateInitializing);
         JsonReply *reply = m_jsonClient->callHello();
@@ -126,18 +163,53 @@ void TunnelProxySocketServer::onConnectionChanged(bool connected)
     } else {
         qCDebug(dcTunnelProxySocketServer()) << "Disconnected from remote proxy server.";
         setState(StateDisconnected);
+        setServerError(ErrorNotConnected);
         cleanUp();
     }
 }
 
 void TunnelProxySocketServer::onConnectionDataAvailable(const QByteArray &data)
 {
+    qCDebug(dcTunnelProxySocketServerTraffic()) << "Data received" << qUtf8Printable(data);
+
     if (m_state != StateRunning) {
         m_jsonClient->processData(data);
+        m_dataBuffer.clear();
         return;
     }
 
-    // Parse SLIP
+    // Parse SLIP frame
+    for (int i = 0; i < data.length(); i++) {
+        quint8 byte = static_cast<quint8>(data.at(i));
+        if (byte == SlipDataProcessor::ProtocolByteEnd) {
+            // If there is no data...continue since it might be a starting END byte
+            if (m_dataBuffer.isEmpty())
+                continue;
+
+            QByteArray frameData = SlipDataProcessor::deserializeData(m_dataBuffer);
+            if (frameData.isNull()) {
+                qCWarning(dcTunnelProxySocketServerTraffic()) << "Received inconsistant SLIP encoded message. Ignoring data...";
+            } else {
+                SlipDataProcessor::Frame frame = SlipDataProcessor::parseFrame(frameData);
+                qCDebug(dcTunnelProxySocketServerTraffic()) << "Frame received" << frame.socketAddress << qUtf8Printable(frame.data);
+                if (frame.socketAddress == 0x0000) {
+                    m_jsonClient->processData(frame.data);
+                } else {
+                    // Find the socket and emit the data received signal
+                    TunnelProxySocket *tunnlProxySocket = m_tunnelProxySockets.value(frame.socketAddress);
+                    if (!tunnlProxySocket) {
+                        qCWarning(dcTunnelProxySocketServer()) << "Received data from unknown tunnel proxy client with address" << frame.socketAddress << "...ignoring the data";
+                    } else {
+                        emit tunnlProxySocket->dataReceived(frame.data);
+                    }
+                }
+            }
+
+            m_dataBuffer.clear();
+        } else {
+            m_dataBuffer.append(data.at(i));
+        }
+    }
 }
 
 void TunnelProxySocketServer::onConnectionSocketError(QAbstractSocket::SocketError error)
@@ -181,6 +253,7 @@ void TunnelProxySocketServer::onHelloFinished()
     if (response.value("status").toString() != "success") {
         qCWarning(dcTunnelProxySocketServer()) << "Could not get initial information from proxy server.";
         m_connection->disconnectServer();
+        setServerError(ErrorConnectionError);
         return;
     }
 
@@ -207,6 +280,7 @@ void TunnelProxySocketServer::onServerRegistrationFinished()
     if (response.value("status").toString() != "success") {
         qCWarning(dcTunnelProxySocketServer()) << "JSON RPC error. Failed to register as tunnel server on the remote proxy server.";
         m_connection->disconnectServer();
+        setServerError(ErrorConnectionError);
         return;
     }
 
@@ -214,11 +288,34 @@ void TunnelProxySocketServer::onServerRegistrationFinished()
     if (responseParams.value("tunnelProxyError").toString() != "TunnelProxyErrorNoError") {
         qCWarning(dcTunnelProxySocketServer()) << "Failed to register as tunnel server on the remote proxy server:" << responseParams.value("tunnelProxyError").toString();
         m_connection->disconnectServer();
+        setServerError(ErrorConnectionError);
         return;
     }
 
     qCDebug(dcTunnelProxySocketServer()) << "Registered successfully as tunnel server on the remote proxy server.";
     setState(StateRunning);
+    m_serverError = ErrorNoError;
+}
+
+void TunnelProxySocketServer::onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress)
+{
+    TunnelProxySocket *tunnelProxySocket = new TunnelProxySocket(m_connection, clientName, clientUuid, QHostAddress(clientPeerAddress), socketAddress, this);
+    qCDebug(dcTunnelProxySocketServer()) << "--> New client connected" << tunnelProxySocket;
+    m_tunnelProxySockets.insert(socketAddress, tunnelProxySocket);
+    emit clientConnected(tunnelProxySocket);
+}
+
+void TunnelProxySocketServer::onTunnelProxyClientDisconnected(quint16 socketAddress)
+{
+    TunnelProxySocket *tunnelProxySocket = m_tunnelProxySockets.take(socketAddress);
+    if (!tunnelProxySocket) {
+        qCWarning(dcTunnelProxySocketServer()) << "Unknown client disconnected" << socketAddress << ". Ignoring the event.";
+        return;
+    }
+
+    qCDebug(dcTunnelProxySocketServer()) << "--> Client disconnected" << tunnelProxySocket;
+    emit tunnelProxySocket->disconnected();
+    tunnelProxySocket->deleteLater();
 }
 
 void TunnelProxySocketServer::setState(State state)
@@ -253,10 +350,21 @@ void TunnelProxySocketServer::setError(QAbstractSocket::SocketError error)
     emit errorOccured(m_error);
 }
 
+void TunnelProxySocketServer::setServerError(Error error)
+{
+    if (m_serverError == error)
+        return;
+
+    qCDebug(dcTunnelProxySocketServer()) << "Server error occured" << error;
+    m_serverError = error;
+    emit serverErrorOccured(m_serverError);
+}
+
 void TunnelProxySocketServer::cleanUp()
 {
-    // TODO: cleanup client connections
-
+    foreach (quint16 socketAddress, m_tunnelProxySockets.keys()) {
+        onTunnelProxyClientDisconnected(socketAddress);
+    }
 
     if (m_jsonClient) {
         m_jsonClient->deleteLater();
@@ -268,8 +376,10 @@ void TunnelProxySocketServer::cleanUp()
         m_connection = nullptr;
     }
 
-//    m_serverName = QString();
-//    m_serverUuid = QUuid();
+    m_remoteProxyServer.clear();
+    m_remoteProxyServerName.clear();
+    m_remoteProxyServerVersion.clear();
+    m_remoteProxyApiVersion.clear();
 
     setState(StateDisconnected);
 }

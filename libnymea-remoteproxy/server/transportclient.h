@@ -50,6 +50,18 @@ public:
     uint creationTime() const;
     QString creationTimeString() const;
 
+    // Schedule a disconnect after the response
+    void killConnectionAfterResponse(const QString &killConnectionReason);
+    bool killConnectionRequested() const;
+    QString killConnectionReason() const;
+
+    // Schedule SLIP enable after response
+    void enableSlipAfterResponse();
+    bool slipAfterResponseEnabled() const;
+
+    bool slipEnabled() const;
+    void setSlipEnabled(bool slipEnabled);
+
     TransportInterface *interface() const;
 
     // Properties from auth request
@@ -85,7 +97,13 @@ protected:
     QString m_name;
     QUuid m_uuid;
 
-    QByteArray m_dataBuffers;
+    QByteArray m_dataBuffer;
+
+    bool m_killConnectionRequested = false;
+    QString m_killConnectionReason;
+
+    bool m_slipAfterResponseEnabled = false;
+    bool m_slipEnabled = false;
 
     // Json data information
     int m_messageId = 0;

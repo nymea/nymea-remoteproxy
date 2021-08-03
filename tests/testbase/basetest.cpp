@@ -31,6 +31,8 @@
 #include "loggingcategories.h"
 #include "remoteproxyconnection.h"
 
+#include "../common/slipdataprocessor.h"
+
 #include <QSslError>
 #include <QMetaType>
 #include <QSignalSpy>
@@ -656,7 +658,7 @@ QVariant BaseTest::injectTcpSocketTunnelProxyData(const QByteArray &data)
     return jsonDoc.toVariant();
 }
 
-QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params, QSslSocket *existingSocket)
+QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params,  bool slipEnabled, QSslSocket *existingSocket)
 {
     QSslSocket *socket = nullptr;
     if (!existingSocket) {
@@ -680,30 +682,66 @@ QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersist
     request.insert("method", method);
     request.insert("params", params);
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
-
+    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + '\n';
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
-    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
+
+    if (slipEnabled) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = payload;
+        socket->write(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+    } else {
+        socket->write(payload);
+    }
+
     // FIXME: check why it waits the full time here
     dataSpy.wait(500);
-    if (dataSpy.count() != 1) {
+    if (dataSpy.count() < 1) {
         qWarning() << "No data received";
         return QPair<QVariant, QSslSocket *>(QVariant(), socket);
     }
 
-    QByteArray data = socket->readAll();
+    QByteArray data;
+    if (slipEnabled) {
+        QByteArray rawData = socket->readAll();
+        QByteArray messageData;
+        // Parse SLIP frame
+        for (int i = 0; i < rawData.length(); i++) {
+            quint8 byte = static_cast<quint8>(rawData.at(i));
+            if (byte == SlipDataProcessor::ProtocolByteEnd) {
+                // If there is no data...continue since it might be a starting END byte
+                if (messageData.isEmpty())
+                    continue;
 
-    // Make sure the response ends with '}\n'
-    if (!data.endsWith("}\n")) {
-        qWarning() << "JSON data does not end with \"}\n\"";
-        return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+                break;
+                messageData.clear();
+            } else {
+                messageData.append(rawData.at(i));
+            }
+        }
+
+        QByteArray deserializedData = SlipDataProcessor::deserializeData(messageData);
+        SlipDataProcessor::Frame frame = SlipDataProcessor::parseFrame(deserializedData);
+        if (frame.data.isEmpty()) {
+            qWarning() << "Could not deserialize SLIP data";
+            return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+        }
+        data = frame.data;
+    } else {
+        data = socket->readAll();
+        // Make sure the response ends with '}\n'
+        if (!data.endsWith("}\n")) {
+            qWarning() << "JSON data does not end with \"}\n\"";
+            return QPair<QVariant, QSslSocket *>(QVariant(), socket);
+        }
     }
 
     // Make sure the response it a valid JSON string
     QJsonParseError error;
     jsonDoc = QJsonDocument::fromJson(data, &error);
     if (error.error != QJsonParseError::NoError) {
-        qWarning() << "JSON parser error" << error.errorString();
+        qWarning() << "JSON parser error" << error.errorString() << qUtf8Printable(data);
         return QPair<QVariant, QSslSocket *>(QVariant(), socket);
     }
 
@@ -718,7 +756,7 @@ QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersist
     return QPair<QVariant, QSslSocket *>(QVariant(), socket);
 }
 
-QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params, QWebSocket *existingSocket)
+QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params,  bool slipEnabled, QWebSocket *existingSocket)
 {
     QWebSocket *socket = nullptr;
     if (!existingSocket) {
@@ -740,16 +778,55 @@ QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersist
     request.insert("method", method);
     request.insert("params", params);
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
+    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + '\n';
 
     QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
-    socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
+
+    if (slipEnabled) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = payload;
+        socket->sendTextMessage(QString(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame))));
+    } else {
+        socket->sendTextMessage(QString(payload));
+    }
+
     dataSpy.wait();
 
     for (int i = 0; i < dataSpy.count(); i++) {
-        // Make sure the response ends with '}\n'
-        if (!dataSpy.at(i).last().toByteArray().endsWith("}\n")) {
-            qWarning() << "JSON data does not end with \"}\n\"";
-            return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+        QByteArray data;
+        if (slipEnabled) {
+            QByteArray rawData = dataSpy.at(i).last().toByteArray();
+            QByteArray messageData;
+            // Parse SLIP frame
+            for (int i = 0; i < rawData.length(); i++) {
+                quint8 byte = static_cast<quint8>(rawData.at(i));
+                if (byte == SlipDataProcessor::ProtocolByteEnd) {
+                    // If there is no data...continue since it might be a starting END byte
+                    if (messageData.isEmpty())
+                        continue;
+
+                    break;
+                    messageData.clear();
+                } else {
+                    messageData.append(rawData.at(i));
+                }
+            }
+
+            QByteArray deserializedData = SlipDataProcessor::deserializeData(messageData);
+            SlipDataProcessor::Frame frame = SlipDataProcessor::parseFrame(deserializedData);
+            if (frame.data.isEmpty()) {
+                qWarning() << "Could not deserialize SLIP data";
+                return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+            }
+            data = frame.data;
+        } else {
+            data = dataSpy.at(i).last().toByteArray();
+            // Make sure the response ends with '}\n'
+            if (!data.endsWith("}\n")) {
+                qWarning() << "JSON data does not end with \"}\n\"";
+                return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+            }
         }
 
         // Make sure the response it a valid JSON string
@@ -771,6 +848,7 @@ QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersist
         }
     }
 
+    qWarning() << "No websocket data received...";
     m_commandCounter++;
     return QPair<QVariant, QWebSocket *>(QVariant(), socket);
 }

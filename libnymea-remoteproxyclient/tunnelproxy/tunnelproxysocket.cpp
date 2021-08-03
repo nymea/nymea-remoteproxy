@@ -26,12 +26,63 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "tunnelproxysocket.h"
+#include "proxyconnection.h"
+#include "../common/slipdataprocessor.h"
 
 namespace remoteproxyclient {
 
-TunnelProxySocket::TunnelProxySocket(QObject *parent) : QObject(parent)
+TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent) :
+    QObject(parent),
+    m_connection(connection),
+    m_clientName(clientName),
+    m_clientUuid(clientUuid),
+    m_clientPeerAddress(clientPeerAddress),
+    m_socketAddress(socketAddress)
 {
 
+}
+
+QUuid TunnelProxySocket::clientUuid() const
+{
+    return m_clientUuid;
+}
+
+QString TunnelProxySocket::clientName() const
+{
+    return m_clientName;
+}
+
+QHostAddress TunnelProxySocket::clientPeerAddress() const
+{
+    return m_clientPeerAddress;
+}
+
+quint16 TunnelProxySocket::socketAddress() const
+{
+    return m_socketAddress;
+}
+
+void TunnelProxySocket::writeData(const QByteArray &data)
+{
+    SlipDataProcessor::Frame frame;
+    frame.socketAddress = m_socketAddress;
+    frame.data = data;
+    m_connection->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+}
+
+void TunnelProxySocket::disconnectSocket()
+{
+
+}
+
+QDebug operator<<(QDebug debug, TunnelProxySocket *tunnelProxySocket)
+{
+    debug.nospace() << "TunnelProxySocket(";
+    debug.nospace() << tunnelProxySocket->clientName() << ", ";
+    debug.nospace() << tunnelProxySocket->clientUuid().toString() << ", ";
+    debug.nospace() << tunnelProxySocket->clientPeerAddress().toString() << ", ";
+    debug.nospace() << tunnelProxySocket->socketAddress() << ")";
+    return debug.space();
 }
 
 }

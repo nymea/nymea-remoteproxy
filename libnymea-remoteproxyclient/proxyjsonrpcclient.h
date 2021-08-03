@@ -55,6 +55,8 @@ public:
 
     // Tunnel proxy
     JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);
+    JsonReply *callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
+    JsonReply *callDisconnectClient(quint16 socketAddress);
 
 private:
     ProxyConnection *m_connection = nullptr;
@@ -69,6 +71,8 @@ private:
 
 signals:
     void tunnelEstablished(const QString clientName, const QString &clientUuid);
+    void tunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress);
+    void tunnelProxyClientDisonnected(quint16 socketAddress);
 
 public slots:
     void processData(const QByteArray &data);

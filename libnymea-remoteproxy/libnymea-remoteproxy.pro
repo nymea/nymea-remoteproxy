@@ -1,4 +1,5 @@
 include(../nymea-remoteproxy.pri)
+include(../common/common.pri)
 
 TEMPLATE = lib
 TARGET = nymea-remoteproxy

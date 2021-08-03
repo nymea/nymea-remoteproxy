@@ -51,6 +51,9 @@ public:
     QString clientName() const;
     QUuid serverUuid() const;
 
+    quint16 socketAddress() const;
+    void setSocketAddress(quint16 socketAddress);
+
 private:
     TransportClient *m_transportClient = nullptr;
     TunnelProxyServerConnection *m_serverConnection = nullptr;
@@ -58,7 +61,7 @@ private:
     QUuid m_clientUuid;
     QString m_clientName;
     QUuid m_serverUuid;
-
+    quint16 m_socketAddress = 0xFFFF;
 };
 
 QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection);

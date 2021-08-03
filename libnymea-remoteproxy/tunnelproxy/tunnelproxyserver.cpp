@@ -32,6 +32,8 @@
 #include "tunnelproxyserverconnection.h"
 #include "tunnelproxyclientconnection.h"
 
+#include "../common/slipdataprocessor.h"
+
 namespace remoteproxy {
 
 TunnelProxyServer::TunnelProxyServer(QObject *parent) :
@@ -86,12 +88,14 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
     TunnelProxyClient *tunnelProxyClient = m_proxyClients.value(clientId);
     if (!tunnelProxyClient) {
         qCWarning(dcTunnelProxyServer()) << "There is no client with client uuid" << clientId.toString();
+        tunnelProxyClient->killConnectionAfterResponse("Internal server error");
         return TunnelProxyServer::TunnelProxyErrorInternalServerError;
     }
 
     // Make sure this client has not been registered as client or re-registration has been called...
     if (tunnelProxyClient->type() != TunnelProxyClient::TypeNone) {
         qCWarning(dcTunnelProxyServer()) << "Client tried to register as server but has already been registerd as" << tunnelProxyClient->type();
+        tunnelProxyClient->killConnectionAfterResponse("Already registered");
         return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
     }
 
@@ -100,7 +104,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
     tunnelProxyClient->setName(serverName);
 
     // Enable SLIP from now on
-//    tunnelProxyClient->setSlipEnabled(true);
+    tunnelProxyClient->enableSlipAfterResponse();
 
     TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, this);
     m_tunnelProxyServerConnections.insert(serverUuid, serverConnection);
@@ -110,22 +114,23 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
 
 TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid)
 {
-    qCDebug(dcTunnelProxyServer()) << "Register new client" << m_proxyClients.value(clientId) << clientName << clientUuid.toString() << "--> server" << serverUuid.toString();
-
     TunnelProxyClient *tunnelProxyClient = m_proxyClients.value(clientId);
     if (!tunnelProxyClient) {
         qCWarning(dcTunnelProxyServer()) << "There is no client with client uuid" << clientId.toString();
+        tunnelProxyClient->killConnectionAfterResponse("Internal server error");
         return TunnelProxyServer::TunnelProxyErrorInternalServerError;
     }
 
     // Make sure this client has not been registered as client or re-registration has been called...
     if (tunnelProxyClient->type() != TunnelProxyClient::TypeNone) {
         qCWarning(dcTunnelProxyServer()) << "Client tried to register as client but has already been registerd as" << tunnelProxyClient->type();
+        tunnelProxyClient->killConnectionAfterResponse("Already registered");
         return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
     }
 
     if (m_tunnelProxyClientConnections.contains(clientUuid)) {
         qCWarning(dcTunnelProxyServer()) << "There is a client already registered with client uuid" << clientUuid.toString();
+        tunnelProxyClient->killConnectionAfterResponse("Already registered");
         return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
     }
 
@@ -133,6 +138,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     TunnelProxyServerConnection *serverConnection = m_tunnelProxyServerConnections.value(serverUuid);
     if (!serverConnection) {
         qCWarning(dcTunnelProxyServer()) << "There is no server registered with server uuid" << serverUuid.toString();
+        tunnelProxyClient->killConnectionAfterResponse("Unknown server");
         return TunnelProxyServer::TunnelProxyErrorServerNotFound;
     }
 
@@ -147,8 +153,47 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     qCDebug(dcTunnelProxyServer()) << "Register client" << clientConnection << "-->" << serverConnection;
     serverConnection->registerClientConnection(clientConnection);
 
-    // TODO: wait for te aprovement from the server
+    // Tell the server a new client want's to connect
+    QVariantMap params;
+    params.insert("clientName", tunnelProxyClient->name());
+    params.insert("clientUuid", tunnelProxyClient->uuid().toString());
+    params.insert("clientPeerAddress", tunnelProxyClient->peerAddress().toString());
+    params.insert("socketAddress", clientConnection->socketAddress());
+    m_jsonRpcServer->sendNotification("TunnelProxy", "ClientConnected", params, serverConnection->transportClient());
 
+    // Note: check if a confirmation from the server would be needed, for rejection or limit or something. For now they are directly connected.
+
+    return TunnelProxyServer::TunnelProxyErrorNoError;
+}
+
+TunnelProxyServer::TunnelProxyError TunnelProxyServer::disconnectClient(const QUuid &clientId, quint16 socketAddress)
+{
+    TunnelProxyClient *tunnelProxyClient = m_proxyClients.value(clientId);
+    if (!tunnelProxyClient) {
+        qCWarning(dcTunnelProxyServer()) << "There is no client with client uuid" << clientId.toString();
+        return TunnelProxyServer::TunnelProxyErrorInternalServerError;
+    }
+
+    if (tunnelProxyClient->type() != TunnelProxyClient::TypeServer) {
+        qCWarning(dcTunnelProxyServer()) << "Client tried to disconnect a client but has not been registerd as server" << tunnelProxyClient->type();
+        tunnelProxyClient->killConnectionAfterResponse("Already registered");
+        return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
+    }
+
+    TunnelProxyServerConnection *serverConnection = m_tunnelProxyServerConnections.value(tunnelProxyClient->uuid());
+    if (!serverConnection) {
+        qCWarning(dcTunnelProxyServer()) << "Could not find server connection for" << tunnelProxyClient;
+        tunnelProxyClient->killConnectionAfterResponse("Internal server error");
+        return TunnelProxyServer::TunnelProxyErrorInternalServerError;
+    }
+
+    TunnelProxyClientConnection *clientConnection = serverConnection->getClientConnection(socketAddress);
+    if (!clientConnection) {
+        qCWarning(dcTunnelProxyServer()) << "Could not find client connection for socket address" << socketAddress << "on" << serverConnection;
+        return TunnelProxyServer::TunnelProxyErrorUnknownSocketAddress;
+    }
+
+    clientConnection->transportClient()->killConnection("Server requested disconnect.");
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
 
@@ -202,8 +247,11 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
             qCWarning(dcTunnelProxyServer()) << "Could not find server connection for disconnected tunnel proxy client claiming to be a server.";
         } else {
 
-
-            // TODO: kill all related clients
+            foreach (TunnelProxyClientConnection *clientConnection, serverConnection->clientConnections()) {
+                serverConnection->unregisterClientConnection(clientConnection);
+                clientConnection->setSocketAddress(0xFFFF);
+                clientConnection->transportClient()->killConnection("Server disconnected");
+            }
 
             serverConnection->deleteLater();
         }
@@ -215,8 +263,10 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
             qCWarning(dcTunnelProxyServer()) << "Could not find client connection for disconnected tunnel proxy client claiming to be a client.";
         } else {
             if (clientConnection->serverConnection()) {
+                QVariantMap params;
+                params.insert("socketAddress", clientConnection->socketAddress());
+                m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, clientConnection->serverConnection()->transportClient());
                 clientConnection->serverConnection()->unregisterClientConnection(clientConnection);
-                // TODO: Send client disconnected to the server
             }
 
             clientConnection->deleteLater();
@@ -239,23 +289,63 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
     }
 
     qCDebug(dcTunnelProxyServerTraffic()) << "Client data available" << tunnelProxyClient << qUtf8Printable(data);
+
     if (tunnelProxyClient->type() == TunnelProxyClient::TypeClient) {
-        // Send the data to the server using slip + frame
+        // Send the data to the server using slip encoded frame
+        TunnelProxyClientConnection *clientConnection = m_tunnelProxyClientConnections.value(tunnelProxyClient->uuid());
+        if (!clientConnection) {
+            qCWarning(dcTunnelProxyServer()) << "Could not find a client connection for client uuid" << tunnelProxyClient->uuid().toString();
+            // FIXME: check what do with this client
+            return;
+        }
 
+        Q_ASSERT_X(clientConnection->serverConnection(), "TunnelProxyServer", "The client has not been registered to a server connection");
 
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = clientConnection->socketAddress();
+        frame.data = data;
+        qCDebug(dcTunnelProxyServerTraffic()) << "Write client data to server using socket address" << clientConnection->socketAddress();
+        clientConnection->serverConnection()->transportClient()->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
+        // Data coming from a connected server connection
         if (tunnelProxyClient->slipEnabled()) {
+            // Unpack SLIP data, get address, pipe to client or give it to the json rpc server if address 0x0000
+            // Handle package fragmentation
+            QList<QByteArray> frames = tunnelProxyClient->processData(data);
+            foreach (const QByteArray &frameData, frames) {
+                SlipDataProcessor::Frame frame = SlipDataProcessor::parseFrame(frameData);
 
+                if (frame.socketAddress == 0x0000) {
+                    qCDebug(dcTunnelProxyServerTraffic()) << "Received frame for the JSON server" << tunnelProxyClient;
+                    m_jsonRpcServer->processDataPackage(tunnelProxyClient, frame.data);
+                } else {
+                    // This data seems to be for a client with the given address
+                    TunnelProxyServerConnection *serverConnection = m_tunnelProxyServerConnections.value(tunnelProxyClient->uuid());
+                    if (!serverConnection) {
+                        qCWarning(dcTunnelProxyServer()) << "Could not find server connection for" << tunnelProxyClient;
+                        continue;
+                    }
+
+                    // Get the client and send the data to the client
+                    TunnelProxyClientConnection *clientConnection = serverConnection->getClientConnection(frame.socketAddress);
+                    if (!clientConnection) {
+                        qCWarning(dcTunnelProxyServer()) << "The server connection wants to send data to a client connection which has not been registered to the server.";
+                        // FIXME: tell the server this client does not exist
+                        return;
+                    }
+
+                    qCDebug(dcTunnelProxyServerTraffic()) << "Sending data to" << clientConnection << qUtf8Printable(data);
+                    clientConnection->transportClient()->sendData(frame.data);
+                }
+            }
         } else {
             m_jsonRpcServer->processData(tunnelProxyClient, data);
         }
-        // Unpack SLIP data, get address, pipe to client or give it to the json rpc server if address 0x0000
 
     } else {
-        // Not registered yet or doing other stuff...let the JSON RPC handle this data
+        // Not registered yet or doing other stuff...let the JSON RPC server handle this data
         m_jsonRpcServer->processData(tunnelProxyClient, data);
     }
-
 }
 
 }

@@ -66,6 +66,16 @@ QUuid TunnelProxyClientConnection::serverUuid() const
     return m_serverUuid;
 }
 
+quint16 TunnelProxyClientConnection::socketAddress() const
+{
+    return m_socketAddress;
+}
+
+void TunnelProxyClientConnection::setSocketAddress(quint16 socketAddress)
+{
+    m_socketAddress = socketAddress;
+}
+
 QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection)
 {
     debug.nospace() << "TunnelProxyClientConnection(";

@@ -61,6 +61,42 @@ QString TransportClient::creationTimeString() const
     return QDateTime::fromMSecsSinceEpoch(creationTime() * 1000).toString("dd.MM.yyyy hh:mm:ss");
 }
 
+void TransportClient::killConnectionAfterResponse(const QString &killConnectionReason)
+{
+    m_killConnectionRequested = true;
+    m_killConnectionReason = killConnectionReason;
+}
+
+bool TransportClient::killConnectionRequested() const
+{
+    return m_killConnectionRequested;
+}
+
+QString TransportClient::killConnectionReason() const
+{
+    return m_killConnectionReason;
+}
+
+void TransportClient::enableSlipAfterResponse()
+{
+    m_slipAfterResponseEnabled = true;
+}
+
+bool TransportClient::slipAfterResponseEnabled() const
+{
+    return m_slipAfterResponseEnabled;
+}
+
+bool TransportClient::slipEnabled() const
+{
+    return m_slipEnabled;
+}
+
+void TransportClient::setSlipEnabled(bool slipEnabled)
+{
+    m_slipEnabled = slipEnabled;
+}
+
 TransportInterface *TransportClient::interface() const
 {
     return m_interface;
@@ -108,7 +144,7 @@ void TransportClient::addTxDataCount(int dataCount)
 
 int TransportClient::bufferSize() const
 {
-    return m_dataBuffers.size();
+    return m_dataBuffer.size();
 }
 
 int TransportClient::generateMessageId()

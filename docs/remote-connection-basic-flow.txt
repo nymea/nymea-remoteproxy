@@ -18,11 +18,8 @@ note over proxy: Server: Assign address for this client socket (0x0001)
 
 proxy->nymea: SLIP:0x0000: ProxyTunnel.ClientConnected (address: 0x0001)
 
-proxy<-nymea: SLIP:0x0000: ProxyTunnel.AcceptClient (address: 0x0001)
 
-proxy->nymea: TunnelProxyErrorNoError
-
-proxy->client: ProxyTunnel.ConfirmClient(uuid, name, serverUuid)
+proxy->client: TunnelProxyErrorNoError
 
 note over client: Connected\nAny incomming and outgoing data will\nbe from the connected nymea instance\nuntil disconnected.
 
@@ -30,10 +27,14 @@ note over nymea, client: Connected: The client can now communicate with nymea di
 
 
 
-proxy<-client: "data"
+proxy<-client: "request data"
 
-nymea<-proxy: SLIP:0x0001 "data"
+nymea<-proxy: SLIP:0x0001 "request data"
 
-nymea->proxy: SLIP:0x0001 "data"
+nymea->proxy: SLIP:0x0001 "response data"
 
-proxy->client: "data"
+proxy->client: "response data"
+
+nymea->proxy: SLIP:0x0001 "notification data"
+
+proxy->client: "notification data"

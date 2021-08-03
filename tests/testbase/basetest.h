@@ -97,8 +97,8 @@ protected:
     QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectTcpSocketTunnelProxyData(const QByteArray &data);
 
-    QPair<QVariant, QSslSocket *> invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), QSslSocket *existingSocket = nullptr);
-    QPair<QVariant, QWebSocket *> invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), QWebSocket *existingSocket = nullptr);
+    QPair<QVariant, QSslSocket *> invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), bool slipEnabled = false, QSslSocket *existingSocket = nullptr);
+    QPair<QVariant, QWebSocket *> invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(),  bool slipEnabled = false, QWebSocket *existingSocket = nullptr);
 
 
     bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);

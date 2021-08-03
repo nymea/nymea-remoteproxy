@@ -1,5 +1,7 @@
 RESOURCES += ../resources/resources.qrc
 
+include(../common/common.pri)
+
 CONFIG += testcase
 QT += testlib
 

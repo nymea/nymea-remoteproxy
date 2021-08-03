@@ -48,8 +48,12 @@ public:
     QUuid serverUuid() const;
     QString serverName() const;
 
+    QList<TunnelProxyClientConnection *> clientConnections() const;
+
     void registerClientConnection(TunnelProxyClientConnection *clientConnection);
     void unregisterClientConnection(TunnelProxyClientConnection *clientConnection);
+
+    TunnelProxyClientConnection *getClientConnection(quint16 socketAddress);
 
 signals:
 
@@ -57,8 +61,14 @@ private:
     TransportClient *m_transportClient = nullptr;
     QUuid m_serverUuid;
     QString m_serverName;
+    quint16 m_connectionLimit = 100;
+
+    quint16 m_currentAddressCounter = 0;
 
     QHash<QUuid, TunnelProxyClientConnection *> m_clientConnections;
+    QHash<quint16, TunnelProxyClientConnection *> m_clientConnectionsAddresses;
+
+    quint16 getFreeAddress();
 
 };
 

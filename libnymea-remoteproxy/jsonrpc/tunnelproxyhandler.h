@@ -46,9 +46,9 @@ public:
     QString name() const override;
 
     Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE JsonReply *DisconnectClient(const QVariantMap &params, TransportClient *transportClient);
     Q_INVOKABLE JsonReply *RegisterClient(const QVariantMap &params, TransportClient *transportClient);
 
-//    Q_INVOKABLE JsonReply *RemoveClient(const QVariantMap &params, TransportClient *transportClient);
 
 signals:
     void ClientConnected(const QVariantMap &params, TransportClient *transportClient);

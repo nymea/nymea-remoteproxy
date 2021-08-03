@@ -66,6 +66,7 @@ private slots:
 
     // Client classes
     void testTunnelProxyServer();
+    void testTunnelProxyClient();
 
 };
 

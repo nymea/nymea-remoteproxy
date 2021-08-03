@@ -69,12 +69,13 @@ private:
 
     QString formatAssertion(const QString &targetNamespace, const QString &method, JsonHandler *handler, const QVariantMap &data) const;
 
-    void processDataPackage(TransportClient *transportClient, const QByteArray &data);
 
 private slots:
     void asyncReplyFinished();
 
 public slots:
+    void processDataPackage(TransportClient *transportClient, const QByteArray &data);
+
     // Client registration for JSON RPC traffic
     void registerClient(TransportClient *transportClient);
     void unregisterClient(TransportClient *transportClient);

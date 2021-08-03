@@ -4,11 +4,11 @@ TEMPLATE=subdirs
 SUBDIRS += server client libnymea-remoteproxy libnymea-remoteproxyclient 
 
 !disabletests {
-    SUBDIRS+=tests
+    SUBDIRS += tests
 }
 
 !disablemonitor {
-    SUBDIRS+=monitor
+    SUBDIRS += monitor
 }
 
 server.depends = libnymea-remoteproxy
@@ -26,8 +26,14 @@ message("----------------------------------------------------------")
 message("JSON-RPC API version $${API_VERSION_MAJOR}.$${API_VERSION_MINOR}")
 message("Qt version:" $$[QT_VERSION])
 
-coverage { message("Building with coverage report") }
-ccache { message("Building with ccache support") }
+coverage {
+    message("Building with coverage report")
+}
+
+ccache {
+    message("Building with ccache support")
+}
+
 disablemonitor {
     message("Building without the monitor")
 }

@@ -101,7 +101,7 @@ QPair<bool, QString> JsonHandler::validateReturns(const QString &methodName, con
 
 void JsonHandler::setDescription(const QString &methodName, const QString &description)
 {
-    for(int i = 0; i < metaObject()->methodCount(); ++i) {
+    for (int i = 0; i < metaObject()->methodCount(); ++i) {
         QMetaMethod method = metaObject()->method(i);
         if (method.name() == methodName) {
             m_descriptions.insert(methodName, description);
@@ -113,7 +113,7 @@ void JsonHandler::setDescription(const QString &methodName, const QString &descr
 
 void JsonHandler::setParams(const QString &methodName, const QVariantMap &params)
 {
-    for(int i = 0; i < metaObject()->methodCount(); ++i) {
+    for (int i = 0; i < metaObject()->methodCount(); ++i) {
         QMetaMethod method = metaObject()->method(i);
         if (method.name() == methodName) {
             m_params.insert(methodName, params);
@@ -125,7 +125,7 @@ void JsonHandler::setParams(const QString &methodName, const QVariantMap &params
 
 void JsonHandler::setReturns(const QString &methodName, const QVariantMap &returns)
 {
-    for(int i = 0; i < metaObject()->methodCount(); ++i) {
+    for (int i = 0; i < metaObject()->methodCount(); ++i) {
         QMetaMethod method = metaObject()->method(i);
         if (method.name() == methodName) {
             m_returns.insert(methodName, returns);

@@ -79,6 +79,20 @@ JsonReply *JsonRpcClient::callRegisterServer(const QUuid &serverUuid, const QStr
     return reply;
 }
 
+JsonReply *JsonRpcClient::callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid)
+{
+    QVariantMap params;
+    params.insert("clientUuid", clientUuid);
+    params.insert("clientName", clientName);
+    params.insert("serverUuid", serverUuid.toString());
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "RegisterClient", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap());
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
 void JsonRpcClient::sendRequest(const QVariantMap &request)
 {
     QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact);
@@ -97,6 +111,8 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
 
     QVariantMap dataMap = jsonDoc.toVariant().toMap();
 
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Data received" << qUtf8Printable(data);
+
     // check if this is a reply to a request
     int commandId = dataMap.value("id").toInt();
     JsonReply *reply = m_replies.take(commandId);
@@ -109,7 +125,7 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
         }
 
         reply->setResponse(dataMap);
-        reply->finished();
+        emit reply->finished();
         return;
     }
 
@@ -126,6 +142,15 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
             QString clientName = notificationParams.value("name").toString();
             QString clientUuid = notificationParams.value("uuid").toString();
             emit tunnelEstablished(clientName, clientUuid);
+        } else if (nameSpace == "TunnelProxy" && notificationName == "ClientConnected") {
+            QString clientName = notificationParams.value("clientName").toString();
+            QUuid clientUuid = notificationParams.value("clientUuid").toUuid();
+            QString clientPeerAddress = notificationParams.value("clientPeerAddress").toString();
+            quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
+            emit tunnelProxyClientConnected(clientName, clientUuid, clientPeerAddress, socketAddress);
+        } else if (nameSpace == "TunnelProxy" && notificationName == "ClientDisconnected") {
+            quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
+            emit tunnelProxyClientDisonnected(socketAddress);
         }
     }
 }
