@@ -265,8 +265,8 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
             if (clientConnection->serverConnection()) {
                 QVariantMap params;
                 params.insert("socketAddress", clientConnection->socketAddress());
-                m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, clientConnection->serverConnection()->transportClient());
                 clientConnection->serverConnection()->unregisterClientConnection(clientConnection);
+                m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, clientConnection->serverConnection()->transportClient());
             }
 
             clientConnection->deleteLater();
@@ -304,8 +304,9 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         SlipDataProcessor::Frame frame;
         frame.socketAddress = clientConnection->socketAddress();
         frame.data = data;
-        qCDebug(dcTunnelProxyServerTraffic()) << "Write client data to server using socket address" << clientConnection->socketAddress();
+        qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << qUtf8Printable(data);
         clientConnection->serverConnection()->transportClient()->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
         // Data coming from a connected server connection
         if (tunnelProxyClient->slipEnabled()) {
@@ -334,7 +335,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
                         return;
                     }
 
-                    qCDebug(dcTunnelProxyServerTraffic()) << "Sending data to" << clientConnection << qUtf8Printable(data);
+                    qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection << qUtf8Printable(data);
                     clientConnection->transportClient()->sendData(frame.data);
                 }
             }

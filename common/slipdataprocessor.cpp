@@ -54,6 +54,9 @@ QByteArray SlipDataProcessor::deserializeData(const QByteArray &data)
         // If escape byte, the next byte has to be a modified byte
         if (byte == ProtocolByteEsc) {
             escaped = true;
+        } else if (byte == ProtocolByteEnd) {
+            // We are done...lets skip the rest of the data since we got the end byte
+            break;
         } else {
             deserializedData.append(static_cast<char>(byte));
         }

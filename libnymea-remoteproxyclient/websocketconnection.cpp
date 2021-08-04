@@ -51,7 +51,7 @@ WebSocketConnection::~WebSocketConnection()
 
 void WebSocketConnection::sendData(const QByteArray &data)
 {
-    m_webSocket->sendTextMessage(QString::fromUtf8(data + '\n'));
+    m_webSocket->sendTextMessage(QString::fromUtf8(data));
 }
 
 void WebSocketConnection::ignoreSslErrors()

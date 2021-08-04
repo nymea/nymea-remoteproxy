@@ -84,11 +84,8 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     params.clear(); returns.clear();
     setDescription("ClientDisconnected", "Emitted whenever a new client has been connected to a registered server. "
                    "Only tunnel proxy clients registered as server will receive this notification.");
-    params.insert("clientId", JsonTypes::basicTypeToString(JsonTypes::UInt));
-    params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
-    params.insert("address", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("socketAddress", JsonTypes::basicTypeToString(JsonTypes::UInt));
     setParams("ClientDisconnected", params);
-
 }
 
 QString TunnelProxyHandler::name() const
@@ -147,11 +144,5 @@ JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, Transpo
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
     return createReply("RegisterClient", response);
 }
-
-
-//JsonReply *TunnelProxyHandler::RemoveClient(const QVariantMap &params, TransportClient *transportClient)
-//{
-
-//}
 
 }

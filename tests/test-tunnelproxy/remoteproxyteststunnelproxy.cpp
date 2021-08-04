@@ -30,6 +30,7 @@
 #include "engine.h"
 #include "loggingcategories.h"
 #include "remoteproxyconnection.h"
+#include "../common/slipdataprocessor.h"
 
 // Client
 #include "tunnelproxy/tunnelproxysocketserver.h"
@@ -336,6 +337,34 @@ void RemoteProxyTestsTunnelProxy::registerClient()
     stopServer();
 }
 
+void RemoteProxyTestsTunnelProxy::testSlip_data()
+{
+    QTest::addColumn<QByteArray>("data");
+    QTest::addColumn<bool>("success");
+
+    QTest::newRow("valid: a lot of special characters") << QByteArray::fromHex("C0AABBCCDDEEFF12A1B2C3D4E5FFC0DBDCDDAA") << true;
+    QTest::newRow("valid: start and end with END protocol") << QByteArray::fromHex("C0C0C0C0C0C0C0C0C0C0DDDDCDCDCDCDCDCD") << true;
+    QTest::newRow("valid: normal text with a special characters") << QByteArray("Foo Bar text describing 123456770ß2123#+@$%/(!\"W=$*'*") << true;
+    QTest::newRow("invalid: escape followed by nor escaped special character") << QByteArray::fromHex("AADB12FFC0") << false;
+
+}
+
+void RemoteProxyTestsTunnelProxy::testSlip()
+{
+    QFETCH(QByteArray, data);
+    QFETCH(bool, success);
+
+    if (success) {
+        QByteArray serializedData = SlipDataProcessor::serializeData(data);
+        QVERIFY(serializedData.endsWith(0xC0));
+        QByteArray deserializedData = SlipDataProcessor::deserializeData(serializedData);
+        QVERIFY(deserializedData == data);
+    } else {
+        QByteArray deserializedData = SlipDataProcessor::deserializeData(data);
+        QVERIFY(deserializedData.isEmpty());
+    }
+}
+
 void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
 {
     // Start the server
@@ -387,28 +416,10 @@ void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
     // Try to register from a websocket with the same uuid
     QPair<QVariant, QWebSocket *> resultWebSocket = invokeWebSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params);
     response = resultWebSocket.first.toMap();
-    QWebSocket *webSocket = resultWebSocket.second;
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     verifyTunnelProxyError(response);
-
-    // Try to register again with the same uuid on the same socket
-    resultWebSocket = invokeWebSocketTunnelProxyApiCallPersistant("TunnelProxy.RegisterServer", params, true, webSocket);
-    response = resultWebSocket.first.toMap();
-    QVERIFY(response.value("status").toString() == "success");
-    QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
-    verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
-
-
-    QSignalSpy disconnectedWebSocketSpy(webSocket, &QWebSocket::disconnected);
-    QVERIFY(disconnectedWebSocketSpy.wait());
-    QVERIFY(disconnectedWebSocketSpy.count() == 1);
-
-    webSocket->close();
-    delete webSocket;
-
-    QTest::qWait(100);
 
     resetDebugCategories();
 
@@ -559,6 +570,7 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
     addDebugCategory("JsonRpcTraffic.debug=true");
     addDebugCategory("TunnelProxySocketServer.debug=true");
     addDebugCategory("TunnelProxyRemoteConnection.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnectionTraffic.debug=true");
     addDebugCategory("RemoteProxyClientJsonRpcTraffic.debug=true");
 
     // Tunnel proxy socket server
@@ -579,6 +591,13 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
     QVERIFY(arguments.at(0).toBool() == true);
     QVERIFY(tunnelProxyServer->running());
 
+    QCOMPARE(tunnelProxyServer->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(tunnelProxyServer->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(tunnelProxyServer->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+
     // Tunnel proxy client connection
     QString clientName = "Awesome client name";
     QUuid clientUuid = QUuid::createUuid();
@@ -597,22 +616,50 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyServer()
     TunnelProxySocket *tunnelProxySocket = arguments.at(0).value<TunnelProxySocket *>();
     QVERIFY(tunnelProxySocket->clientName() == clientName);
     QVERIFY(tunnelProxySocket->clientUuid() == clientUuid);
+    QVERIFY(!tunnelProxySocket->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocket->socketAddress() != 0x0000 && tunnelProxySocket->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocket->connected());
+
+    QCOMPARE(clientConnection->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(clientConnection->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(clientConnection->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(clientConnection->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(clientConnection->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+    // We have a remote connection, now disconnect the client and verify the socket dissapears on th server side
+    QSignalSpy clientDisconnectedSpy(tunnelProxyServer, &TunnelProxySocketServer::clientDisconnected);
+
+    clientConnection->disconnectServer();
+
+    QVERIFY(clientDisconnectedSpy.wait());
+    QVERIFY(clientDisconnectedSpy.count() == 1);
+    arguments = clientDisconnectedSpy.takeFirst();
+    tunnelProxySocket = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocket->clientName() == clientName);
+    QVERIFY(tunnelProxySocket->clientUuid() == clientUuid);
+    QVERIFY(!tunnelProxySocket->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocket->socketAddress() != 0x0000 && tunnelProxySocket->socketAddress() != 0xFFFF);
+    QVERIFY(!tunnelProxySocket->connected());
+
 
     // Stop the server connection and verify the client gets disconnected
+    QSignalSpy serverNotRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
 
     tunnelProxyServer->stopServer();
 
-    QSignalSpy disconnectedSpy(clientConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged);
-    QVERIFY(disconnectedSpy.wait());
-    QVERIFY(disconnectedSpy.count() == 1);
-    arguments = disconnectedSpy.takeFirst();
+    // Verify the remote connection is disconnected
+    serverNotRunningSpy.wait();
+    QVERIFY(serverNotRunningSpy.count() == 1);
+    arguments = serverNotRunningSpy.takeFirst();
     QVERIFY(arguments.at(0).toBool() == false);
-    QVERIFY(!clientConnection->remoteConnected());
+    QVERIFY(!tunnelProxyServer->running());
 
+    // Clean up
+    tunnelProxyServer->deleteLater();
+    clientConnection->deleteLater();
 
     resetDebugCategories();
 
-    // Clean up
     stopServer();
 }
 
@@ -647,6 +694,12 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyClient()
     QVERIFY(arguments.at(0).toBool() == true);
     QVERIFY(tunnelProxyServer->running());
 
+    QCOMPARE(tunnelProxyServer->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(tunnelProxyServer->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(tunnelProxyServer->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
 
     // Tunnel proxy client connection
     QString clientName = "Awesome client name";
@@ -666,14 +719,275 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyClient()
     QVERIFY(arguments.at(0).toBool() == true);
     QVERIFY(clientConnection->remoteConnected());
 
-    // Verify server socket connected
+    QCOMPARE(clientConnection->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(clientConnection->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(clientConnection->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(clientConnection->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(clientConnection->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+    // Stop the server and make sure the client gets disconnected
+    tunnelProxyServer->stopServer();
+
+    QSignalSpy clientRemoteDisonnectedSpy(clientConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged);
+    QVERIFY(clientRemoteDisonnectedSpy.wait());
+    QVERIFY(clientRemoteDisonnectedSpy.count() == 1);
+    arguments = clientRemoteDisonnectedSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == false);
+    QVERIFY(!clientConnection->remoteConnected());
 
 
+    // Clean up
+    tunnelProxyServer->deleteLater();
+    clientConnection->deleteLater();
 
     resetDebugCategories();
 
-    // Clean up
     stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::testTunnelProxyServerSocketDisconnect()
+{
+    // Start the server
+    startServer();
+
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("TunnelProxyServerTraffic.debug=true");
+    addDebugCategory("JsonRpcTraffic.debug=true");
+    addDebugCategory("TunnelProxySocketServer.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnection.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnectionTraffic.debug=true");
+    addDebugCategory("RemoteProxyClientJsonRpcTraffic.debug=true");
+
+    // Tunnel proxy socket server
+    QString serverName = "SuperDuper server name";
+    QUuid serverUuid = QUuid::createUuid();
+
+    TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
+    connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        tunnelProxyServer->ignoreSslErrors(errors);
+    });
+
+    tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
+
+    QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
+    serverRunningSpy.wait();
+    QVERIFY(serverRunningSpy.count() == 1);
+    QList<QVariant> arguments = serverRunningSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(tunnelProxyServer->running());
+
+    QCOMPARE(tunnelProxyServer->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(tunnelProxyServer->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(tunnelProxyServer->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+
+    // Tunnel proxy client connection
+    QString clientName = "Awesome client name";
+    QUuid clientUuid = QUuid::createUuid();
+
+    TunnelProxyRemoteConnection *clientConnection = new TunnelProxyRemoteConnection(clientUuid, clientName, this);
+    connect(clientConnection, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        clientConnection->ignoreSslErrors(errors);
+    });
+
+    clientConnection->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    QSignalSpy clientConnectedSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(clientConnectedSpy.wait());
+    QVERIFY(clientConnectedSpy.count() == 1);
+    arguments = clientConnectedSpy.takeFirst();
+    TunnelProxySocket *tunnelProxySocket = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocket->clientName() == clientName);
+    QVERIFY(tunnelProxySocket->clientUuid() == clientUuid);
+    QVERIFY(!tunnelProxySocket->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocket->socketAddress() != 0x0000 && tunnelProxySocket->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocket->connected());
+
+    QCOMPARE(clientConnection->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(clientConnection->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(clientConnection->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(clientConnection->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(clientConnection->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+    QVERIFY(clientConnection->remoteConnected() == true);
+
+    // Now request the TunnelProxySocket to disconnect and verify the client Connection really gets disconnected
+    QSignalSpy clientRemoteDisonnectedSpy(clientConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged);
+
+    tunnelProxySocket->disconnectSocket();
+
+    QVERIFY(clientRemoteDisonnectedSpy.wait());
+    QVERIFY(clientRemoteDisonnectedSpy.count() == 1);
+    arguments = clientRemoteDisonnectedSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == false);
+    QVERIFY(!clientConnection->remoteConnected());
+
+    QTest::qWait(100);
+
+    // Clean up
+    tunnelProxyServer->deleteLater();
+    clientConnection->deleteLater();
+
+    resetDebugCategories();
+
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::tunnelProxyEndToEndTest()
+{
+    // Start the server
+    startServer();
+
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("TunnelProxyServerTraffic.debug=true");
+    addDebugCategory("JsonRpcTraffic.debug=true");
+    addDebugCategory("TunnelProxySocketServer.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnection.debug=true");
+    addDebugCategory("TunnelProxyRemoteConnectionTraffic.debug=true");
+    addDebugCategory("RemoteProxyClientJsonRpcTraffic.debug=true");
+
+    // ** Create the server **
+    QString serverName = "nymea server";
+    QUuid serverUuid = QUuid::createUuid();
+
+    TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
+    connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        tunnelProxyServer->ignoreSslErrors(errors);
+    });
+
+    tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
+
+    QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
+    serverRunningSpy.wait();
+    QVERIFY(serverRunningSpy.count() == 1);
+    QList<QVariant> arguments = serverRunningSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(tunnelProxyServer->running());
+    QCOMPARE(tunnelProxyServer->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(tunnelProxyServer->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(tunnelProxyServer->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+
+    // ** Remote connection 1 **
+
+    QString clientOneName = "Client one";
+    QUuid clientOneUuid = QUuid::createUuid();
+    TunnelProxyRemoteConnection *remoteConnectionOne = new TunnelProxyRemoteConnection(clientOneUuid, clientOneName, this);
+    connect(remoteConnectionOne, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        remoteConnectionOne->ignoreSslErrors(errors);
+    });
+
+    remoteConnectionOne->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    // ** Tunnel proxy server socket 1 **
+    QSignalSpy remoteConnectedOneSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(remoteConnectedOneSpy.wait());
+    QVERIFY(remoteConnectedOneSpy.count() == 1);
+    arguments = remoteConnectedOneSpy.takeFirst();
+
+    TunnelProxySocket *tunnelProxySocketOne = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocketOne->clientName() == clientOneName);
+    QVERIFY(tunnelProxySocketOne->clientUuid() == clientOneUuid);
+    QVERIFY(!tunnelProxySocketOne->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocketOne->socketAddress() != 0x0000 && tunnelProxySocketOne->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocketOne->connected());
+
+    qDebug() << "Have socket one" << tunnelProxySocketOne;
+
+    // ** Send data in both directions
+    QByteArray testData("#sdföiabi23u4b34b598gvndafjibnföQIUH34982HRIPURBFÖWLKDÜOQw9h934utbf ljBiH9FBLAJF  RF AF,A§uu)(\"§)§(u$)($=$(((($((!");
+
+    // Socket -> Remote connection
+    QSignalSpy remoteConnectionOneDataSpy(remoteConnectionOne, &TunnelProxyRemoteConnection::dataReady);
+    tunnelProxySocketOne->writeData(testData);
+    QVERIFY(remoteConnectionOneDataSpy.wait());
+    QVERIFY(remoteConnectionOneDataSpy.count() == 1);
+    arguments = remoteConnectionOneDataSpy.takeFirst();
+    QByteArray receivedTestData = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData == testData);
+
+
+    // Remote connection -> Socket
+    QByteArray testData2("The biggest decision in life is about changing your life through changing your mind. – Albert Schweitzer");
+    QSignalSpy tunnelProxySocketOneDataSpy(tunnelProxySocketOne, &TunnelProxySocket::dataReceived);
+    remoteConnectionOne->sendData(testData2);
+    QVERIFY(tunnelProxySocketOneDataSpy.wait());
+    QVERIFY(tunnelProxySocketOneDataSpy.count() == 1);
+    arguments = tunnelProxySocketOneDataSpy.takeFirst();
+    QByteArray receivedTestData2 = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData2 == testData2);
+
+
+
+    // ** Remote connection 2 **
+
+    QString clientTwoName = "Client two";
+    QUuid clientTwoUuid = QUuid::createUuid();
+    TunnelProxyRemoteConnection *remoteConnectionTwo = new TunnelProxyRemoteConnection(clientTwoUuid, clientTwoName, this);
+    connect(remoteConnectionTwo, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        remoteConnectionTwo->ignoreSslErrors(errors);
+    });
+
+    remoteConnectionTwo->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    // ** Tunnel proxy server socket 2 **
+    QSignalSpy remoteConnectedTwoSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(remoteConnectedTwoSpy.wait());
+    QVERIFY(remoteConnectedTwoSpy.count() == 1);
+    arguments = remoteConnectedTwoSpy.takeFirst();
+
+    TunnelProxySocket *tunnelProxySocketTwo = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocketTwo->clientName() == clientTwoName);
+    QVERIFY(tunnelProxySocketTwo->clientUuid() == clientTwoUuid);
+    QVERIFY(!tunnelProxySocketTwo->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocketTwo->socketAddress() != 0x0000 && tunnelProxySocketTwo->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocketTwo->connected());
+
+    qDebug() << "Have socket two" << tunnelProxySocketTwo;
+
+    // ** Send data in both directions
+
+    // Socket -> Remote connection
+    QSignalSpy remoteConnectionTwoDataSpy(remoteConnectionTwo, &TunnelProxyRemoteConnection::dataReady);
+    tunnelProxySocketTwo->writeData(testData);
+    QVERIFY(remoteConnectionTwoDataSpy.wait());
+    QVERIFY(remoteConnectionTwoDataSpy.count() == 1);
+    arguments = remoteConnectionTwoDataSpy.takeFirst();
+    receivedTestData = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData == testData);
+
+    // Remote connection -> Socket
+    QSignalSpy tunnelProxySocketTwoDataSpy(tunnelProxySocketTwo, &TunnelProxySocket::dataReceived);
+    remoteConnectionTwo->sendData(testData2);
+    QVERIFY(tunnelProxySocketTwoDataSpy.wait());
+    QVERIFY(tunnelProxySocketTwoDataSpy.count() == 1);
+    arguments = tunnelProxySocketTwoDataSpy.takeFirst();
+    receivedTestData2 = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData2 == testData2);
+
+    Engine::instance()->tunnelProxyServer()->stopServer();
+
+    QTest::qWait(100);
+
+    QVERIFY(!tunnelProxyServer->running());
+    QVERIFY(!remoteConnectionOne->remoteConnected());
+    QVERIFY(!remoteConnectionTwo->remoteConnected());
+
+
+    // Clean up
+    tunnelProxyServer->deleteLater();
+    remoteConnectionOne->deleteLater();
+    remoteConnectionTwo->deleteLater();
+
+    resetDebugCategories();
+
+    stopServer();
+
 }
 
 

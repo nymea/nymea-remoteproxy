@@ -74,6 +74,8 @@ public:
     void ignoreSslErrors();
     void ignoreSslErrors(const QList<QSslError> &errors);
 
+    QUrl serverUrl() const;
+
     QString remoteProxyServer() const;
     QString remoteProxyServerName() const;
     QString remoteProxyServerVersion() const;
@@ -82,6 +84,7 @@ public:
 public slots:
     bool connectServer(const QUrl &url, const QUuid &serverUuid);
     void disconnectServer();
+    bool sendData(const QByteArray &data);
 
 signals:
     void stateChanged(TunnelProxyRemoteConnection::State state);

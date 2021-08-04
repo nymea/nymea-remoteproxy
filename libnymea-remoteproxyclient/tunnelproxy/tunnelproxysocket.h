@@ -35,6 +35,7 @@
 namespace remoteproxyclient {
 
 class ProxyConnection;
+class TunnelProxySocketServer;
 
 class TunnelProxySocket : public QObject
 {
@@ -47,24 +48,32 @@ public:
     QHostAddress clientPeerAddress() const;
     quint16 socketAddress() const;
 
+    bool connected() const;
+
     void writeData(const QByteArray &data);
 
     void disconnectSocket();
 
 signals:
     void dataReceived(const QByteArray &data);
+
+    void connectedChanged(bool connected);
     void disconnected();
 
 private:
-    explicit TunnelProxySocket(ProxyConnection *connection, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent = nullptr);
+    explicit TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent = nullptr);
     ~TunnelProxySocket() = default;
 
     ProxyConnection *m_connection = nullptr;
+    TunnelProxySocketServer *m_socketServer = nullptr;
+    bool m_connected = true; // Note: on creatrion, the socket is connected, otherwise it would not have been created
 
     QString m_clientName;
     QUuid m_clientUuid;
     QHostAddress m_clientPeerAddress;
     quint16 m_socketAddress = 0xFFFF;
+
+    void setDisconnected();
 
 };
 

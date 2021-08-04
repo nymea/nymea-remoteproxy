@@ -27,6 +27,7 @@
 
 #include "proxyjsonrpcclient.h"
 #include "proxyconnection.h"
+#include "../common/slipdataprocessor.h"
 
 #include <QJsonDocument>
 
@@ -93,10 +94,30 @@ JsonReply *JsonRpcClient::callRegisterClient(const QUuid &clientUuid, const QStr
     return reply;
 }
 
-void JsonRpcClient::sendRequest(const QVariantMap &request)
+JsonReply *JsonRpcClient::callDisconnectClient(quint16 socketAddress)
 {
-    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact);
-    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << data;
+    QVariantMap params;
+    params.insert("socketAddress", socketAddress);
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "DisconnectClient", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap(), true);
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
+void JsonRpcClient::sendRequest(const QVariantMap &request, bool slipEnabled)
+{
+    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
+
+    if (slipEnabled) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = data;
+        data = SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame));
+    }
+
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << qUtf8Printable(data);
     m_connection->sendData(data);
 }
 

@@ -45,6 +45,9 @@ class JsonRpcClient;
 class TunnelProxySocketServer : public QObject
 {
     Q_OBJECT
+
+    friend class TunnelProxySocket;
+
 public:
     enum State {
         StateConnecting,
@@ -146,6 +149,8 @@ private:
     QHash<quint16, TunnelProxySocket *> m_tunnelProxySockets;
 
     QByteArray m_dataBuffer;
+
+    void requestSocketDisconnect(quint16 socketAddress);
 
     void setState(State state);
     void setRunning(bool running);

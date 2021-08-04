@@ -53,7 +53,7 @@ void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
     }
 
     qCDebug(dcTcpSocketServerTraffic()) << "Send data to" << clientId.toString() << data + '\n';
-    if (client->write(data + '\n') < 0) {
+    if (client->write(data) < 0) {
         qCWarning(dcTcpSocketServer()) << "Could not write data to client socket" << clientId.toString();
     }
 }
@@ -64,8 +64,10 @@ void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString 
     if (!client)
         return;
 
-    qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
-    client->close();
+    if (client->state() == QAbstractSocket::ConnectedState) {
+        qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+        client->close();
+    }
 }
 
 bool TcpSocketServer::running() const

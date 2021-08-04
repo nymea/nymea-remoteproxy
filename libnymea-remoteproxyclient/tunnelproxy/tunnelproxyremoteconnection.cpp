@@ -77,6 +77,11 @@ void TunnelProxyRemoteConnection::ignoreSslErrors(const QList<QSslError> &errors
     m_connection->ignoreSslErrors(errors);
 }
 
+QUrl TunnelProxyRemoteConnection::serverUrl() const
+{
+    return m_serverUrl;
+}
+
 QString TunnelProxyRemoteConnection::remoteProxyServer() const
 {
     return m_remoteProxyServer;
@@ -136,6 +141,17 @@ void TunnelProxyRemoteConnection::disconnectServer()
         qCDebug(dcTunnelProxyRemoteConnection()) << "Disconnecting from" << m_connection->serverUrl().toString();
         m_connection->disconnectServer();
     }
+}
+
+bool TunnelProxyRemoteConnection::sendData(const QByteArray &data)
+{
+    if (!remoteConnected()) {
+        qCWarning(dcTunnelProxyRemoteConnection()) << "Could not send data. Not connected.";
+        return false;
+    }
+
+    m_connection->sendData(data);
+    return true;
 }
 
 void TunnelProxyRemoteConnection::onConnectionChanged(bool connected)

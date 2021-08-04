@@ -87,6 +87,16 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setTcpServerPort(static_cast<quint16>(settings.value("port", 1213).toInt()));
     settings.endGroup();
 
+    settings.beginGroup("WebSocketServerTunnelProxy");
+    setWebSocketServerTunnelProxyHost(QHostAddress(settings.value("host", "127.0.0.1").toString()));
+    setWebSocketServerTunnelProxyPort(static_cast<quint16>(settings.value("port", 2212).toInt()));
+    settings.endGroup();
+
+    settings.beginGroup("TcpServerTunnelProxy");
+    setTcpServerTunnelProxyHost(QHostAddress(settings.value("host", "127.0.0.1").toString()));
+    setTcpServerTunnelProxyPort(static_cast<quint16>(settings.value("port", 2213).toInt()));
+    settings.endGroup();
+
     // Load SSL configuration
     QSslConfiguration sslConfiguration;
     sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);

@@ -46,6 +46,7 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
                 } else {
                     qCDebug(dcTunnelProxyServerTraffic()) << "Frame received";
                     packages.append(m_dataBuffer);
+                    m_dataBuffer.clear();
                 }
             } else {
                 m_dataBuffer.append(data.at(i));

@@ -140,10 +140,10 @@ void JsonRpcServer::sendResponse(TransportClient *client, int commandId, const Q
     if (client->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data;
+        frame.data = data + '\n';
         client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
-        client->sendData(data);
+        client->sendData(data + '\n');
     }
 }
 
@@ -159,10 +159,10 @@ void JsonRpcServer::sendErrorResponse(TransportClient *client, int commandId, co
     if (client->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data;
+        frame.data = data + '\n';
         client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
-        client->sendData(data);
+        client->sendData(data + '\n');
     }
 }
 
@@ -372,12 +372,12 @@ void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &me
     if (transportClient->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data;
+        frame.data = data + '\n';
         qCDebug(dcJsonRpcTraffic()) << "Sending notification frame:" <<frame.socketAddress << qUtf8Printable(frame.data);
         transportClient->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
         qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
-        transportClient->sendData(data);
+        transportClient->sendData(data + '\n');
     }
 }
 

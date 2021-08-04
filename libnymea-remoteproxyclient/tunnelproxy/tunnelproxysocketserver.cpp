@@ -299,7 +299,7 @@ void TunnelProxySocketServer::onServerRegistrationFinished()
 
 void TunnelProxySocketServer::onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress)
 {
-    TunnelProxySocket *tunnelProxySocket = new TunnelProxySocket(m_connection, clientName, clientUuid, QHostAddress(clientPeerAddress), socketAddress, this);
+    TunnelProxySocket *tunnelProxySocket = new TunnelProxySocket(m_connection, this, clientName, clientUuid, QHostAddress(clientPeerAddress), socketAddress, this);
     qCDebug(dcTunnelProxySocketServer()) << "--> New client connected" << tunnelProxySocket;
     m_tunnelProxySockets.insert(socketAddress, tunnelProxySocket);
     emit clientConnected(tunnelProxySocket);
@@ -314,8 +314,22 @@ void TunnelProxySocketServer::onTunnelProxyClientDisconnected(quint16 socketAddr
     }
 
     qCDebug(dcTunnelProxySocketServer()) << "--> Client disconnected" << tunnelProxySocket;
-    emit tunnelProxySocket->disconnected();
+    tunnelProxySocket->setDisconnected();
+    emit clientDisconnected(tunnelProxySocket);
     tunnelProxySocket->deleteLater();
+}
+
+void TunnelProxySocketServer::requestSocketDisconnect(quint16 socketAddress)
+{
+    TunnelProxySocket *socket = m_tunnelProxySockets.value(socketAddress);
+    qCDebug(dcTunnelProxySocketServer()) << "Request to disconnect socket" << socket;
+
+    JsonReply *reply = m_jsonClient->callDisconnectClient(socketAddress);
+    connect(reply, &JsonReply::finished, this, [=](){
+       reply->deleteLater();
+       // TODO: handle errors
+       qCDebug(dcTunnelProxySocketServer()) << "Request to disconnect client finished" << reply->response();
+    });
 }
 
 void TunnelProxySocketServer::setState(State state)

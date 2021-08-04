@@ -715,7 +715,6 @@ QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersist
                     continue;
 
                 break;
-                messageData.clear();
             } else {
                 messageData.append(rawData.at(i));
             }
@@ -780,13 +779,19 @@ QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersist
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
     QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + '\n';
 
+
+    if (socket->state() != QAbstractSocket::ConnectedState) {
+        qWarning() << "Socket not connected";
+        return QPair<QVariant, QWebSocket *>(QVariant(), socket);
+    }
+
     QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
 
     if (slipEnabled) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
         frame.data = payload;
-        socket->sendTextMessage(QString(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame))));
+        socket->sendTextMessage(QString::fromUtf8(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame))));
     } else {
         socket->sendTextMessage(QString(payload));
     }

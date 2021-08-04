@@ -60,6 +60,9 @@ private slots:
     void registerClient_data();
     void registerClient();
 
+    void testSlip_data();
+    void testSlip();
+
     void registerServerDuplicated();
     void registerClientDuplicated();
     void crossRegisterServerClient();
@@ -67,6 +70,10 @@ private slots:
     // Client classes
     void testTunnelProxyServer();
     void testTunnelProxyClient();
+    void testTunnelProxyServerSocketDisconnect();
+
+    void tunnelProxyEndToEndTest();
+
 
 };
 

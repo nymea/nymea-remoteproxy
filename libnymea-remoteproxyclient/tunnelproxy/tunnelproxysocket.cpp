@@ -27,13 +27,15 @@
 
 #include "tunnelproxysocket.h"
 #include "proxyconnection.h"
+#include "tunnelproxysocketserver.h"
 #include "../common/slipdataprocessor.h"
 
 namespace remoteproxyclient {
 
-TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent) :
+TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent) :
     QObject(parent),
     m_connection(connection),
+    m_socketServer(socketServer),
     m_clientName(clientName),
     m_clientUuid(clientUuid),
     m_clientPeerAddress(clientPeerAddress),
@@ -62,6 +64,11 @@ quint16 TunnelProxySocket::socketAddress() const
     return m_socketAddress;
 }
 
+bool TunnelProxySocket::connected() const
+{
+    return m_connected;
+}
+
 void TunnelProxySocket::writeData(const QByteArray &data)
 {
     SlipDataProcessor::Frame frame;
@@ -72,7 +79,14 @@ void TunnelProxySocket::writeData(const QByteArray &data)
 
 void TunnelProxySocket::disconnectSocket()
 {
+    m_socketServer->requestSocketDisconnect(m_socketAddress);
+}
 
+void TunnelProxySocket::setDisconnected()
+{
+    m_connected = false;
+    emit connectedChanged(false);
+    emit disconnected();
 }
 
 QDebug operator<<(QDebug debug, TunnelProxySocket *tunnelProxySocket)

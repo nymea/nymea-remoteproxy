@@ -66,7 +66,7 @@ private:
 
     QHash<int, JsonReply *> m_replies;
 
-    void sendRequest(const QVariantMap &request);
+    void sendRequest(const QVariantMap &request, bool slipEnabled = false);
     void processDataPackage(const QByteArray &data);
 
 signals:
