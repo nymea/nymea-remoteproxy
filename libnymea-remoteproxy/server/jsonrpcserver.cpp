@@ -30,7 +30,7 @@
 #include "loggingcategories.h"
 #include "jsonrpc/jsontypes.h"
 #include "transportclient.h"
-#include "slipdataprocessor.h"
+#include "../common/slipdataprocessor.h"
 
 #include <QJsonDocument>
 #include <QJsonParseError>

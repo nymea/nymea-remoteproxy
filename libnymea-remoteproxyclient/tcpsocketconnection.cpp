@@ -80,7 +80,7 @@ void TcpSocketConnection::onEncrypted()
 
 void TcpSocketConnection::onError(QAbstractSocket::SocketError error)
 {
-    qCDebug(dcRemoteProxyClientTcpSocket()) << "Socket error occured" << error << m_tcpSocket->errorString();
+    qCWarning(dcRemoteProxyClientTcpSocket()) << "Socket error occured" << error << m_tcpSocket->errorString();
     emit errorOccured(error);
 }
 

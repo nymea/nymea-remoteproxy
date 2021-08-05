@@ -1,7 +1,7 @@
 #include "tunnelproxyclient.h"
 #include "loggingcategories.h"
 #include "server/transportinterface.h"
-#include "slipdataprocessor.h"
+#include "../common/slipdataprocessor.h"
 
 namespace remoteproxy {
 

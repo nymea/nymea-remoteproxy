@@ -97,9 +97,10 @@ void TcpSocketServer::onClientDisconnected(QSslSocket *client)
 {
     QUuid clientId = m_clientList.key(client);
     qCDebug(dcTcpSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
-    m_clientList.take(clientId);
-    // Note: the SslServer is deleting the socket object
-    emit clientDisconnected(clientId);
+    if (m_clientList.take(clientId)) {
+        // Note: the SslServer is deleting the socket object
+        emit clientDisconnected(clientId);
+    }
 }
 
 bool TcpSocketServer::startServer()
@@ -175,7 +176,7 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     if (m_sslEnabled) {
         qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
         sslSocket->setSslConfiguration(m_config);
-        addPendingConnection(sslSocket);
+        //addPendingConnection(sslSocket);
         sslSocket->startServerEncryption();
     } else {
         emit clientConnected(sslSocket);

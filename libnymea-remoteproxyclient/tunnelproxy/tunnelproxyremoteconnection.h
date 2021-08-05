@@ -28,17 +28,19 @@
 #ifndef TUNNELPROXYREMOTECONNECTION_H
 #define TUNNELPROXYREMOTECONNECTION_H
 
+#include <QUrl>
 #include <QUuid>
 #include <QObject>
+#include <QSslError>
+#include <QAbstractSocket>
 #include <QLoggingCategory>
-
-#include "proxyconnection.h"
 
 Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyRemoteConnection)
 
 namespace remoteproxyclient {
 
 class JsonRpcClient;
+class ProxyConnection;
 
 class TunnelProxyRemoteConnection : public QObject
 {

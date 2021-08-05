@@ -28,7 +28,7 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
     connect(m_socketServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
         if (m_insecure) {
             qDebug() << "SSL errors occured. Ignoring because explicit specified.";
-            m_socketServer->ignoreSslErrors();
+            m_socketServer->ignoreSslErrors(errors);
         } else {
             qWarning() << "SSL errors occured:";
             foreach (const QSslError &sslError, errors) {

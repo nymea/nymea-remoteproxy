@@ -28,11 +28,12 @@
 #ifndef TUNNELPROXYSOCKETSERVER_H
 #define TUNNELPROXYSOCKETSERVER_H
 
+#include <QUrl>
 #include <QUuid>
 #include <QObject>
+#include <QSslError>
 #include <QLoggingCategory>
 
-#include "proxyconnection.h"
 #include "tunnelproxysocket.h"
 
 Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServer)
@@ -41,6 +42,7 @@ Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic)
 namespace remoteproxyclient {
 
 class JsonRpcClient;
+class ProxyConnection;
 
 class TunnelProxySocketServer : public QObject
 {

@@ -6,14 +6,16 @@ target.path = $$[QT_INSTALL_LIBS]
 
 include(libnymea-remoteproxyclient.pri)
 
-installheaders.files = \
-    remoteproxyconnection.h \
-    tunnelproxy/tunnelproxyremoteconnection.h \
-    tunnelproxy/tunnelproxysocket.h \
-    tcpsocketconnection.h
+installheaders.files = remoteproxyconnection.h
 installheaders.path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxyclient/
 
-INSTALLS += target installheaders
+installtunnelheaders.files = tunnelproxy/tunnelproxyremoteconnection.h \
+    tunnelproxy/tunnelproxysocket.h \
+    tunnelproxy/tunnelproxysocketserver.h
+installtunnelheaders.path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxyclient/tunnelproxy
+
+
+INSTALLS += target installheaders installtunnelheaders
 
 # Create pkgconfig file
 CONFIG += create_pc create_prl no_install_prl

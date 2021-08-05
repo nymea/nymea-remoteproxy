@@ -682,6 +682,7 @@ void RemoteProxyTestsTunnelProxy::testTunnelProxyClient()
 
     TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
     connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        qDebug() << errors;
         tunnelProxyServer->ignoreSslErrors(errors);
     });
 
