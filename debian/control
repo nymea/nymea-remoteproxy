@@ -55,6 +55,15 @@ Description: The nymea remote proxy client for testing
   The nymea remote proxy client for testing
 
 
+Package: nymea-remoteproxy-tunnelclient
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+Description: The nymea remote proxy tunnel client for testing
+  The nymea remote proxy tunnel client for testing
+
+
 Package: libnymea-remoteproxyclient
 Architecture: any
 Section: libs

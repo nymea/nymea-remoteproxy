@@ -60,6 +60,7 @@ protected:
 private slots:
     void onClientDisconnected();
     void onSocketReadyRead();
+    void onSocketError(QAbstractSocket::SocketError);
 
 };
 

@@ -1,3 +1,5 @@
+include(../common/common.pri)
+
 INCLUDEPATH += $$PWD
 
 HEADERS += \

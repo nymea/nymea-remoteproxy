@@ -31,12 +31,12 @@
 
 Q_LOGGING_CATEGORY(dcProxyClient, "ProxyClient")
 
-ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, QObject *parent) :
+ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, RemoteProxyConnection::ConnectionType connectionType, QObject *parent) :
     QObject(parent),
     m_name(name),
     m_uuid(uuid)
 {
-    m_connection = new RemoteProxyConnection(m_uuid, m_name, this);
+    m_connection = new RemoteProxyConnection(m_uuid, m_name, connectionType, this);
     qCDebug(dcProxyClient()) << "Creating remote proxy connection" << m_name << m_uuid.toString();
     connect(m_connection, &RemoteProxyConnection::ready, this, &ProxyClient::onClientReady);
     connect(m_connection, &RemoteProxyConnection::authenticated, this, &ProxyClient::onAuthenticationFinished);

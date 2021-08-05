@@ -1,8 +1,7 @@
 include(../nymea-remoteproxy.pri)
 include(../libnymea-remoteproxyclient/libnymea-remoteproxyclient.pri)
-include(../common/common.pri)
 
-TARGET = nymea-remoteproxy-client
+TARGET = nymea-remoteproxy-tunnelclient
 TEMPLATE = app
 
 INCLUDEPATH += ../libnymea-remoteproxy
@@ -10,10 +9,12 @@ INCLUDEPATH += ../libnymea-remoteproxy
 LIBS += -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient
 
 SOURCES += main.cpp \
-    proxyclient.cpp
+    clientconnection.cpp \
+    serverconnection.cpp
 
 target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target
 
 HEADERS += \
-    proxyclient.h
+    clientconnection.h \
+    serverconnection.h

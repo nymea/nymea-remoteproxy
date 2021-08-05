@@ -26,13 +26,15 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include <QUrl>
+#include <QUuid>
 #include <QHash>
 #include <QCoreApplication>
 #include <QLoggingCategory>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 
-#include "proxyclient.h"
+#include "serverconnection.h"
+#include "clientconnection.h"
 
 static QHash<QString, bool> s_loggingFilters;
 static const char *const normal = "\033[0m";
@@ -94,8 +96,8 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy client application. This client allowes to test "
-                                             "a server application as client perspective.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy  tunnel client application. This application allowes to register as client"
+                                             "or server on the tunnel proxy interface.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 2021 nymea GmbH <developer@nymea.io>\n")
@@ -103,32 +105,27 @@ int main(int argc, char *argv[])
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
 
-    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default wss://dev-remoteproxy.nymea.io:443", "url");
-    urlOption.setDefaultValue("wss://dev-remoteproxy.nymea.io:443");
+    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default ssl://dev-remoteproxy.nymea.io:2213", "url");
+    urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:2213");
     parser.addOption(urlOption);
-
-    QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
-    parser.addOption(tokenOption);
-
-    QCommandLineOption nonceOption(QStringList() << "n" << "nonce", "The shared connection unique nonce for this tunnel.", "nonce");
-    parser.addOption(nonceOption);
 
     QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
-    QCommandLineOption pingPongOption(QStringList() << "p" << "pingpong", "Start a ping pong traffic trough the remote connection.");
-    parser.addOption(pingPongOption);
+    QCommandLineOption serverOption(QStringList() << "s" << "server", "Connect as tunnel proxy server connection.");
+    parser.addOption(serverOption);
 
+    QCommandLineOption clientOption(QStringList() << "c" << "client", "Connect as tunnel proxy client connection. The server uuid is required.");
+    parser.addOption(clientOption);
 
-    QCommandLineOption nameOption(QStringList() << "name", "The name of the client. Default nymea-remoteproxyclient", "name");
-    nameOption.setDefaultValue("nymea-remoteproxyclient");
+    QCommandLineOption nameOption(QStringList() << "n" << "name", "The name of the connecting client.", "name");
     parser.addOption(nameOption);
 
-    QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the client. If not specified, a new one will be created", "uuid");
+    QCommandLineOption uuidOption(QStringList() << "u" << "uuid", "The uuid of the connecting client. If not specified, a new one will be created", "uuid");
     parser.addOption(uuidOption);
 
-    QCommandLineOption tcpOption(QStringList() << "tcp", "Use TCP as tronsport instead of web sockets.");
-    parser.addOption(tcpOption);
+    QCommandLineOption serverUuidOption(QStringList() << "server-uuid", "The uuid of the server you want to connect to as client connection.");
+    parser.addOption(serverUuidOption);
 
     QCommandLineOption verboseOption(QStringList() << "verbose", "Print more information about the connection.");
     parser.addOption(verboseOption);
@@ -138,46 +135,83 @@ int main(int argc, char *argv[])
 
     parser.process(application);
 
-    // Enable verbose
-    if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
-        s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
-        s_loggingFilters["RemoteProxyClientWebSocket"] = true;
-        s_loggingFilters["RemoteProxyClientConnection"] = true;
+    // Make sure not server and client given
+    if (parser.isSet(serverOption) && parser.isSet(clientOption)) {
+        qCritical() << "Please specify either beeing a client or a server connection, not both.";
+        exit(EXIT_FAILURE);
     }
 
-    // Enable very verbose
-    if (parser.isSet(veryVerboseOption)) {
-        s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
-        s_loggingFilters["RemoteProxyClientConnectionTraffic"] = true;
-    }
-    QLoggingCategory::installFilter(loggingCategoryFilter);
-
-    if (!parser.isSet(tokenOption)) {
-        qCCritical(dcProxyClient()) << "Please specify the token for authentication using -t <token> or --token <token>." << endl << endl;
-        parser.showHelp(-1);
+    // Get the uuid to pick for the connection
+    QUuid uuid(parser.value(uuidOption));
+    if (uuid.isNull()) {
+        uuid = QUuid::createUuid();
+        qDebug() << "Picking automatic UUID" << uuid.toString();
     }
 
     QUrl serverUrl(parser.value(urlOption));
     if (!serverUrl.isValid()) {
-        qCCritical(dcProxyClient()) << "Invalid proxy server url passed." << parser.value(urlOption);
+        qCritical() << "Invalid proxy server url passed." << parser.value(urlOption);
         exit(-1);
     }
 
-    QUuid uuid(parser.value(uuidOption));
-    if (uuid.isNull()) {
-        uuid = QUuid::createUuid();
-    }
+    // Server, or if not specified server too
+    if (parser.isSet(serverOption) || (!parser.isSet(serverOption) && !parser.isSet(clientOption))) {
+        QString name = parser.value("name");
+        if (name.isEmpty()) {
+            name = "Server connection";
+            qDebug() << "Picking automatic name" << name;
+        }
 
-    if (parser.isSet(tcpOption)) {
-        ProxyClient client(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
-        client.setInsecure(parser.isSet(insecureOption));
-        client.setPingpong(parser.isSet(pingPongOption));
-        client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+        // Enable verbose
+        if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["default"] = true;
+            s_loggingFilters["TunnelProxySocketServer"] = true;
+            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
+            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
+            s_loggingFilters["RemoteProxyClientConnection"] = true;
+        }
+
+        // Enable very verbose
+        if (parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
+            s_loggingFilters["TunnelProxySocketServerTraffic"] = true;
+        }
+        QLoggingCategory::installFilter(loggingCategoryFilter);
+
+
+        // Create the server connection
+        ServerConnection server(serverUrl, name, uuid, parser.isSet(insecureOption));
+
+        server.startServer();
+
     } else {
-        ProxyClient client(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
-        client.setInsecure(parser.isSet(insecureOption));
-        client.setPingpong(parser.isSet(pingPongOption));
-        client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+        // Client
+        QString name = parser.value("name");
+        if (name.isEmpty()) {
+            name = "Client connection";
+            qDebug() << "Picking automatic name" << name;
+        }
+
+        if (!parser.isSet(serverUuidOption)) {
+            qCritical() << "Please specify the server UUID you want to connect to using the --server-uuid parameter.";
+            exit(EXIT_FAILURE);
+        }
+
+        // Enable verbose
+        if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["default"] = true;
+            s_loggingFilters["TunnelProxyRemoteConnection"] = true;
+            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
+            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
+            s_loggingFilters["RemoteProxyClientConnection"] = true;
+        }
+
+        // Enable very verbose
+        if (parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
+            s_loggingFilters["TunnelProxySocketServerTraffic"] = true;
+        }
+        QLoggingCategory::installFilter(loggingCategoryFilter);
     }
 
     return application.exec();

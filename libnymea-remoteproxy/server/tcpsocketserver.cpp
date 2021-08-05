@@ -151,9 +151,19 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     qCDebug(dcTcpSocketServer()) << "Incomming connection" << sslSocket;
     connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
     connect(sslSocket, &QSslSocket::disconnected, this, &SslServer::onClientDisconnected);
+    connect(sslSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onSocketError(QAbstractSocket::SocketError)));
     connect(sslSocket, &QSslSocket::encrypted, this, [this, sslSocket](){
         qCDebug(dcTcpSocketServer()) << "SSL encryption established for" << sslSocket;
         emit clientConnected(sslSocket);
+    });
+
+
+    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+    connect(sslSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, [](const QList<QSslError> &errors) {
+        qCWarning(dcTcpSocketServer()) << "SSL Errors happened in the client connections:";
+        foreach (const QSslError &error, errors) {
+            qCWarning(dcTcpSocketServer()) << "SSL Error:" << error.error() << error.errorString();
+        }
     });
 
     if (!sslSocket->setSocketDescriptor(socketDescriptor)) {
@@ -163,8 +173,9 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     }
 
     if (m_sslEnabled) {
-        sslSocket->setSslConfiguration(m_config);
         qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
+        sslSocket->setSslConfiguration(m_config);
+        addPendingConnection(sslSocket);
         sslSocket->startServerEncryption();
     } else {
         emit clientConnected(sslSocket);
@@ -185,6 +196,11 @@ void SslServer::onSocketReadyRead()
     QByteArray data = sslSocket->readAll();
     qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
     emit dataAvailable(sslSocket, data);
+}
+
+void SslServer::onSocketError(QAbstractSocket::SocketError error)
+{
+    qCWarning(dcTcpSocketServer()) << "Socket error occured" << error;
 }
 
 }

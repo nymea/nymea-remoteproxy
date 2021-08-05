@@ -30,7 +30,7 @@
 #include "tcpsocketconnection.h"
 #include "websocketconnection.h"
 #include "proxyjsonrpcclient.h"
-#include "../common/slipdataprocessor.h"
+#include "../../common/slipdataprocessor.h"
 
 Q_LOGGING_CATEGORY(dcTunnelProxySocketServer, "dcTunnelProxySocketServer")
 Q_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic, "dcTunnelProxySocketServerTraffic")

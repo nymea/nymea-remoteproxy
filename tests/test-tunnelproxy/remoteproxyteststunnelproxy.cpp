@@ -923,7 +923,6 @@ void RemoteProxyTestsTunnelProxy::tunnelProxyEndToEndTest()
     QVERIFY(receivedTestData2 == testData2);
 
 
-
     // ** Remote connection 2 **
 
     QString clientTwoName = "Client two";
@@ -977,7 +976,6 @@ void RemoteProxyTestsTunnelProxy::tunnelProxyEndToEndTest()
     QVERIFY(!tunnelProxyServer->running());
     QVERIFY(!remoteConnectionOne->remoteConnected());
     QVERIFY(!remoteConnectionTwo->remoteConnected());
-
 
     // Clean up
     tunnelProxyServer->deleteLater();

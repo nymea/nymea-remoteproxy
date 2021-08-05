@@ -39,9 +39,11 @@ TcpSocketConnection::TcpSocketConnection(QObject *parent) :
     connect(m_tcpSocket, &QSslSocket::disconnected, this, &TcpSocketConnection::onDisconnected);
     connect(m_tcpSocket, &QSslSocket::encrypted, this, &TcpSocketConnection::onEncrypted);
     connect(m_tcpSocket, &QSslSocket::readyRead, this, &TcpSocketConnection::onReadyRead);
-    connect(m_tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
-    connect(m_tcpSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
-    connect(m_tcpSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SIGNAL(sslErrors(QList<QSslError>)));
+    typedef void (QSslSocket:: *errorSignal)(QAbstractSocket::SocketError);
+    connect(m_tcpSocket, static_cast<errorSignal>(&QSslSocket::error), this, &TcpSocketConnection::onError);
+    connect(m_tcpSocket, &QSslSocket::stateChanged, this, &TcpSocketConnection::onStateChanged);
+    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+    QObject::connect(m_tcpSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &TcpSocketConnection::sslErrors);
 }
 
 TcpSocketConnection::~TcpSocketConnection()
@@ -109,12 +111,12 @@ void TcpSocketConnection::onReadyRead()
 void TcpSocketConnection::connectServer(const QUrl &serverUrl)
 {
     setServerUrl(serverUrl);
-    qCDebug(dcRemoteProxyClientTcpSocket()) << "Connecting to" << this->serverUrl().toString();
-
     if (serverUrl.scheme() == "tcp") {
+        qCDebug(dcRemoteProxyClientTcpSocket()) << "Connecting to" << this->serverUrl().toString();
         m_tcpSocket->connectToHost(QHostAddress(this->serverUrl().host()), static_cast<quint16>(this->serverUrl().port()));
     } else {
         m_ssl = true;
+        qCDebug(dcRemoteProxyClientTcpSocket()) << "Connecting encrypted to" << this->serverUrl().toString();
         m_tcpSocket->connectToHostEncrypted(this->serverUrl().host(), static_cast<quint16>(this->serverUrl().port()));
     }
 }
