@@ -12,6 +12,7 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
     m_remoteConnection = new TunnelProxyRemoteConnection(m_uuid, m_name);
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::stateChanged, this, [this](TunnelProxyRemoteConnection::State state){
+        qDebug() << state;
         switch (state) {
         case TunnelProxyRemoteConnection::StateRegister:
             qDebug() << "Connected with" << m_remoteConnection->remoteProxyServer() << m_remoteConnection->remoteProxyServerName() << m_remoteConnection->remoteProxyServerVersion() << m_remoteConnection->remoteProxyApiVersion();
@@ -22,7 +23,7 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
     });
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged, this, [](bool remoteConnected){
-        qDebug() << "Remote connection " << (remoteConnected ? "established" : "disconnected");
+        qDebug() << "Remote connection" << (remoteConnected ? "established successfully" : "disconnected");
     });
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::dataReady, this, [](const QByteArray &data){

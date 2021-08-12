@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     QCommandLineOption nonceOption(QStringList() << "n" << "nonce", "The shared connection unique nonce for this tunnel.", "nonce");
     parser.addOption(nonceOption);
 
-    QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
+    QCommandLineOption insecureOption(QStringList() << "i" << "ignore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
     QCommandLineOption pingPongOption(QStringList() << "p" << "pingpong", "Start a ping pong traffic trough the remote connection.");

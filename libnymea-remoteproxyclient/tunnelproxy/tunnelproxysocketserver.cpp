@@ -42,7 +42,7 @@ TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const 
     m_serverUuid(serverUuid),
     m_serverName(serverName)
 {
-
+    setupReconnectTimer();
 }
 
 TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, ConnectionType connectionType, QObject *parent) :
@@ -51,7 +51,7 @@ TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const 
     m_serverName(serverName),
     m_connectionType(connectionType)
 {
-
+    setupReconnectTimer();
 }
 
 TunnelProxySocketServer::~TunnelProxySocketServer()
@@ -72,6 +72,11 @@ QAbstractSocket::SocketError TunnelProxySocketServer::error() const
 TunnelProxySocketServer::Error TunnelProxySocketServer::serverError() const
 {
     return m_serverError;
+}
+
+TunnelProxySocketServer::State TunnelProxySocketServer::state() const
+{
+    return m_state;
 }
 
 void TunnelProxySocketServer::ignoreSslErrors()
@@ -109,8 +114,13 @@ QString TunnelProxySocketServer::remoteProxyApiVersion() const
     return m_remoteProxyApiVersion;
 }
 
-void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
+bool TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 {
+    if (!serverUrl.isValid() || serverUrl.isEmpty()) {
+        qCWarning(dcTunnelProxySocketServer()) << "Could not start server. The given remote proxy URL is not valid" << serverUrl.toString();
+        return false;
+    }
+
     m_serverUrl = serverUrl;
     m_error = QAbstractSocket::UnknownSocketError;
 
@@ -139,10 +149,16 @@ void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 
     qCDebug(dcTunnelProxySocketServer()) << "Connecting to" << m_serverUrl.toString();
     m_connection->connectServer(m_serverUrl);
+    m_enabled = true;
+
+    return true;
 }
 
 void TunnelProxySocketServer::stopServer()
 {
+    m_enabled = false;
+    m_reconnectTimer.stop();
+
     if (m_connection) {
         qCDebug(dcTunnelProxySocketServer()) << "Disconnecting from" << m_connection->serverUrl().toString();
         m_connection->disconnectServer();
@@ -231,6 +247,7 @@ void TunnelProxySocketServer::onConnectionStateChanged(QAbstractSocket::SocketSt
         break;
     case QAbstractSocket::ConnectedState:
         setState(StateConnected);
+        m_reconnectTimer.stop();
         break;
     case QAbstractSocket::ClosingState:
         setState(StateDiconnecting);
@@ -331,6 +348,23 @@ void TunnelProxySocketServer::requestSocketDisconnect(quint16 socketAddress)
     });
 }
 
+void TunnelProxySocketServer::setupReconnectTimer()
+{
+    m_reconnectTimer.setInterval(5000);
+    m_reconnectTimer.setSingleShot(true);
+    connect(&m_reconnectTimer, &QTimer::timeout, this, [this](){
+        if (!m_enabled) {
+            m_reconnectTimer.stop();
+            return;
+        }
+
+        if (m_state == StateDisconnected) {
+            qCDebug(dcTunnelProxySocketServer()) << "Trying to reconnect to the remote proxy...";
+            startServer(m_serverUrl);
+        }
+    });
+}
+
 void TunnelProxySocketServer::setState(State state)
 {
     if (m_state == state)
@@ -341,6 +375,11 @@ void TunnelProxySocketServer::setState(State state)
     emit stateChanged(m_state);
 
     setRunning(m_state == StateRunning);
+
+    if (m_state == StateDisconnected && m_enabled) {
+        qCDebug(dcTunnelProxySocketServer()) << "Starting reconnect timer...";
+        m_reconnectTimer.start();
+    }
 }
 
 void TunnelProxySocketServer::setRunning(bool running)
@@ -393,6 +432,8 @@ void TunnelProxySocketServer::cleanUp()
     m_remoteProxyServerName.clear();
     m_remoteProxyServerVersion.clear();
     m_remoteProxyApiVersion.clear();
+
+    m_enabled = false;
 
     setState(StateDisconnected);
 }

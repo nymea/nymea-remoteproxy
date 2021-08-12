@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:2213");
     parser.addOption(urlOption);
 
-    QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
+    QCommandLineOption insecureOption(QStringList() << "i" << "ignore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
     QCommandLineOption serverOption(QStringList() << "s" << "server", "Connect as tunnel proxy server connection.");

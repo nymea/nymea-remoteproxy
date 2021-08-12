@@ -30,6 +30,7 @@
 
 #include <QUrl>
 #include <QUuid>
+#include <QTimer>
 #include <QObject>
 #include <QSslError>
 #include <QLoggingCategory>
@@ -87,6 +88,8 @@ public:
     QAbstractSocket::SocketError error() const;
     Error serverError() const;
 
+    State state() const;
+
     void ignoreSslErrors();
     void ignoreSslErrors(const QList<QSslError> &errors);
 
@@ -98,7 +101,7 @@ public:
     QString remoteProxyApiVersion() const;
 
 public slots:
-    void startServer(const QUrl &serverUrl);
+    bool startServer(const QUrl &serverUrl);
     void stopServer();
 
 signals:
@@ -145,6 +148,9 @@ private:
     Error m_serverError = ErrorNoError;
     State m_state = StateDisconnected;
 
+    QTimer m_reconnectTimer;
+    bool m_enabled = false;
+
     ProxyConnection *m_connection = nullptr;
     JsonRpcClient *m_jsonClient = nullptr;
 
@@ -153,6 +159,7 @@ private:
     QByteArray m_dataBuffer;
 
     void requestSocketDisconnect(quint16 socketAddress);
+    void setupReconnectTimer();
 
     void setState(State state);
     void setRunning(bool running);
