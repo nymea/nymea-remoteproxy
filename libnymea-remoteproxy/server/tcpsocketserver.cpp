@@ -158,7 +158,6 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         emit clientConnected(sslSocket);
     });
 
-
     typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
     connect(sslSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, [](const QList<QSslError> &errors) {
         qCWarning(dcTcpSocketServer()) << "SSL Errors happened in the client connections:";

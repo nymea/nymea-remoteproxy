@@ -103,15 +103,15 @@ void WebSocketConnection::connectServer(const QUrl &serverUrl)
     if (connected()) {
         m_webSocket->close();
     }
-    setServerUrl(serverUrl);
+    m_serverUrl = serverUrl;
 
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Connecting to" << this->serverUrl().toString();
+    qCDebug(dcRemoteProxyClientWebSocket()) << "Connecting to" << m_serverUrl.toString();
     m_webSocket->open(this->serverUrl());
 }
 
 void WebSocketConnection::disconnectServer()
 {
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnecting from" << serverUrl().toString();
+    qCDebug(dcRemoteProxyClientWebSocket()) << "Disconnecting from" << m_serverUrl.toString();
     m_webSocket->close();
 }
 

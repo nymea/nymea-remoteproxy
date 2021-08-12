@@ -162,22 +162,25 @@ int main(int argc, char *argv[])
         qCCritical(dcProxyClient()) << "Invalid proxy server url passed." << parser.value(urlOption);
         exit(-1);
     }
+    qCDebug(dcProxyClient()) << "Using URL" << serverUrl;
 
     QUuid uuid(parser.value(uuidOption));
     if (uuid.isNull()) {
         uuid = QUuid::createUuid();
     }
 
+    ProxyClient *client = nullptr;
     if (parser.isSet(tcpOption)) {
-        ProxyClient client(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
-        client.setInsecure(parser.isSet(insecureOption));
-        client.setPingpong(parser.isSet(pingPongOption));
-        client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+        qCDebug(dcProxyClient()) << "Using TCP as transport layer";
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
+        client->setInsecure(parser.isSet(insecureOption));
+        client->setPingpong(parser.isSet(pingPongOption));
+        client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
     } else {
-        ProxyClient client(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
-        client.setInsecure(parser.isSet(insecureOption));
-        client.setPingpong(parser.isSet(pingPongOption));
-        client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
+        client->setInsecure(parser.isSet(insecureOption));
+        client->setPingpong(parser.isSet(pingPongOption));
+        client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
     }
 
     return application.exec();

@@ -53,11 +53,6 @@ void ProxyConnection::setConnected(bool connected)
     emit connectedChanged(m_connected);
 }
 
-void ProxyConnection::setServerUrl(const QUrl &serverUrl)
-{
-    m_serverUrl = serverUrl;
-}
-
 ProxyConnection::~ProxyConnection()
 {
 

@@ -32,8 +32,8 @@
 #include "proxyjsonrpcclient.h"
 #include "../../common/slipdataprocessor.h"
 
-Q_LOGGING_CATEGORY(dcTunnelProxySocketServer, "dcTunnelProxySocketServer")
-Q_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic, "dcTunnelProxySocketServerTraffic")
+Q_LOGGING_CATEGORY(dcTunnelProxySocketServer, "TunnelProxySocketServer")
+Q_LOGGING_CATEGORY(dcTunnelProxySocketServerTraffic, "TunnelProxySocketServerTraffic")
 
 namespace remoteproxyclient {
 
@@ -108,7 +108,6 @@ QString TunnelProxySocketServer::remoteProxyApiVersion() const
 {
     return m_remoteProxyApiVersion;
 }
-
 
 void TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 {

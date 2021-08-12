@@ -19,15 +19,14 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
     });
 
     connect(m_socketServer, &TunnelProxySocketServer::runningChanged, this, [=](bool running){
-        qDebug() << "--> Server is" << (running ? "running" : "not running any more");
         if (running) {
-            qDebug() << "--> Connected with" << m_socketServer->remoteProxyServer() << m_socketServer->remoteProxyServerName() << m_socketServer->remoteProxyServerVersion() << m_socketServer->remoteProxyApiVersion();
+            qDebug() << "Connected with" << m_socketServer->remoteProxyServer() << m_socketServer->remoteProxyServerName() << m_socketServer->remoteProxyServerVersion() << m_socketServer->remoteProxyApiVersion();
         }
+        qDebug() << "--> The tunnel proxy server is" << (running ? "running and listening for incoming connections" : "not running any more");
     });
 
     connect(m_socketServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
         if (m_insecure) {
-            qDebug() << "SSL errors occured. Ignoring because explicit specified.";
             m_socketServer->ignoreSslErrors(errors);
         } else {
             qWarning() << "SSL errors occured:";

@@ -31,6 +31,7 @@
 #include <QUrl>
 #include <QObject>
 #include <QSslError>
+#include <QSslConfiguration>
 #include <QHostAddress>
 
 namespace remoteproxyclient {
@@ -53,11 +54,11 @@ public:
 
 private:
     bool m_connected = false;
-    QUrl m_serverUrl;
 
 protected:
+    QUrl m_serverUrl;
+
     void setConnected(bool connected);
-    void setServerUrl(const QUrl &serverUrl);
 
 signals:
     void connectedChanged(bool connected);

@@ -8,6 +8,10 @@ INCLUDEPATH += ../libnymea-remoteproxy
 
 LIBS += -L$$top_builddir/libnymea-remoteproxyclient/ -lnymea-remoteproxyclient
 
+HEADERS += \
+    clientconnection.h \
+    serverconnection.h
+
 SOURCES += main.cpp \
     clientconnection.cpp \
     serverconnection.cpp
@@ -15,6 +19,3 @@ SOURCES += main.cpp \
 target.path = $$[QT_INSTALL_PREFIX]/bin
 INSTALLS += target
 
-HEADERS += \
-    clientconnection.h \
-    serverconnection.h

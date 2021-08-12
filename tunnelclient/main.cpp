@@ -58,10 +58,18 @@ static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context,
 {
     switch (type) {
     case QtInfoMsg:
-        fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        if (context.category == QStringLiteral("default")) {
+            fprintf(stdout, "%s\n", message.toUtf8().data());
+        } else {
+            fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        }
         break;
     case QtDebugMsg:
-        fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        if (context.category == QStringLiteral("default")) {
+            fprintf(stdout, "%s\n", message.toUtf8().data());
+        } else {
+            fprintf(stdout, "%s: %s\n", context.category, message.toUtf8().data());
+        }
         break;
     case QtWarningMsg:
         fprintf(stdout, "%s%s: %s%s\n", warning, context.category, message.toUtf8().data(), normal);
@@ -86,12 +94,15 @@ int main(int argc, char *argv[])
     application.setApplicationVersion(SERVER_VERSION_STRING);
 
     // Default debug categories
-    s_loggingFilters.insert("ProxyClient", true);
     s_loggingFilters.insert("RemoteProxyClientJsonRpc", false);
-    s_loggingFilters.insert("RemoteProxyClientWebSocket", false);
-    s_loggingFilters.insert("RemoteProxyClientConnection", false);
     s_loggingFilters.insert("RemoteProxyClientJsonRpcTraffic", false);
+    s_loggingFilters.insert("RemoteProxyClientWebSocket", false);
+    s_loggingFilters.insert("RemoteProxyClientTcpSocket", false);
+    s_loggingFilters.insert("RemoteProxyClientConnection", false);
     s_loggingFilters.insert("RemoteProxyClientConnectionTraffic", false);
+    s_loggingFilters.insert("TunnelProxySocketServer", false);
+    s_loggingFilters.insert("TunnelProxySocketServerTraffic", false);
+    s_loggingFilters.insert("TunnelProxyRemoteConnection", false);
 
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -118,13 +129,13 @@ int main(int argc, char *argv[])
     QCommandLineOption clientOption(QStringList() << "c" << "client", "Connect as tunnel proxy client connection. The server uuid is required.");
     parser.addOption(clientOption);
 
-    QCommandLineOption nameOption(QStringList() << "n" << "name", "The name of the connecting client.", "name");
+    QCommandLineOption nameOption(QStringList() << "n" << "name", "The name of the connecting client. If not specified a default name will be selected.", "name");
     parser.addOption(nameOption);
 
-    QCommandLineOption uuidOption(QStringList() << "u" << "uuid", "The uuid of the connecting client. If not specified, a new one will be created", "uuid");
+    QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the connecting client. If not specified, a new one will be created.", "uuid");
     parser.addOption(uuidOption);
 
-    QCommandLineOption serverUuidOption(QStringList() << "server-uuid", "The uuid of the server you want to connect to as client connection.");
+    QCommandLineOption serverUuidOption(QStringList() << "server-uuid", "The uuid of the server you want to connect to as client connection.", "uuid");
     parser.addOption(serverUuidOption);
 
     QCommandLineOption verboseOption(QStringList() << "verbose", "Print more information about the connection.");
@@ -166,23 +177,25 @@ int main(int argc, char *argv[])
         if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
             s_loggingFilters["default"] = true;
             s_loggingFilters["TunnelProxySocketServer"] = true;
-            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
-            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
-            s_loggingFilters["RemoteProxyClientConnection"] = true;
+            s_loggingFilters["TunnelProxyRemoteConnection"] = true;
         }
 
         // Enable very verbose
         if (parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
             s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
+            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
+            s_loggingFilters["RemoteProxyClientTcpSocket"] = true;
+            s_loggingFilters["RemoteProxyClientConnection"] = true;
+            s_loggingFilters["RemoteProxyClientConnectionTraffic"] = true;
             s_loggingFilters["TunnelProxySocketServerTraffic"] = true;
         }
         QLoggingCategory::installFilter(loggingCategoryFilter);
 
 
         // Create the server connection
-        ServerConnection server(serverUrl, name, uuid, parser.isSet(insecureOption));
-
-        server.startServer();
+        ServerConnection *server = new ServerConnection(serverUrl, name, uuid, parser.isSet(insecureOption));
+        server->startServer();
 
     } else {
         // Client
@@ -197,21 +210,34 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
 
+        QUuid serverUuid(parser.value(serverUuidOption));
+        if (serverUuid.isNull()) {
+            qCritical() << "The given server uuid is not valid." << parser.value(serverUuidOption);
+            exit(EXIT_FAILURE);
+        }
+
         // Enable verbose
         if (parser.isSet(verboseOption) || parser.isSet(veryVerboseOption)) {
             s_loggingFilters["default"] = true;
+            s_loggingFilters["TunnelProxySocketServer"] = true;
             s_loggingFilters["TunnelProxyRemoteConnection"] = true;
-            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
-            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
-            s_loggingFilters["RemoteProxyClientConnection"] = true;
         }
 
         // Enable very verbose
         if (parser.isSet(veryVerboseOption)) {
+            s_loggingFilters["RemoteProxyClientJsonRpc"] = true;
             s_loggingFilters["RemoteProxyClientJsonRpcTraffic"] = true;
+            s_loggingFilters["RemoteProxyClientWebSocket"] = true;
+            s_loggingFilters["RemoteProxyClientTcpSocket"] = true;
+            s_loggingFilters["RemoteProxyClientConnection"] = true;
+            s_loggingFilters["RemoteProxyClientConnectionTraffic"] = true;
             s_loggingFilters["TunnelProxySocketServerTraffic"] = true;
         }
         QLoggingCategory::installFilter(loggingCategoryFilter);
+
+        // Create the server connection
+        ClientConnection *client = new ClientConnection(serverUrl, name, uuid, serverUuid, parser.isSet(insecureOption));
+        client->connectToServer();
     }
 
     return application.exec();

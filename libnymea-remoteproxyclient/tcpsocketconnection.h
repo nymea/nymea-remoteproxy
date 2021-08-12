@@ -35,7 +35,7 @@
 
 #include "proxyconnection.h"
 
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClienTcpSocket)
+Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClientTcpSocket)
 
 namespace remoteproxyclient {
 
