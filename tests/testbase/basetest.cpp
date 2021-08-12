@@ -45,6 +45,8 @@ BaseTest::BaseTest(QObject *parent) :
     QObject(parent)
 {
     resetDebugCategories();
+
+    qRegisterMetaType<TransportClient*>("TransportClient*");
 }
 
 void BaseTest::loadConfiguration(const QString &fileName)
