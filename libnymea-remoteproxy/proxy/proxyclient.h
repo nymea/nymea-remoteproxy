@@ -90,7 +90,7 @@ private:
 signals:
     void authenticated();
     void tunnelConnected();
-    void timeoutOccured();
+    void timeoutOccurred();
 
 };
 

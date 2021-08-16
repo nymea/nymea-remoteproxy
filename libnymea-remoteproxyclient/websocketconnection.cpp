@@ -72,8 +72,8 @@ void WebSocketConnection::onDisconnected()
 
 void WebSocketConnection::onError(QAbstractSocket::SocketError error)
 {
-    qCDebug(dcRemoteProxyClientWebSocket()) << "Socket error occured" << error << m_webSocket->errorString();
-    emit errorOccured(error);
+    qCDebug(dcRemoteProxyClientWebSocket()) << "Socket error occurred" << error << m_webSocket->errorString();
+    emit errorOccurred(error);
 }
 
 void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state)

@@ -200,7 +200,7 @@ void SslServer::onSocketReadyRead()
 
 void SslServer::onSocketError(QAbstractSocket::SocketError error)
 {
-    qCWarning(dcTcpSocketServer()) << "Socket error occured" << error;
+    qCWarning(dcTcpSocketServer()) << "Socket error occurred" << error;
 }
 
 }

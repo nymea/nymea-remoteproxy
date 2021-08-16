@@ -216,7 +216,7 @@ void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &a
 
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
-    connect(proxyClient, &ProxyClient::timeoutOccured, this, &ProxyServer::onProxyClientTimeoutOccured);
+    connect(proxyClient, &ProxyClient::timeoutOccurred, this, &ProxyServer::onProxyClientTimeoutOccurred);
 
     m_totalClientCount += 1;
     saveStatistics();
@@ -375,10 +375,10 @@ void ProxyServer::onProxyClientAuthenticated()
     }
 }
 
-void ProxyServer::onProxyClientTimeoutOccured()
+void ProxyServer::onProxyClientTimeoutOccurred()
 {
     ProxyClient *proxyClient = static_cast<ProxyClient *>(sender());
-    qCDebug(dcProxyServer()) << "Timeout occured for" << proxyClient;    
+    qCDebug(dcProxyServer()) << "Timeout occurred for" << proxyClient;
     switch (proxyClient->timerWaitState()) {
     case ProxyClient::TimerWaitStateInactive:
         proxyClient->killConnection("Proxy timeout occuret. The socket was inactive.");

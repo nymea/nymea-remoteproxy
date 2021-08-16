@@ -106,8 +106,8 @@ public slots:
 
 signals:
     void stateChanged(TunnelProxySocketServer::State state);
-    void errorOccured(QAbstractSocket::SocketError error);
-    void serverErrorOccured(Error error);
+    void errorOccurred(QAbstractSocket::SocketError error);
+    void serverErrorOccurred(Error error);
     void sslErrors(const QList<QSslError> &errors);
 
     void runningChanged(bool running);

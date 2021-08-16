@@ -123,7 +123,7 @@ bool TunnelProxyRemoteConnection::connectServer(const QUrl &url, const QUuid &se
 
     connect(m_connection, &ProxyConnection::connectedChanged, this, &TunnelProxyRemoteConnection::onConnectionChanged);
     connect(m_connection, &ProxyConnection::dataReceived, this, &TunnelProxyRemoteConnection::onConnectionDataAvailable);
-    connect(m_connection, &ProxyConnection::errorOccured, this, &TunnelProxyRemoteConnection::onConnectionSocketError);
+    connect(m_connection, &ProxyConnection::errorOccurred, this, &TunnelProxyRemoteConnection::onConnectionSocketError);
     connect(m_connection, &ProxyConnection::stateChanged, this, &TunnelProxyRemoteConnection::onConnectionStateChanged);
     connect(m_connection, &ProxyConnection::sslErrors, this, &TunnelProxyRemoteConnection::sslErrors);
 
@@ -287,8 +287,8 @@ void TunnelProxyRemoteConnection::setError(QAbstractSocket::SocketError error)
         return;
 
     m_error = error;
-    qCWarning(dcTunnelProxyRemoteConnection()) << "Error occured" << m_error;
-    emit errorOccured(m_error);
+    qCWarning(dcTunnelProxyRemoteConnection()) << "Error occurred" << m_error;
+    emit errorOccurred(m_error);
 }
 
 void TunnelProxyRemoteConnection::cleanUp()

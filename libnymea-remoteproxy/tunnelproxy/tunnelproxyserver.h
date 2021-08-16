@@ -67,6 +67,8 @@ public:
     TunnelProxyServer::TunnelProxyError registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
     TunnelProxyServer::TunnelProxyError disconnectClient(const QUuid &clientId, quint16 socketAddress);
 
+    QVariantMap currentStatistics();
+
 public slots:
     void startServer();
     void stopServer();

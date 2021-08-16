@@ -83,7 +83,6 @@ private:
     void loadStatistics();
     void saveStatistics();
 
-
     // Helper methods
     ProxyClient *getRemoteClient(ProxyClient *proxyClient);
     void establishTunnel(ProxyClient *firstClient, ProxyClient *secondClient);
@@ -97,7 +96,7 @@ private slots:
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
 
     void onProxyClientAuthenticated();
-    void onProxyClientTimeoutOccured();
+    void onProxyClientTimeoutOccurred();
 
 public slots:
     void startServer();

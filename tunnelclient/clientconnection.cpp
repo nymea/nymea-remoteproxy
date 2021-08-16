@@ -30,15 +30,15 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
         qDebug() << "Data received" << data;
     });
 
-    connect(m_remoteConnection, &TunnelProxyRemoteConnection::errorOccured, this, [](QAbstractSocket::SocketError error){
-        qWarning() << "Socket error occured" << error;
+    connect(m_remoteConnection, &TunnelProxyRemoteConnection::errorOccurred, this, [](QAbstractSocket::SocketError error){
+        qWarning() << "Socket error occurred" << error;
     });
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
         if (m_insecure) {
             m_remoteConnection->ignoreSslErrors(errors);
         } else {
-            qWarning() << "SSL errors occured:";
+            qWarning() << "SSL errors occurred:";
             foreach (const QSslError &sslError, errors) {
                 qWarning() << "  --> " << sslError.errorString();
             }

@@ -57,7 +57,7 @@ private:
     RemoteProxyConnection *m_connection = nullptr;
 
 private slots:
-    void onErrorOccured(QAbstractSocket::SocketError error);
+    void onErrorOccurred(QAbstractSocket::SocketError error);
     void onClientReady();
     void onAuthenticationFinished();
     void onRemoteConnectionEstablished();

@@ -256,6 +256,7 @@ QVariantMap Engine::createServerStatistic()
     monitorData.insert("serverVersion", SERVER_VERSION_STRING);
     monitorData.insert("apiVersion", API_VERSION_STRING);
     monitorData.insert("proxyStatistic", proxyServer()->currentStatistics());
+    monitorData.insert("tunnelProxyStatistic", tunnelProxyServer()->currentStatistics());
     return monitorData;
 }
 

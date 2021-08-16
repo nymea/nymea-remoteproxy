@@ -42,7 +42,7 @@ ProxyClient::ProxyClient(const QString &name, const QUuid &uuid, RemoteProxyConn
     connect(m_connection, &RemoteProxyConnection::authenticated, this, &ProxyClient::onAuthenticationFinished);
     connect(m_connection, &RemoteProxyConnection::remoteConnectionEstablished, this, &ProxyClient::onRemoteConnectionEstablished);
     connect(m_connection, &RemoteProxyConnection::dataReady, this, &ProxyClient::onDataReady);
-    connect(m_connection, &RemoteProxyConnection::errorOccured, this, &ProxyClient::onErrorOccured);
+    connect(m_connection, &RemoteProxyConnection::errorOccurred, this, &ProxyClient::onErrorOccurred);
     connect(m_connection, &RemoteProxyConnection::disconnected, this, &ProxyClient::onClientDisconnected);
     connect(m_connection, &RemoteProxyConnection::sslErrors, this, &ProxyClient::onSslErrors);
 }
@@ -57,9 +57,9 @@ void ProxyClient::setPingpong(bool enable)
     m_pingpong = enable;
 }
 
-void ProxyClient::onErrorOccured(QAbstractSocket::SocketError error)
+void ProxyClient::onErrorOccurred(QAbstractSocket::SocketError error)
 {
-    qCWarning(dcProxyClient()) << "Error occured" << error;
+    qCWarning(dcProxyClient()) << "Error occurred" << error;
     exit(-1);
 }
 
@@ -100,10 +100,10 @@ void ProxyClient::onClientDisconnected()
 void ProxyClient::onSslErrors(const QList<QSslError> errors)
 {
     if (m_insecure) {
-        qCDebug(dcProxyClient()) << "SSL errors occured. Ignoring because explicit specified.";
+        qCDebug(dcProxyClient()) << "SSL errors occurred. Ignoring because explicit specified.";
         m_connection->ignoreSslErrors();
     } else {
-        qCWarning(dcProxyClient()) << "SSL errors occured:";
+        qCWarning(dcProxyClient()) << "SSL errors occurred:";
         foreach (const QSslError &sslError, errors) {
             qCWarning(dcProxyClient()) << "  --> " << sslError.errorString();
         }

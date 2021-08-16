@@ -139,7 +139,7 @@ bool TunnelProxySocketServer::startServer(const QUrl &serverUrl)
 
     connect(m_connection, &ProxyConnection::connectedChanged, this, &TunnelProxySocketServer::onConnectionChanged);
     connect(m_connection, &ProxyConnection::dataReceived, this, &TunnelProxySocketServer::onConnectionDataAvailable);
-    connect(m_connection, &ProxyConnection::errorOccured, this, &TunnelProxySocketServer::onConnectionSocketError);
+    connect(m_connection, &ProxyConnection::errorOccurred, this, &TunnelProxySocketServer::onConnectionSocketError);
     connect(m_connection, &ProxyConnection::stateChanged, this, &TunnelProxySocketServer::onConnectionStateChanged);
     connect(m_connection, &ProxyConnection::sslErrors, this, &TunnelProxySocketServer::sslErrors);
 
@@ -398,8 +398,8 @@ void TunnelProxySocketServer::setError(QAbstractSocket::SocketError error)
         return;
 
     m_error = error;
-    qCDebug(dcTunnelProxySocketServer()) << "Error occured" << m_error;
-    emit errorOccured(m_error);
+    qCDebug(dcTunnelProxySocketServer()) << "Error occurred" << m_error;
+    emit errorOccurred(m_error);
 }
 
 void TunnelProxySocketServer::setServerError(Error error)
@@ -407,9 +407,9 @@ void TunnelProxySocketServer::setServerError(Error error)
     if (m_serverError == error)
         return;
 
-    qCDebug(dcTunnelProxySocketServer()) << "Server error occured" << error;
+    qCDebug(dcTunnelProxySocketServer()) << "Server error occurred" << error;
     m_serverError = error;
-    emit serverErrorOccured(m_serverError);
+    emit serverErrorOccurred(m_serverError);
 }
 
 void TunnelProxySocketServer::cleanUp()

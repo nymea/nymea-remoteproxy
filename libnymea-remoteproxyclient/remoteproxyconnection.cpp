@@ -192,8 +192,8 @@ void RemoteProxyConnection::setError(QAbstractSocket::SocketError error)
         return;
 
     m_error = error;
-    qCDebug(dcRemoteProxyClientConnection()) << "Error occured" << m_error;
-    emit errorOccured(m_error);
+    qCDebug(dcRemoteProxyClientConnection()) << "Error occurred" << m_error;
+    emit errorOccurred(m_error);
 }
 
 void RemoteProxyConnection::onConnectionChanged(bool isConnected)
@@ -337,7 +337,7 @@ bool RemoteProxyConnection::connectServer(const QUrl &url)
 
     connect(m_connection, &ProxyConnection::connectedChanged, this, &RemoteProxyConnection::onConnectionChanged);
     connect(m_connection, &ProxyConnection::dataReceived, this, &RemoteProxyConnection::onConnectionDataAvailable);
-    connect(m_connection, &ProxyConnection::errorOccured, this, &RemoteProxyConnection::onConnectionSocketError);
+    connect(m_connection, &ProxyConnection::errorOccurred, this, &RemoteProxyConnection::onConnectionSocketError);
     connect(m_connection, &ProxyConnection::stateChanged, this, &RemoteProxyConnection::onConnectionStateChanged);
     connect(m_connection, &ProxyConnection::sslErrors, this, &RemoteProxyConnection::sslErrors);
 

@@ -133,7 +133,7 @@ signals:
     void disconnected();
 
     void stateChanged(RemoteProxyConnection::State state);
-    void errorOccured(QAbstractSocket::SocketError error);
+    void errorOccurred(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
     void dataReady(const QByteArray &data);

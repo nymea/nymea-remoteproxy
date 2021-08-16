@@ -37,7 +37,7 @@ ProxyClient::ProxyClient(TransportInterface *interface, const QUuid &clientId, c
     TransportClient(interface, clientId, address, parent)
 {
     m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &ProxyClient::timeoutOccured);
+    connect(m_timer, &QTimer::timeout, this, &ProxyClient::timeoutOccurred);
     m_timer->setSingleShot(true);
     resetTimer();
 }

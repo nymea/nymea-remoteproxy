@@ -38,7 +38,7 @@ MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
     connect(m_socket, &QLocalSocket::connected, this, &MonitorClient::onConnected);
     connect(m_socket, &QLocalSocket::disconnected, this, &MonitorClient::onDisconnected);
     connect(m_socket, &QLocalSocket::readyRead, this, &MonitorClient::onReadyRead);
-    connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccured(QLocalSocket::LocalSocketError)));
+    connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccurred(QLocalSocket::LocalSocketError)));
 }
 
 void MonitorClient::onConnected()
@@ -71,10 +71,10 @@ void MonitorClient::onReadyRead()
     emit dataReady(dataMap);
 }
 
-void MonitorClient::onErrorOccured(QLocalSocket::LocalSocketError socketError)
+void MonitorClient::onErrorOccurred(QLocalSocket::LocalSocketError socketError)
 {
     Q_UNUSED(socketError)
-    qWarning() << "Local socket error occured" << m_socket->errorString();
+    qWarning() << "Local socket error occurred" << m_socket->errorString();
 }
 
 void MonitorClient::connectMonitor()

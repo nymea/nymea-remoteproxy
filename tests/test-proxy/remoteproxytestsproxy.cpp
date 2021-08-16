@@ -1086,7 +1086,7 @@ void RemoteProxyTestsProxy::sslConfigurations()
 
     // Connect to the server (insecure disabled)
     RemoteProxyConnection *connector = new RemoteProxyConnection(QUuid::createUuid(), "Test client one", this);
-    QSignalSpy spyError(connector, &RemoteProxyConnection::errorOccured);
+    QSignalSpy spyError(connector, &RemoteProxyConnection::errorOccurred);
     QVERIFY(connector->connectServer(m_serverUrlProxyWebSocket));
     spyError.wait();
     QVERIFY(spyError.count() == 1);
@@ -1213,7 +1213,7 @@ void RemoteProxyTestsProxy::authenticationReplyConnection()
     connectionReadySpy.wait();
     QVERIFY(connectionReadySpy.count() == 1);
 
-    QSignalSpy connectionErrorSpy(connection, &RemoteProxyConnection::errorOccured);
+    QSignalSpy connectionErrorSpy(connection, &RemoteProxyConnection::errorOccurred);
     connection->authenticate("blub");
     connectionErrorSpy.wait();
     QVERIFY(connectionErrorSpy.count() == 1);

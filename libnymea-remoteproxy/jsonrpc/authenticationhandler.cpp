@@ -95,7 +95,7 @@ void AuthenticationHandler::onAuthenticationFinished()
     JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
 
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
-        qCWarning(dcJsonRpc()) << "Authentication error occured" << authenticationReply->error();
+        qCWarning(dcJsonRpc()) << "Authentication error occurred" << authenticationReply->error();
         jsonReply->setSuccess(false);
     } else {
         // Successfully authenticated

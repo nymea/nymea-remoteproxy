@@ -29,7 +29,7 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
         if (m_insecure) {
             m_socketServer->ignoreSslErrors(errors);
         } else {
-            qWarning() << "SSL errors occured:";
+            qWarning() << "SSL errors occurred:";
             foreach (const QSslError &sslError, errors) {
                 qWarning() << "  --> " << sslError.errorString();
             }

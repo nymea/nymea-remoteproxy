@@ -197,6 +197,39 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::disconnectClient(const QU
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
 
+QVariantMap TunnelProxyServer::currentStatistics()
+{
+    QVariantMap statisticsMap;
+    statisticsMap.insert("totalClientCount", m_proxyClients.count());
+    statisticsMap.insert("serverConnectionsCount", m_tunnelProxyServerConnections.count());
+    statisticsMap.insert("clientConnectionsCount", m_tunnelProxyClientConnections.count());
+
+    QVariantList tunnelConnections;
+    foreach (TunnelProxyServerConnection *serverConnection, m_tunnelProxyServerConnections) {
+        QVariantMap serverMap;
+        serverMap.insert("id", serverConnection->transportClient()->clientId().toString());
+        serverMap.insert("address", serverConnection->transportClient()->peerAddress().toString());
+        serverMap.insert("timestamp", serverConnection->transportClient()->creationTime());
+        serverMap.insert("name", serverConnection->transportClient()->name());
+        serverMap.insert("serverUuid", serverConnection->transportClient()->uuid());
+        QVariantList clientList;
+        foreach (TunnelProxyClientConnection *clientConnection, serverConnection->clientConnections()) {
+            QVariantMap clientMap;
+            clientMap.insert("id", clientConnection->transportClient()->clientId().toString());
+            clientMap.insert("address", clientConnection->transportClient()->peerAddress().toString());
+            clientMap.insert("timestamp", clientConnection->transportClient()->creationTime());
+            clientMap.insert("name", clientConnection->transportClient()->name());
+            clientMap.insert("clientUuid", clientConnection->transportClient()->uuid());
+            clientList.append(clientMap);
+        }
+        serverMap.insert("clientConnections", clientList);
+    }
+
+    statisticsMap.insert("tunnelConnections", tunnelConnections);
+
+    return statisticsMap;
+}
+
 void TunnelProxyServer::startServer()
 {
     qCDebug(dcTunnelProxyServer()) << "Starting tunnel proxy...";

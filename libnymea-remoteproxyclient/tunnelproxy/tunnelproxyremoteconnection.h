@@ -90,7 +90,7 @@ public slots:
 
 signals:
     void stateChanged(TunnelProxyRemoteConnection::State state);
-    void errorOccured(QAbstractSocket::SocketError error);
+    void errorOccurred(QAbstractSocket::SocketError error);
     void sslErrors(const QList<QSslError> &errors);
 
     void remoteConnectedChanged(bool remoteConnected);
