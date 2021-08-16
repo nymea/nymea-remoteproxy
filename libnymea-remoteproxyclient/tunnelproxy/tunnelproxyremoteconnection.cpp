@@ -62,6 +62,11 @@ bool TunnelProxyRemoteConnection::remoteConnected() const
     return m_remoteConnected;
 }
 
+TunnelProxyRemoteConnection::State TunnelProxyRemoteConnection::state() const
+{
+    return m_state;
+}
+
 QAbstractSocket::SocketError TunnelProxyRemoteConnection::error() const
 {
     return m_error;
