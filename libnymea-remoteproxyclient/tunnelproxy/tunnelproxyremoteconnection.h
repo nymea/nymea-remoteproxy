@@ -71,6 +71,8 @@ public:
 
     bool remoteConnected() const;
 
+    State state() const;
+
     QAbstractSocket::SocketError error() const;
 
     void ignoreSslErrors();
