@@ -116,7 +116,6 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     TunnelProxyClient *tunnelProxyClient = m_proxyClients.value(clientId);
     if (!tunnelProxyClient) {
         qCWarning(dcTunnelProxyServer()) << "There is no client with client uuid" << clientId.toString();
-        tunnelProxyClient->killConnectionAfterResponse("Internal server error");
         return TunnelProxyServer::TunnelProxyErrorInternalServerError;
     }
 
