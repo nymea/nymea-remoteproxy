@@ -59,7 +59,7 @@ TunnelProxyRemoteConnection::~TunnelProxyRemoteConnection()
 
 bool TunnelProxyRemoteConnection::remoteConnected() const
 {
-    return m_remoteConnected;
+    return m_state == StateRemoteConnected;
 }
 
 TunnelProxyRemoteConnection::State TunnelProxyRemoteConnection::state() const
@@ -273,18 +273,9 @@ void TunnelProxyRemoteConnection::setState(State state)
     m_state = state;
     qCDebug(dcTunnelProxyRemoteConnection()) << "State changed" << m_state;
     emit stateChanged(m_state);
-
-    setRemoteConnected(m_state == StateRemoteConnected);
+    emit remoteConnectedChanged(m_state == StateRemoteConnected);
 }
 
-void TunnelProxyRemoteConnection::setRemoteConnected(bool remoteConnected)
-{
-    if (m_remoteConnected == remoteConnected)
-        return;
-
-    m_remoteConnected = remoteConnected;
-    emit remoteConnectedChanged(m_remoteConnected);
-}
 
 void TunnelProxyRemoteConnection::setError(QAbstractSocket::SocketError error)
 {

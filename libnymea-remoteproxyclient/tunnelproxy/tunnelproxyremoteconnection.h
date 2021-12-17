@@ -118,8 +118,6 @@ private:
 
     QUuid m_serverUuid;
 
-    bool m_remoteConnected = false;
-
     // Remote proxy server information
     QString m_remoteProxyServer;
     QString m_remoteProxyServerName;
