@@ -52,7 +52,7 @@ void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
         return;
     }
 
-    qCDebug(dcTcpSocketServerTraffic()) << "Send data to" << clientId.toString() << data + '\n';
+    qCDebug(dcTcpSocketServerTraffic()) << "Send data to" << clientId.toString() << data;
     if (client->write(data) < 0) {
         qCWarning(dcTcpSocketServer()) << "Could not write data to client socket" << clientId.toString();
     }

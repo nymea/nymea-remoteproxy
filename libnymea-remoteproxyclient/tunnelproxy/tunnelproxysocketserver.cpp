@@ -159,6 +159,8 @@ void TunnelProxySocketServer::stopServer()
     m_enabled = false;
     m_reconnectTimer.stop();
 
+    qCDebug(dcTunnelProxySocketServer()) << "Stopping the server.";
+
     if (m_connection) {
         qCDebug(dcTunnelProxySocketServer()) << "Disconnecting from" << m_connection->serverUrl().toString();
         m_connection->disconnectServer();
@@ -247,6 +249,7 @@ void TunnelProxySocketServer::onConnectionStateChanged(QAbstractSocket::SocketSt
         break;
     case QAbstractSocket::ConnectedState:
         setState(StateConnected);
+        qCDebug(dcTunnelProxySocketServer()) << "Stopping reconnect timer.";
         m_reconnectTimer.stop();
         break;
     case QAbstractSocket::ClosingState:
@@ -351,9 +354,10 @@ void TunnelProxySocketServer::requestSocketDisconnect(quint16 socketAddress)
 void TunnelProxySocketServer::setupReconnectTimer()
 {
     m_reconnectTimer.setInterval(5000);
-    m_reconnectTimer.setSingleShot(true);
+    m_reconnectTimer.setSingleShot(false);
     connect(&m_reconnectTimer, &QTimer::timeout, this, [this](){
         if (!m_enabled) {
+            qCDebug(dcTunnelProxySocketServer()) << "Stopping reconnect timer. The server has been disabled.";
             m_reconnectTimer.stop();
             return;
         }
@@ -432,8 +436,6 @@ void TunnelProxySocketServer::cleanUp()
     m_remoteProxyServerName.clear();
     m_remoteProxyServerVersion.clear();
     m_remoteProxyApiVersion.clear();
-
-    m_enabled = false;
 
     setState(StateDisconnected);
 }

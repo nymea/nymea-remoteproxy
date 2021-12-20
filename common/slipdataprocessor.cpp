@@ -97,15 +97,23 @@ QByteArray SlipDataProcessor::serializeData(const QByteArray &data)
 SlipDataProcessor::Frame SlipDataProcessor::parseFrame(const QByteArray &data)
 {
     Frame frame;
-    frame.socketAddress = static_cast<quint16>(static_cast<quint16>(data.at(0)) << 8 | data.at(1));
-    frame.data = data.right(data.length() - 2);
+    QDataStream stream(data);
+    stream >> frame.socketAddress;
+    while (!stream.atEnd()) {
+        quint8 dataByte;
+        stream >> dataByte;
+        frame.data.append(dataByte);
+    }
     return frame;
 }
 
 QByteArray SlipDataProcessor::buildFrame(const Frame &frame)
 {
-    QByteArray addressData;
-    QDataStream stream(&addressData, QIODevice::WriteOnly);
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
     stream << frame.socketAddress;
-    return addressData + frame.data;
+    for (int i = 0; i < frame.data.size(); i++) {
+        stream << static_cast<quint8>(frame.data.at(i));
+    }
+    return data;
 }

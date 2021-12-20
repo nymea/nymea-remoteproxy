@@ -335,7 +335,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         SlipDataProcessor::Frame frame;
         frame.socketAddress = clientConnection->socketAddress();
         frame.data = data;
-        qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << qUtf8Printable(data);
+        qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << "\n" << data;
         clientConnection->serverConnection()->transportClient()->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
 
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
@@ -366,7 +366,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
                         return;
                     }
 
-                    qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection << qUtf8Printable(data);
+                    qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
                     clientConnection->transportClient()->sendData(frame.data);
                 }
             }
