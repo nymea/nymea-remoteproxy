@@ -270,10 +270,16 @@ void TunnelProxyRemoteConnection::setState(State state)
     if (m_state == state)
         return;
 
+    bool remoteConnected = m_state == StateRemoteConnected;
+
     m_state = state;
     qCDebug(dcTunnelProxyRemoteConnection()) << "State changed" << m_state;
     emit stateChanged(m_state);
-    emit remoteConnectedChanged(m_state == StateRemoteConnected);
+
+    bool stillRemoteConnected = m_state == StateRemoteConnected;
+    if (remoteConnected != stillRemoteConnected) {
+        emit remoteConnectedChanged(m_state == StateRemoteConnected);
+    }
 }
 
 
