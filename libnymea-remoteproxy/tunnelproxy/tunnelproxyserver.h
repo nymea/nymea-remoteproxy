@@ -95,6 +95,9 @@ private:
     QHash<QUuid, TunnelProxyServerConnection *> m_tunnelProxyServerConnections; // server uuid, object
     QHash<QUuid, TunnelProxyClientConnection *> m_tunnelProxyClientConnections; // client uuid, object
 
+    // Statistic measurments
+    int m_troughput = 0;
+    int m_troughputCounter = 0;
 };
 
 }

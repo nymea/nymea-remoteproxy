@@ -56,7 +56,9 @@ bool MonitorServer::running() const
 
 void MonitorServer::sendMonitorData(QLocalSocket *clientConnection, const QVariantMap &dataMap)
 {
-    clientConnection->write(QJsonDocument::fromVariant(dataMap).toJson(QJsonDocument::Compact) + '\n');
+    QByteArray data = QJsonDocument::fromVariant(dataMap).toJson(QJsonDocument::Indented) + '\n';
+    qCDebug(dcMonitorServer()) << "Sending monitor data" << qUtf8Printable(data);
+    clientConnection->write(data);
     clientConnection->flush();
 }
 

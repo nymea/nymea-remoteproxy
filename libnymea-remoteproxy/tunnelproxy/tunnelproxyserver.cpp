@@ -201,6 +201,7 @@ QVariantMap TunnelProxyServer::currentStatistics()
     statisticsMap.insert("totalClientCount", m_proxyClients.count());
     statisticsMap.insert("serverConnectionsCount", m_tunnelProxyServerConnections.count());
     statisticsMap.insert("clientConnectionsCount", m_tunnelProxyClientConnections.count());
+    statisticsMap.insert("troughput", m_troughput);
 
     QVariantList tunnelConnections;
     foreach (TunnelProxyServerConnection *serverConnection, m_tunnelProxyServerConnections) {
@@ -210,6 +211,9 @@ QVariantMap TunnelProxyServer::currentStatistics()
         serverMap.insert("timestamp", serverConnection->transportClient()->creationTime());
         serverMap.insert("name", serverConnection->transportClient()->name());
         serverMap.insert("serverUuid", serverConnection->transportClient()->uuid());
+        serverMap.insert("rxDataCount", serverConnection->transportClient()->rxDataCount());
+        serverMap.insert("txDataCount", serverConnection->transportClient()->txDataCount());
+
         QVariantList clientList;
         foreach (TunnelProxyClientConnection *clientConnection, serverConnection->clientConnections()) {
             QVariantMap clientMap;
@@ -218,9 +222,12 @@ QVariantMap TunnelProxyServer::currentStatistics()
             clientMap.insert("timestamp", clientConnection->transportClient()->creationTime());
             clientMap.insert("name", clientConnection->transportClient()->name());
             clientMap.insert("clientUuid", clientConnection->transportClient()->uuid());
+            clientMap.insert("rxDataCount", clientConnection->transportClient()->rxDataCount());
+            clientMap.insert("txDataCount", clientConnection->transportClient()->txDataCount());
             clientList.append(clientMap);
         }
         serverMap.insert("clientConnections", clientList);
+        tunnelConnections.append(serverMap);
     }
 
     statisticsMap.insert("tunnelConnections", tunnelConnections);
@@ -248,7 +255,8 @@ void TunnelProxyServer::stopServer()
 
 void TunnelProxyServer::tick()
 {
-
+    m_troughput = m_troughputCounter;
+    m_troughputCounter = 0;
 }
 
 void TunnelProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
@@ -337,7 +345,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         frame.data = data;
         qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << "\n" << data;
         clientConnection->serverConnection()->transportClient()->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
-
+        m_troughputCounter += data.count();
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
         // Data coming from a connected server connection
         if (tunnelProxyClient->slipEnabled()) {
@@ -368,6 +376,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
 
                     qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
                     clientConnection->transportClient()->sendData(frame.data);
+                    m_troughputCounter += data.count();
                 }
             }
         } else {

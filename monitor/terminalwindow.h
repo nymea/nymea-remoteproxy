@@ -41,7 +41,8 @@ public:
 
     enum View {
         ViewClients,
-        ViewTunnels
+        ViewTunnels,
+        ViewTunnelProxy
     };
     Q_ENUM(View)
 
@@ -58,6 +59,11 @@ private:
     int m_terminalSizeY = 0;
 
     View m_view = ViewClients;
+    int m_tunnelProxyScollIndex = 0;
+
+
+    // Tabs
+    QList<View> m_tabs;
 
     QVariantMap m_dataMap;
     QHash<QString, QVariantMap> m_clientHash;
@@ -70,11 +76,15 @@ private:
     // content paint methods
     void resizeWindow();
     void drawWindowBorder(WINDOW *window);
+    void moveTabRight();
+    void moveTabLeft();
+
     void paintHeader();
     void paintContentClients();
     void paintContentTunnels();
+    void paintContentTunnelProxy();
 
-signals:
+    void cleanup();
 
 private slots:
     void eventLoop();
