@@ -79,7 +79,6 @@ public:
     TcpSocketServer *tcpSocketServerTunnelProxy() const;
     WebSocketServer *webSocketServerTunnelProxy() const;
 
-
     MonitorServer *monitorServer() const;
     LogEngine *logEngine() const;
 

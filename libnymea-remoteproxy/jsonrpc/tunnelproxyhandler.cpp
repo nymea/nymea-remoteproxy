@@ -57,6 +57,13 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
     setReturns("DisconnectClient", returns);
 
+    params.clear(); returns.clear();
+    setDescription("Ping", "In order to keep a connection alive when no client is connected, this Ping method can be used. The sent timestamp will be returned as sent in the response for speed measuements on the client side.");
+    params.insert("timestamp", JsonTypes::basicTypeToString(JsonTypes::UInt));
+    setParams("Ping", params);
+    returns.insert("timestamp", JsonTypes::basicTypeToString(JsonTypes::UInt));
+    setReturns("Ping", returns);
+
 
     // Client
     params.clear(); returns.clear();
@@ -121,6 +128,14 @@ JsonReply *TunnelProxyHandler::DisconnectClient(const QVariantMap &params, Trans
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
     return createReply("DisconnectClient", response);
+}
+
+JsonReply *TunnelProxyHandler::Ping(const QVariantMap &params, TransportClient *transportClient)
+{
+    qCDebug(dcJsonRpc()) << name() << "ping received" << params << transportClient;
+    QVariantMap response;
+    response.insert("timestamp", params.value("timestamp"));
+    return createReply("Ping", response);
 }
 
 JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, TransportClient *transportClient)

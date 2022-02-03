@@ -48,6 +48,7 @@ public:
     // Server
     Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
     Q_INVOKABLE JsonReply *DisconnectClient(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE JsonReply *Ping(const QVariantMap &params, TransportClient *transportClient);
 
     // Client
     Q_INVOKABLE JsonReply *RegisterClient(const QVariantMap &params, TransportClient *transportClient);

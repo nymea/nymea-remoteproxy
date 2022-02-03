@@ -42,7 +42,7 @@ TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const 
     m_serverUuid(serverUuid),
     m_serverName(serverName)
 {
-    setupReconnectTimer();
+    setupTimers();
 }
 
 TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const QString &serverName, ConnectionType connectionType, QObject *parent) :
@@ -51,7 +51,7 @@ TunnelProxySocketServer::TunnelProxySocketServer(const QUuid &serverUuid, const 
     m_serverName(serverName),
     m_connectionType(connectionType)
 {
-    setupReconnectTimer();
+    setupTimers();
 }
 
 TunnelProxySocketServer::~TunnelProxySocketServer()
@@ -188,6 +188,9 @@ void TunnelProxySocketServer::onConnectionChanged(bool connected)
 void TunnelProxySocketServer::onConnectionDataAvailable(const QByteArray &data)
 {
     qCDebug(dcTunnelProxySocketServerTraffic()) << "Data received" << qUtf8Printable(data);
+
+    // We recived data, let's reset the keep alive timer
+    m_keepAliveTimer.start();
 
     if (m_state != StateRunning) {
         m_jsonClient->processData(data);
@@ -345,13 +348,13 @@ void TunnelProxySocketServer::requestSocketDisconnect(quint16 socketAddress)
 
     JsonReply *reply = m_jsonClient->callDisconnectClient(socketAddress);
     connect(reply, &JsonReply::finished, this, [=](){
-       reply->deleteLater();
-       // TODO: handle errors
-       qCDebug(dcTunnelProxySocketServer()) << "Request to disconnect client finished" << reply->response();
+        reply->deleteLater();
+        // TODO: handle errors
+        qCDebug(dcTunnelProxySocketServer()) << "Request to disconnect client finished" << reply->response();
     });
 }
 
-void TunnelProxySocketServer::setupReconnectTimer()
+void TunnelProxySocketServer::setupTimers()
 {
     m_reconnectTimer.setInterval(5000);
     m_reconnectTimer.setSingleShot(false);
@@ -365,6 +368,24 @@ void TunnelProxySocketServer::setupReconnectTimer()
         if (m_state == StateDisconnected) {
             qCDebug(dcTunnelProxySocketServer()) << "Trying to reconnect to the remote proxy...";
             startServer(m_serverUrl);
+        }
+    });
+
+    m_keepAliveTimer.setInterval(30000);
+    m_keepAliveTimer.setSingleShot(false);
+    connect(&m_keepAliveTimer, &QTimer::timeout, this, [this](){
+        if (m_state == StateRunning) {
+            qCDebug(dcTunnelProxySocketServer()) << "Ping the proxy server to keep the connection alive";
+            quint64 requestTimestamp = QDateTime::currentMSecsSinceEpoch();
+            JsonReply *reply = m_jsonClient->callPing(QDateTime::currentMSecsSinceEpoch() / 1000);
+            connect(reply, &JsonReply::finished, this, [=](){
+                quint64 pingDuration = QDateTime::currentMSecsSinceEpoch() - requestTimestamp;
+                reply->deleteLater();
+                qCDebug(dcTunnelProxySocketServer()) << "Ping response received" << reply->response() << "Duration:" << pingDuration << "ms";
+            });
+        } else {
+            // The server is not running any more
+            m_keepAliveTimer.stop();
         }
     });
 }
@@ -383,6 +404,7 @@ void TunnelProxySocketServer::setState(State state)
     if (m_state == StateDisconnected && m_enabled) {
         qCDebug(dcTunnelProxySocketServer()) << "Starting reconnect timer...";
         m_reconnectTimer.start();
+        m_keepAliveTimer.stop();
     }
 }
 
@@ -394,6 +416,13 @@ void TunnelProxySocketServer::setRunning(bool running)
     qCDebug(dcTunnelProxySocketServer()) << "The TunnelProxy server" << (running ? "is now up and running. Listening for remote clients" : "not running any more.");
     m_running = running;
     emit runningChanged(m_running);
+
+    if (m_running) {
+        qCDebug(dcTunnelProxySocketServer()) << "Starting the keep alive timer";
+        m_keepAliveTimer.start();
+    } else {
+        m_keepAliveTimer.stop();
+    }
 }
 
 void TunnelProxySocketServer::setError(QAbstractSocket::SocketError error)

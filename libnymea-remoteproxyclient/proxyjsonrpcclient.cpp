@@ -106,6 +106,18 @@ JsonReply *JsonRpcClient::callDisconnectClient(quint16 socketAddress)
     return reply;
 }
 
+JsonReply *JsonRpcClient::callPing(uint timestamp)
+{
+    QVariantMap params;
+    params.insert("timestamp", timestamp);
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "Ping", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap(), true);
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
 void JsonRpcClient::sendRequest(const QVariantMap &request, bool slipEnabled)
 {
     QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';

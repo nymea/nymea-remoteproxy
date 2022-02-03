@@ -57,6 +57,7 @@ public:
     JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);
     JsonReply *callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
     JsonReply *callDisconnectClient(quint16 socketAddress);
+    JsonReply *callPing(uint timestamp);
 
 private:
     ProxyConnection *m_connection = nullptr;

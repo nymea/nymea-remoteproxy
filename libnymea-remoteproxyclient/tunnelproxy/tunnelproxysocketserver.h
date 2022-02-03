@@ -149,6 +149,7 @@ private:
     State m_state = StateDisconnected;
 
     QTimer m_reconnectTimer;
+    QTimer m_keepAliveTimer;
     bool m_enabled = false;
 
     ProxyConnection *m_connection = nullptr;
@@ -159,7 +160,7 @@ private:
     QByteArray m_dataBuffer;
 
     void requestSocketDisconnect(quint16 socketAddress);
-    void setupReconnectTimer();
+    void setupTimers();
 
     void setState(State state);
     void setRunning(bool running);
