@@ -169,9 +169,9 @@ void RemoteProxyTestsProxy::monitorServer()
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
-    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(QUuid(connectionOne->tunnelPartnerUuid()), uuidConnectionTwo);
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
-    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+    QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
 
     // Get monitor data
@@ -638,9 +638,9 @@ void RemoteProxyTestsProxy::authenticateNonce()
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
-    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(QUuid(connectionOne->tunnelPartnerUuid()), uuidConnectionTwo);
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
-    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+    QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
     // Pipe data trought the tunnel
     QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
@@ -877,9 +877,9 @@ void RemoteProxyTestsProxy::remoteConnection()
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
-    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(QUuid(connectionOne->tunnelPartnerUuid()), uuidConnectionTwo);
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
-    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+    QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
     // Pipe data trought the tunnel
     QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
@@ -1293,9 +1293,9 @@ void RemoteProxyTestsProxy::tcpRemoteConnection()
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
-    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(QUuid(connectionOne->tunnelPartnerUuid()), uuidConnectionTwo);
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
-    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+    QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
     // Pipe data trought the tunnel
     QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
@@ -1387,9 +1387,9 @@ void RemoteProxyTestsProxy::tcpWebsocketRemoteConnection()
     QVERIFY(connectionTwo->state() == RemoteProxyConnection::StateRemoteConnected);
 
     QCOMPARE(connectionOne->tunnelPartnerName(), nameConnectionTwo);
-    QCOMPARE(connectionOne->tunnelPartnerUuid(), uuidConnectionTwo.toString());
+    QCOMPARE(QUuid(connectionOne->tunnelPartnerUuid()), uuidConnectionTwo);
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
-    QCOMPARE(connectionTwo->tunnelPartnerUuid(), uuidConnectionOne.toString());
+    QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
     // Pipe data trought the tunnel
     QSignalSpy remoteConnectionDataOne(connectionOne, &RemoteProxyConnection::dataReady);
