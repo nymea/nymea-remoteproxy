@@ -135,7 +135,7 @@ QString RemoteProxyConnection::tunnelPartnerName() const
 
 QString RemoteProxyConnection::tunnelPartnerUuid() const
 {
-    return m_tunnelPartnerUuid;
+    return "{" + m_tunnelPartnerUuid + "}";
 }
 
 void RemoteProxyConnection::cleanUp()
