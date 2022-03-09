@@ -81,7 +81,7 @@ private:
     bool m_sslEnabled;
     QSslConfiguration m_sslConfiguration;
 
-     QHash<QUuid, QTcpSocket *> m_clientList;
+    QHash<QUuid, QTcpSocket *> m_clientList;
 
     SslServer *m_server = nullptr;
 

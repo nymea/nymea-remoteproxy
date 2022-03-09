@@ -86,7 +86,7 @@ void WebSocketServer::onClientConnected()
     // Got a new client connected
     QWebSocket *client = m_server->nextPendingConnection();
     if (!client) {
-        qCWarning(dcWebSocketServer()) << "Next pending connection dissapeared. Doing nothing.";
+        qCWarning(dcWebSocketServer()) << "Next pending connection disappeared. Doing nothing.";
         return;
     }
 
@@ -147,7 +147,7 @@ void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
     QWebSocket *client = static_cast<QWebSocket *>(sender());
     qCWarning(dcWebSocketServer()) << "Client error occurred:" << client << client->peerAddress().toString() << error << client->errorString() << "Closing the socket.";
 
-    // Note: on any error which can occure, make sure the socket will be closed in any case
+    // Note: on any error which can occurre, make sure the socket will be closed in any case
     client->close();
 }
 
@@ -199,7 +199,7 @@ bool WebSocketServer::stopServer()
     if (!m_server)
         return true;
 
-    qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
+    qCDebug(dcWebSocketServer()) << "Stopping server" << m_server->serverName() << serverUrl().toString();
     m_server->close();
     delete m_server;
     m_server = nullptr;

@@ -200,7 +200,7 @@ void JsonRpcClient::processData(const QByteArray &data)
         m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
         splitIndex = m_dataBuffer.indexOf("}\n{");
     }
-    if (m_dataBuffer.trimmed().endsWith("}")) {
+    if (m_dataBuffer.endsWith("}\n") || m_dataBuffer.endsWith("}")) {
         processDataPacket(m_dataBuffer);
         m_dataBuffer.clear();
     }

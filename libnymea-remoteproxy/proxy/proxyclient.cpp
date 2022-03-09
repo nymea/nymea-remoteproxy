@@ -115,11 +115,9 @@ void ProxyClient::resetTimer()
 {
     switch (m_timerWaitState) {
     case TimerWaitStateInactive:
-        m_timer->stop();
         m_timer->start(Engine::instance()->configuration()->inactiveTimeout());
         break;
     case TimerWaitStateAlone:
-        m_timer->stop();
         m_timer->start(Engine::instance()->configuration()->aloneTimeout());
         break;
     }
@@ -137,7 +135,7 @@ QList<QByteArray> ProxyClient::processData(const QByteArray &data)
         m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
         splitIndex = m_dataBuffer.indexOf("}\n{");
     }
-    if (m_dataBuffer.trimmed().endsWith("}")) {
+    if (m_dataBuffer.endsWith("}\n") || m_dataBuffer.endsWith("}")) {
         packets.append(m_dataBuffer);
         m_dataBuffer.clear();
     }

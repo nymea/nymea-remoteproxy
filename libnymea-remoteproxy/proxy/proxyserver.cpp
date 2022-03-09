@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -381,10 +381,10 @@ void ProxyServer::onProxyClientTimeoutOccurred()
     qCDebug(dcProxyServer()) << "Timeout occurred for" << proxyClient;
     switch (proxyClient->timerWaitState()) {
     case ProxyClient::TimerWaitStateInactive:
-        proxyClient->killConnection("Proxy timeout occuret. The socket was inactive.");
+        proxyClient->killConnection("Proxy timeout occurred. The socket was inactive.");
         break;
     case ProxyClient::TimerWaitStateAlone:
-        proxyClient->killConnection("Proxy timeout occuret. The tunnel partner did not show up.");
+        proxyClient->killConnection("Proxy timeout occurred. The tunnel partner did not show up.");
         break;
     }
 }
