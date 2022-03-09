@@ -27,11 +27,11 @@ void TunnelProxyClient::setType(Type type)
 
 QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
 {
-    QList<QByteArray> packages;
+    QList<QByteArray> packets;
 
-    // Parse packages depending on the encoded
+    // Parse packets depending on the encoded
     if (m_slipEnabled) {
-        // Read each byte until we get END byte, then unescape the package
+        // Read each byte until we get END byte, then unescape the packet
         for (int i = 0; i < data.length(); i++) {
             quint8 byte = static_cast<quint8>(data.at(i));
             if (byte == SlipDataProcessor::ProtocolByteEnd) {
@@ -44,7 +44,7 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
                     qCWarning(dcTunnelProxyServerTraffic()) << "Received inconsistant SLIP encoded message. Ignoring data...";
                 } else {
                     qCDebug(dcTunnelProxyServerTraffic()) << "Frame received";
-                    packages.append(m_dataBuffer);
+                    packets.append(m_dataBuffer);
                     m_dataBuffer.clear();
                 }
             } else {
@@ -56,17 +56,17 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
         m_dataBuffer.append(data);
         int splitIndex = m_dataBuffer.indexOf("}\n{");
         while (splitIndex > -1) {
-            packages.append(m_dataBuffer.left(splitIndex + 1));
+            packets.append(m_dataBuffer.left(splitIndex + 1));
             m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
             splitIndex = m_dataBuffer.indexOf("}\n{");
         }
         if (m_dataBuffer.trimmed().endsWith("}")) {
-            packages.append(m_dataBuffer);
+            packets.append(m_dataBuffer);
             m_dataBuffer.clear();
         }
     }
 
-    return packages;
+    return packets;
 }
 
 QDebug operator<<(QDebug debug, TunnelProxyClient *tunnelProxyClient)

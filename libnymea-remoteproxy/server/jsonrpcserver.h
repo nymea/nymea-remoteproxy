@@ -74,7 +74,7 @@ private slots:
     void asyncReplyFinished();
 
 public slots:
-    void processDataPackage(TransportClient *transportClient, const QByteArray &data);
+    void processDataPacket(TransportClient *transportClient, const QByteArray &data);
 
     // Client registration for JSON RPC traffic
     void registerClient(TransportClient *transportClient);

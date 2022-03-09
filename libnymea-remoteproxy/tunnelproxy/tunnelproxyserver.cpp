@@ -350,14 +350,14 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         // Data coming from a connected server connection
         if (tunnelProxyClient->slipEnabled()) {
             // Unpack SLIP data, get address, pipe to client or give it to the json rpc server if address 0x0000
-            // Handle package fragmentation
+            // Handle packet fragmentation
             QList<QByteArray> frames = tunnelProxyClient->processData(data);
             foreach (const QByteArray &frameData, frames) {
                 SlipDataProcessor::Frame frame = SlipDataProcessor::parseFrame(frameData);
 
                 if (frame.socketAddress == 0x0000) {
                     qCDebug(dcTunnelProxyServerTraffic()) << "Received frame for the JSON server" << tunnelProxyClient;
-                    m_jsonRpcServer->processDataPackage(tunnelProxyClient, frame.data);
+                    m_jsonRpcServer->processDataPacket(tunnelProxyClient, frame.data);
                 } else {
                     // This data seems to be for a client with the given address
                     TunnelProxyServerConnection *serverConnection = m_tunnelProxyServerConnections.value(tunnelProxyClient->uuid());

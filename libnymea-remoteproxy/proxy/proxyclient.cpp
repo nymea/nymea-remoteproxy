@@ -127,22 +127,22 @@ void ProxyClient::resetTimer()
 
 QList<QByteArray> ProxyClient::processData(const QByteArray &data)
 {
-    QList<QByteArray> packages;
+    QList<QByteArray> packets;
 
     // Handle packet fragmentation
     m_dataBuffer.append(data);
     int splitIndex = m_dataBuffer.indexOf("}\n{");
     while (splitIndex > -1) {
-        packages.append(m_dataBuffer.left(splitIndex + 1));
+        packets.append(m_dataBuffer.left(splitIndex + 1));
         m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
         splitIndex = m_dataBuffer.indexOf("}\n{");
     }
     if (m_dataBuffer.trimmed().endsWith("}")) {
-        packages.append(m_dataBuffer);
+        packets.append(m_dataBuffer);
         m_dataBuffer.clear();
     }
 
-    return packages;
+    return packets;
 }
 
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)

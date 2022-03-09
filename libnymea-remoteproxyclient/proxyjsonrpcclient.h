@@ -68,7 +68,7 @@ private:
     QHash<int, JsonReply *> m_replies;
 
     void sendRequest(const QVariantMap &request, bool slipEnabled = false);
-    void processDataPackage(const QByteArray &data);
+    void processDataPacket(const QByteArray &data);
 
 signals:
     void tunnelEstablished(const QString clientName, const QString &clientUuid);

@@ -189,7 +189,7 @@ void JsonRpcServer::unregisterHandler(JsonHandler *handler)
     m_handlers.remove(handler->name());
 }
 
-void JsonRpcServer::processDataPackage(TransportClient *transportClient, const QByteArray &data)
+void JsonRpcServer::processDataPacket(TransportClient *transportClient, const QByteArray &data)
 {
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
@@ -347,8 +347,8 @@ void JsonRpcServer::processData(TransportClient *transportClient, const QByteArr
 
     qCDebug(dcJsonRpcTraffic()) << "Incoming data from" << transportClient << ": " << qUtf8Printable(data);
 
-    // Handle package fragmentation
-    QList<QByteArray> packages = transportClient->processData(data);
+    // Handle packet fragmentation
+    QList<QByteArray> packets = transportClient->processData(data);
 
     // Make sure the buffer size is in range
     if (transportClient->bufferSize() > 1024 * 10) {
@@ -357,8 +357,8 @@ void JsonRpcServer::processData(TransportClient *transportClient, const QByteArr
         return;
     }
 
-    foreach (const QByteArray &package, packages) {
-        processDataPackage(transportClient, package);
+    foreach (const QByteArray &packet, packets) {
+        processDataPacket(transportClient, packet);
     }
 }
 
