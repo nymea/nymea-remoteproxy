@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
 
-    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default wss://dev-remoteproxy.nymea.io:443", "url");
-    urlOption.setDefaultValue("wss://dev-remoteproxy.nymea.io:443");
+    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default ssl://dev-remoteproxy.nymea.io:4433", "url");
+    urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:4433");
     parser.addOption(urlOption);
 
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
@@ -128,8 +128,8 @@ int main(int argc, char *argv[])
     QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the client. If not specified, a new one will be created", "uuid");
     parser.addOption(uuidOption);
 
-    QCommandLineOption tcpOption(QStringList() << "tcp", "Use TCP as tronsport instead of web sockets.");
-    parser.addOption(tcpOption);
+    QCommandLineOption wsOption(QStringList() << "ws", "Use web socket as tronsport instead of TCP sockets.");
+    parser.addOption(wsOption);
 
     QCommandLineOption verboseOption(QStringList() << "verbose", "Print more information about the connection.");
     parser.addOption(verboseOption);
@@ -171,14 +171,15 @@ int main(int argc, char *argv[])
     }
 
     ProxyClient *client = nullptr;
-    if (parser.isSet(tcpOption)) {
-        qCDebug(dcProxyClient()) << "Using TCP as transport layer";
-        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
+    if (parser.isSet(wsOption)) {
+        qCDebug(dcProxyClient()) << "Using web sockets as transport layer";
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
         client->setInsecure(parser.isSet(insecureOption));
         client->setPingpong(parser.isSet(pingPongOption));
         client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
     } else {
-        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
+        qCDebug(dcProxyClient()) << "Using TCP as transport layer";
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
         client->setInsecure(parser.isSet(insecureOption));
         client->setPingpong(parser.isSet(pingPongOption));
         client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));

@@ -97,7 +97,7 @@ public:
 private:
     QUuid m_clientUuid;
     QString m_clientName;
-    ConnectionType m_connectionType = ConnectionTypeWebSocket;
+    ConnectionType m_connectionType = ConnectionTypeTcpSocket;
 
     QUrl m_serverUrl;
 
