@@ -31,6 +31,7 @@
 #include "loggingcategories.h"
 #include "remoteproxyconnection.h"
 #include "../common/slipdataprocessor.h"
+#include "../../version.h"
 
 // Client
 #include "tunnelproxy/tunnelproxysocketserver.h"

@@ -30,6 +30,7 @@
 #include "engine.h"
 #include "loggingcategories.h"
 #include "remoteproxyconnection.h"
+#include "../../version.h"
 
 #include <QMetaType>
 #include <QSignalSpy>

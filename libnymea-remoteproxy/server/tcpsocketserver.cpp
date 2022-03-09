@@ -115,7 +115,7 @@ bool TcpSocketServer::startServer()
     }
 
     connect(m_server, &SslServer::clientConnected, this, &TcpSocketServer::onClientConnected);
-    connect(m_server, SIGNAL(clientDisconnected(QSslSocket*)), SLOT(onClientDisconnected(QSslSocket*)));
+    connect(m_server, &SslServer::clientDisconnected, this, &TcpSocketServer::onClientDisconnected);
     connect(m_server, &SslServer::dataAvailable, this, &TcpSocketServer::onDataAvailable);
     qCDebug(dcTcpSocketServer()) << "Server started successfully.";
     return true;
@@ -152,7 +152,9 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     qCDebug(dcTcpSocketServer()) << "Incomming connection" << sslSocket;
     connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
     connect(sslSocket, &QSslSocket::disconnected, this, &SslServer::onClientDisconnected);
-    connect(sslSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onSocketError(QAbstractSocket::SocketError)));
+
+    typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
+    connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, &SslServer::onSocketError);
     connect(sslSocket, &QSslSocket::encrypted, this, [this, sslSocket](){
         qCDebug(dcTcpSocketServer()) << "SSL encryption established for" << sslSocket;
         emit clientConnected(sslSocket);

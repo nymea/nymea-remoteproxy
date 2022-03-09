@@ -36,7 +36,6 @@ TcpSocketConnection::TcpSocketConnection(QObject *parent) :
 {
     m_tcpSocket = new QSslSocket(this);
 
-    QObject::connect(m_tcpSocket, &QSslSocket::connected, this, [=](){ qCDebug(dcRemoteProxyClientTcpSocket()) << "Connected!!!!"; });
     QObject::connect(m_tcpSocket, &QSslSocket::disconnected, this, &TcpSocketConnection::onDisconnected);
     QObject::connect(m_tcpSocket, &QSslSocket::encrypted, this, &TcpSocketConnection::onEncrypted);
     QObject::connect(m_tcpSocket, &QSslSocket::readyRead, this, &TcpSocketConnection::onReadyRead);
@@ -47,10 +46,6 @@ TcpSocketConnection::TcpSocketConnection(QObject *parent) :
 
     typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
     QObject::connect(m_tcpSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &TcpSocketConnection::sslErrors);
-
-    //    QObject::connect(m_tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
-    //    QObject::connect(m_tcpSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SIGNAL(sslErrors(QList<QSslError>)));
-
 }
 
 TcpSocketConnection::~TcpSocketConnection()

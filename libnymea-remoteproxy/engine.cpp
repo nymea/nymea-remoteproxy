@@ -27,6 +27,7 @@
 
 #include "engine.h"
 #include "loggingcategories.h"
+#include "../version.h"
 
 namespace remoteproxy {
 
@@ -326,7 +327,6 @@ void Engine::clean()
         m_configuration = nullptr;
     }
 }
-
 
 void Engine::setRunning(bool running)
 {

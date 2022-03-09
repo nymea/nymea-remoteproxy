@@ -66,7 +66,7 @@ private:
 
     ProxyConnection *m_connection = nullptr;
     TunnelProxySocketServer *m_socketServer = nullptr;
-    bool m_connected = true; // Note: on creatrion, the socket is connected, otherwise it would not have been created
+    bool m_connected = true; // Note: on creation, the socket is connected, otherwise it would not have been created
 
     QString m_clientName;
     QUuid m_clientUuid;

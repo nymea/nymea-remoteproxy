@@ -108,6 +108,7 @@ protected:
     // Json data information
     int m_messageId = 0;
 
+private:
     // Statistics info
     quint64 m_rxDataCount = 0;
     quint64 m_txDataCount = 0;

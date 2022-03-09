@@ -129,7 +129,7 @@ quint64 TransportClient::rxDataCount() const
 
 void TransportClient::addRxDataCount(int dataCount)
 {
-    m_rxDataCount += static_cast<quint64>(dataCount);
+    m_rxDataCount += dataCount;
 }
 
 quint64 TransportClient::txDataCount() const
@@ -139,7 +139,7 @@ quint64 TransportClient::txDataCount() const
 
 void TransportClient::addTxDataCount(int dataCount)
 {
-    m_txDataCount += static_cast<quint64>(dataCount);
+    m_txDataCount += dataCount;
 }
 
 int TransportClient::bufferSize() const

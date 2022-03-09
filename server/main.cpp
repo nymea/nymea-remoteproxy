@@ -51,6 +51,8 @@
 #include "authentication/aws/awsauthenticator.h"
 #include "authentication/dummy/dummyauthenticator.h"
 
+#include "../version.h"
+
 using namespace remoteproxy;
 
 static QHash<QString, bool> s_loggingFilters;
@@ -65,7 +67,7 @@ static const char *const error = "\e[31m";
 static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
     QString messageString;
-    QString timeString = QDateTime::currentDateTimeUtc().toString("yyyy.MM.dd hh:mm:ss.zzz");
+    QString timeString = QDateTime::currentDateTime().toString("yyyy.MM.dd hh:mm:ss.zzz");
     switch (type) {
     case QtInfoMsg:
         messageString = QString(" I %1 | %2: %3").arg(timeString).arg(context.category).arg(message);

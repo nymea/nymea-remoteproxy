@@ -1,7 +1,7 @@
 Source: nymea-remoteproxy
 Section: utils
 Priority: options
-Maintainer: Simon Stürz <simon.stuerz@nymea.io>
+Maintainer: nymea GmbH <developer@nymea.io>
 Standards-Version: 3.9.3
 Homepage: https://nymea.io
 Vcs-Git: https://github.com/nymea/nymea-remoteproxy.git
@@ -16,6 +16,8 @@ Build-depends: debhelper (>= 9.0.0),
 
 Package: nymea-remoteproxy
 Architecture: any
+Section: net
+Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          awscli,
@@ -28,6 +30,7 @@ Description: The nymea remote proxy server
 Package: libnymea-remoteproxy
 Architecture: any
 Section: libs
+Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy server lib
@@ -48,7 +51,8 @@ Description: The nymea remote proxy server lib - development files
 
 Package: nymea-remoteproxy-client
 Architecture: any
-Section: libs
+Section: utils
+Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy client for testing
@@ -57,7 +61,8 @@ Description: The nymea remote proxy client for testing
 
 Package: nymea-remoteproxy-tunnelclient
 Architecture: any
-Section: libs
+Section: utils
+Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy tunnel client for testing
@@ -67,6 +72,7 @@ Description: The nymea remote proxy tunnel client for testing
 Package: libnymea-remoteproxyclient
 Architecture: any
 Section: libs
+Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
 Description: The nymea remote proxy server client lib
@@ -87,6 +93,8 @@ Description: The nymea remote proxy server client lib - development files
 
 Package: nymea-remoteproxy-tests
 Architecture: any
+Multi-Arch: same
+Section: devel
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          libnymea-remoteproxy (= ${binary:Version}),
@@ -96,8 +104,9 @@ Description: The nymea remote proxy server tests
 
 Package: nymea-remoteproxy-monitor
 Architecture: any
+Multi-Arch: same
+Section: utils
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         libncurses5,
 Description: The nymea remote proxy monitor tool
   The nymea remote proxy server monitor

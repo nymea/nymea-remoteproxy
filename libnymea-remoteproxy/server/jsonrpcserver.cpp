@@ -31,6 +31,7 @@
 #include "jsonrpc/jsontypes.h"
 #include "transportclient.h"
 #include "../common/slipdataprocessor.h"
+#include "../version.h"
 
 #include <QJsonDocument>
 #include <QJsonParseError>

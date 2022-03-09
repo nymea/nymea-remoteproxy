@@ -1,5 +1,15 @@
 include(nymea-remoteproxy.pri)
 
+# Define versions
+SERVER_NAME=nymea-remoteproxy
+API_VERSION_MAJOR=0
+API_VERSION_MINOR=5
+
+# Parse and export SERVER_VERSION
+SERVER_VERSION=$$system('dpkg-parsechangelog | sed -n -e "s/^Version: //p"')
+
+QMAKE_SUBSTITUTES += version.h.in
+
 TEMPLATE=subdirs
 SUBDIRS += server client tunnelclient libnymea-remoteproxy libnymea-remoteproxyclient
 

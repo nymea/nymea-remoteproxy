@@ -27,7 +27,6 @@ void TunnelProxyClient::setType(Type type)
 
 QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
 {
-    // TODO: unescape if this data is for the json handler
     QList<QByteArray> packages;
 
     // Parse packages depending on the encoded

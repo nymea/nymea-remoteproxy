@@ -36,6 +36,8 @@
 #include "serverconnection.h"
 #include "clientconnection.h"
 
+#include "../version.h"
+
 static QHash<QString, bool> s_loggingFilters;
 static const char *const normal = "\033[0m";
 static const char *const warning = "\e[33m";
