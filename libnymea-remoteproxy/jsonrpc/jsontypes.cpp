@@ -40,9 +40,9 @@ QString JsonTypes::s_lastError;
 // Types
 QVariantList JsonTypes::s_basicType;
 QVariantList JsonTypes::s_authenticationError;
+QVariantList JsonTypes::s_tunnelProxyError;
 
 // Objects
-
 
 
 QVariantMap JsonTypes::allTypes()
@@ -52,8 +52,7 @@ QVariantMap JsonTypes::allTypes()
     // Enums
     allTypes.insert("BasicType", basicType());
     allTypes.insert("AuthenticationError", authenticationError());
-
-    // Types
+    allTypes.insert("TunnelProxyError", tunnelProxyError());
 
     return allTypes;
 }
@@ -63,6 +62,7 @@ void JsonTypes::init()
     // Declare types
     s_basicType = enumToStrings(JsonTypes::staticMetaObject, "BasicType");
     s_authenticationError = enumToStrings(Authenticator::staticMetaObject, "AuthenticationError");
+    s_tunnelProxyError = enumToStrings(TunnelProxyServer::staticMetaObject, "TunnelProxyError");
 
     s_initialized = true;
 }
@@ -124,10 +124,17 @@ QPair<bool, QString> JsonTypes::validateVariant(const QVariant &templateVariant,
                     qCWarning(dcJsonRpc()) << QString("Value %1 not allowed in %2").arg(variant.toString()).arg(authenticationErrorRef());
                     return result;
                 }
+            } else if (refName == tunnelProxyErrorRef()) {
+                QPair<bool, QString> result = validateEnum(s_tunnelProxyError, variant);
+                if (!result.first) {
+                    qCWarning(dcJsonRpc()) << QString("Value %1 not allowed in %2").arg(variant.toString()).arg(tunnelProxyErrorRef());
+                    return result;
+                }
             } else {
                 Q_ASSERT_X(false, "JsonTypes", QString("Unhandled ref: %1").arg(refName).toLatin1().data());
                 return report(false, QString("Unhandled ref %1. Server implementation incomplete.").arg(refName));
             }
+
         } else {
             QPair<bool, QString> result = JsonTypes::validateProperty(templateVariant, variant);
             if (!result.first) {

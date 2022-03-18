@@ -28,6 +28,7 @@
 #include "jsontypes.h"
 #include "loggingcategories.h"
 #include "authenticationhandler.h"
+#include "server/transportclient.h"
 
 #include "engine.h"
 
@@ -60,9 +61,9 @@ QString AuthenticationHandler::name() const
     return "Authentication";
 }
 
-JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyClient *proxyClient)
+JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, TransportClient *transportClient)
 {
-    QString uuid = params.value("uuid").toString();
+    QUuid uuid = params.value("uuid").toUuid();
     QString name = params.value("name").toString();
     QString token = params.value("token").toString();
     QString nonce = params.value("nonce").toString();
@@ -71,6 +72,7 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, ProxyC
     JsonReply *jsonReply = createAsyncReply("Authenticate");
 
     // Set the token for this proxy client
+    ProxyClient *proxyClient = qobject_cast<ProxyClient *>(transportClient);
     proxyClient->setUuid(uuid);
     proxyClient->setName(name);
     proxyClient->setToken(token);
@@ -93,7 +95,7 @@ void AuthenticationHandler::onAuthenticationFinished()
     JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
 
     if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
-        qCWarning(dcJsonRpc()) << "Authentication error occured" << authenticationReply->error();
+        qCWarning(dcJsonRpc()) << "Authentication error occurred" << authenticationReply->error();
         jsonReply->setSuccess(false);
     } else {
         // Successfully authenticated
@@ -106,7 +108,7 @@ void AuthenticationHandler::onAuthenticationFinished()
         jsonReply->setData(errorToReply(authenticationReply->error()));
     }
 
-    jsonReply->finished();
+    emit jsonReply->finished();
 }
 
 }

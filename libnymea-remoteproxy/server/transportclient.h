@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,31 +25,24 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef PROXYCLIENT_H
-#define PROXYCLIENT_H
+#ifndef TRANSPORTCLIENT_H
+#define TRANSPORTCLIENT_H
 
+#include <QObject>
 #include <QUuid>
 #include <QDebug>
-#include <QObject>
-#include <QTimer>
 #include <QHostAddress>
-
-#include "transportinterface.h"
 
 namespace remoteproxy {
 
-class ProxyClient : public QObject
+class TransportInterface;
+
+class TransportClient : public QObject
 {
     Q_OBJECT
-
 public:
-    enum TimerWaitState {
-        TimerWaitStateInactive,
-        TimerWaitStateAlone
-    };
-    Q_ENUM(TimerWaitState)
-
-    explicit ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
+    explicit TransportClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
+    virtual ~TransportClient() = default;
 
     QUuid clientId() const;
     QHostAddress peerAddress() const;
@@ -57,31 +50,26 @@ public:
     uint creationTime() const;
     QString creationTimeString() const;
 
-    bool isAuthenticated() const;
-    void setAuthenticated(bool isAuthenticated);
+    // Schedule a disconnect after the response
+    void killConnectionAfterResponse(const QString &killConnectionReason);
+    bool killConnectionRequested() const;
+    QString killConnectionReason() const;
 
-    bool isTunnelConnected() const;
-    void setTunnelConnected(bool isTunnelConnected);
+    // Schedule SLIP enable after response
+    void enableSlipAfterResponse();
+    bool slipAfterResponseEnabled() const;
 
-    QString userName() const;
-    void setUserName(const QString &userName);
+    bool slipEnabled() const;
+    void setSlipEnabled(bool slipEnabled);
 
     TransportInterface *interface() const;
 
     // Properties from auth request
-    QString uuid() const;
-    void setUuid(const QString &uuid);
+    QUuid uuid() const;
+    void setUuid(const QUuid &uuid);
 
     QString name() const;
     void setName(const QString &name);
-
-    QString tunnelIdentifier() const;
-
-    QString token() const;
-    void setToken(const QString &token);
-
-    QString nonce() const;
-    void setNonce(const QString &nonce);
 
     quint64 rxDataCount() const;
     void addRxDataCount(int dataCount);
@@ -89,53 +77,44 @@ public:
     quint64 txDataCount() const;
     void addTxDataCount(int dataCount);
 
-    // Actions for this client
-    TimerWaitState timerWaitState() const;
-    void resetTimer();
-    void sendData(const QByteArray &data);
-    void killConnection(const QString &reason);
-
-    // Json server methods
-    int generateMessageId();
-    QList<QByteArray> processData(const QByteArray &data);
     int bufferSize() const;
 
-private:
+    int generateMessageId();
+
+    virtual void sendData(const QByteArray &data);
+    virtual void killConnection(const QString &reason);
+
+    virtual QList<QByteArray> processData(const QByteArray &data) = 0;
+
+protected:
     TransportInterface *m_interface = nullptr;
-    QTimer *m_timer = nullptr;
-    TimerWaitState m_timerWaitState = TimerWaitStateInactive;
 
     QUuid m_clientId;
     QHostAddress m_peerAddress;
     uint m_creationTimeStamp = 0;
 
-    bool m_authenticated = false;
-    bool m_tunnelConnected = false;
-
-    QString m_uuid;
+    // Eveyone has to register him self everywhere with a name and a uuid
     QString m_name;
-    QString m_token;
-    QString m_nonce;
+    QUuid m_uuid;
 
-    QString m_userName;
+    QByteArray m_dataBuffer;
+
+    bool m_killConnectionRequested = false;
+    QString m_killConnectionReason;
+
+    bool m_slipAfterResponseEnabled = false;
+    bool m_slipEnabled = false;
 
     // Json data information
     int m_messageId = 0;
-    QByteArray m_dataBuffers;
-    bool m_bufferSizeViolation = false;
 
+private:
+    // Statistics info
     quint64 m_rxDataCount = 0;
     quint64 m_txDataCount = 0;
 
-signals:
-    void authenticated();
-    void tunnelConnected();
-    void timeoutOccured();
-
 };
-
-QDebug operator<< (QDebug debug, ProxyClient *proxyClient);
 
 }
 
-#endif // PROXYCLIENT_H
+#endif // TRANSPORTCLIENT_H

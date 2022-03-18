@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,66 +25,55 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
-#define NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
+#ifndef TUNNELPROXYSERVERCONNECTION_H
+#define TUNNELPROXYSERVERCONNECTION_H
 
-#include "basetest.h"
+#include <QUuid>
+#include <QObject>
+#include <QDebug>
 
-using namespace remoteproxy;
-using namespace remoteproxyclient;
+namespace remoteproxy {
 
-class RemoteProxyOfflineTests : public BaseTest
+class TransportClient;
+class TunnelProxyClientConnection;
+
+class TunnelProxyServerConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit RemoteProxyOfflineTests(QObject *parent = nullptr);
-    ~RemoteProxyOfflineTests() = default;
+    explicit TunnelProxyServerConnection(TransportClient *transportClient, const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
 
-private slots:
-    // Basic stuff
-    void startStopServer();
-    void dummyAuthenticator();
-    void monitorServer();
+    TransportClient *transportClient() const;
 
-    void configuration_data();
-    void configuration();
+    QUuid serverUuid() const;
+    QString serverName() const;
 
-    // WebSocket connection
-    void serverPortBlocked();
-    void websocketBinaryData();
-    void websocketPing();
+    QList<TunnelProxyClientConnection *> clientConnections() const;
 
-    // WebSocket connection API
-    void getIntrospect();
-    void getHello();
+    void registerClientConnection(TunnelProxyClientConnection *clientConnection);
+    void unregisterClientConnection(TunnelProxyClientConnection *clientConnection);
 
-    void apiBasicCalls_data();
-    void apiBasicCalls();
+    TunnelProxyClientConnection *getClientConnection(quint16 socketAddress);
 
-    void authenticate_data();
-    void authenticate();
+signals:
 
-    void authenticateNonce();
-    void authenticateSendData();
+private:
+    TransportClient *m_transportClient = nullptr;
+    QUuid m_serverUuid;
+    QString m_serverName;
+    quint16 m_connectionLimit = 100;
 
-    // Client lib
-    void clientConnectionTcpSocket();
-    void clientConnectionWebSocket();
-    void remoteConnection();
-    void multipleRemoteConnection();
-    void trippleConnection();
-    void duplicateUuid();
-    void sslConfigurations();
+    quint16 m_currentAddressCounter = 0;
 
-    void inactiveTimeout();
-    void jsonRpcTimeout();
-    void authenticationReplyTimeout();
-    void authenticationReplyConnection();
+    QHash<QUuid, TunnelProxyClientConnection *> m_clientConnections;
+    QHash<quint16, TunnelProxyClientConnection *> m_clientConnectionsAddresses;
 
-    // TCP Websocket combinations
-    void tcpRemoteConnection();
-    void tcpWebsocketRemoteConnection();
+    quint16 getFreeAddress();
 
 };
 
-#endif // NYMEA_REMOTEPROXY_TESTS_OFFLINE_H
+QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection);
+
+}
+
+#endif // TUNNELPROXYSERVERCONNECTION_H

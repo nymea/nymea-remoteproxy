@@ -52,7 +52,7 @@ private slots:
     void onConnected();
     void onDisconnected();
     void onReadyRead();
-    void onErrorOccured(QLocalSocket::LocalSocketError socketError);
+    void onErrorOccurred(QLocalSocket::LocalSocketError socketError);
 
 public slots:
     void connectMonitor();

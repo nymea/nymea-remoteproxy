@@ -1,7 +1,11 @@
 #!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_VERBOSE=1
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
+include /usr/share/dpkg/buildflags.mk
 
 PREPROCESS_FILES := $(wildcard debian/*.in)
 
@@ -11,17 +15,9 @@ $(PREPROCESS_FILES:.in=): %: %.in
 override_dh_install: $(PREPROCESS_FILES:.in=)
 	dh_install
 
-override_dh_strip:
-	dh_strip --dbg-package=libnymea-remoteproxy-dbg
-	dh_strip --dbg-package=libnymea-remoteproxyclient-dbg
-
-#override_dh_auto_test:
-#	make test
-
 override_dh_auto_clean:
 	dh_auto_clean
-	find . -name *.qm -exec rm {} \;
 	rm -rf $(PREPROCESS_FILES:.in=)
 
 %:
-	dh $@ --with systemd --parallel
+	dh $@ --buildsystem=qmake --with systemd --parallel

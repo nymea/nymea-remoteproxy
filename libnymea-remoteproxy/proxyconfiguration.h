@@ -100,10 +100,10 @@ public:
     QSslConfiguration sslConfiguration() const;
 
     // WebSocketServer
-    QHostAddress webSocketServerHost() const;
+    QHostAddress webSocketServerProxyHost() const;
     void setWebSocketServerHost(const QHostAddress &address);
 
-    quint16 webSocketServerPort() const;
+    quint16 webSocketServerProxyPort() const;
     void setWebSocketServerPort(quint16 port);
 
     // TcpServer
@@ -112,6 +112,21 @@ public:
 
     quint16 tcpServerPort() const;
     void setTcpServerPort(quint16 port);
+
+    // WebSocketServer (tunnel)
+    QHostAddress webSocketServerTunnelProxyHost() const;
+    void setWebSocketServerTunnelProxyHost(const QHostAddress &address);
+
+    quint16 webSocketServerTunnelProxyPort() const;
+    void setWebSocketServerTunnelProxyPort(quint16 port);
+
+    // TcpServer (tunnel)
+    QHostAddress tcpServerTunnelProxyHost() const;
+    void setTcpServerTunnelProxyHost(const QHostAddress &address);
+
+    quint16 tcpServerTunnelProxyPort() const;
+    void setTcpServerTunnelProxyPort(quint16 port);
+
 
 private:
     // ProxyServer
@@ -139,13 +154,22 @@ private:
     QString m_sslCertificateChainFileName;
     QSslConfiguration m_sslConfiguration;
 
-    // WebSocketServer
-    QHostAddress m_webSocketServerHost = QHostAddress::LocalHost;
-    quint16 m_webSocketServerPort = 1212;
+    // WebSocketServer (proxy)
+    QHostAddress m_webSocketServerProxyHost = QHostAddress::LocalHost;
+    quint16 m_webSocketServerProxyPort = 1212;
 
-    // TcpServer
+    // TcpServer (proxy)
     QHostAddress m_tcpServerHost = QHostAddress::LocalHost;
     quint16 m_tcpServerPort = 1213;
+
+    // WebSocketServer (proxy)
+    QHostAddress m_webSocketServerTunnelProxyHost = QHostAddress::LocalHost;
+    quint16 m_webSocketServerTunnelProxyPort = 2212;
+
+    // TcpServer (proxy)
+    QHostAddress m_tcpServerTunnelProxyHost = QHostAddress::LocalHost;
+    quint16 m_tcpServerTunnelProxyPort = 2213;
+
 
 };
 

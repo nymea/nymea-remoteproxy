@@ -1,23 +1,29 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *                                                                               *
- * Copyright (C) 2019 Simon Stürz <simon.stuerz@guh.io>                          *
- *                                                                               *
- * This file is part of nymea-remoteproxy.                                       *
- *                                                                               *
- * This program is free software: you can redistribute it and/or modify          *
- * it under the terms of the GNU General Public License as published by          *
- * the Free Software Foundation, either version 3 of the License, or             *
- * (at your option) any later version.                                           *
- *                                                                               *
- * This program is distributed in the hope that it will be useful,               *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of                *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                 *
- * GNU General Public License for more details.                                  *
- *                                                                               *
- * You should have received a copy of the GNU General Public License             *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.         *
- *                                                                               *
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+*  Copyright 2013 - 2020, nymea GmbH
+*  Contact: contact@nymea.io
+*
+*  This file is part of nymea.
+*  This project including source code and documentation is protected by copyright law, and
+*  remains the property of nymea GmbH. All rights, including reproduction, publication,
+*  editing and translation, are reserved. The use of this project is subject to the terms of a
+*  license agreement to be concluded with nymea GmbH in accordance with the terms
+*  of use of nymea GmbH, available under https://nymea.io/license
+*
+*  GNU General Public License Usage
+*  Alternatively, this project may be redistributed and/or modified under
+*  the terms of the GNU General Public License as published by the Free Software Foundation,
+*  GNU version 3. this project is distributed in the hope that it will be useful, but WITHOUT ANY
+*  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+*  PURPOSE. See the GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License along with this project.
+*  If not, see <https://www.gnu.org/licenses/>.
+*
+*  For any further details and any questions please contact us under contact@nymea.io
+*  or see our FAQ/Licensing Information on https://nymea.io/license/faq
+*
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "tcpsocketserver.h"
 #include "loggingcategories.h"
@@ -46,8 +52,8 @@ void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
         return;
     }
 
-    qCDebug(dcTcpSocketServerTraffic()) << "Send data to" << clientId.toString() << data + '\n';
-    if (client->write(data + '\n') < 0) {
+    qCDebug(dcTcpSocketServerTraffic()) << "Send data to" << clientId.toString() << data;
+    if (client->write(data) < 0) {
         qCWarning(dcTcpSocketServer()) << "Could not write data to client socket" << clientId.toString();
     }
 }
@@ -58,8 +64,10 @@ void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString 
     if (!client)
         return;
 
-    qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
-    client->close();
+    if (client->state() == QAbstractSocket::ConnectedState) {
+        qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+        client->close();
+    }
 }
 
 bool TcpSocketServer::running() const
@@ -89,9 +97,10 @@ void TcpSocketServer::onClientDisconnected(QSslSocket *client)
 {
     QUuid clientId = m_clientList.key(client);
     qCDebug(dcTcpSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
-    m_clientList.take(clientId);
-    // Note: the SslServer is deleting the socket object
-    emit clientDisconnected(clientId);
+    if (m_clientList.take(clientId)) {
+        // Note: the SslServer is deleting the socket object
+        emit clientDisconnected(clientId);
+    }
 }
 
 bool TcpSocketServer::startServer()
@@ -106,7 +115,7 @@ bool TcpSocketServer::startServer()
     }
 
     connect(m_server, &SslServer::clientConnected, this, &TcpSocketServer::onClientConnected);
-    connect(m_server, SIGNAL(clientDisconnected(QSslSocket *)), SLOT(onClientDisconnected(QSslSocket *)));
+    connect(m_server, &SslServer::clientDisconnected, this, &TcpSocketServer::onClientDisconnected);
     connect(m_server, &SslServer::dataAvailable, this, &TcpSocketServer::onDataAvailable);
     qCDebug(dcTcpSocketServer()) << "Server started successfully.";
     return true;
@@ -133,7 +142,6 @@ SslServer::SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *
     QTcpServer(parent),
     m_sslEnabled(sslEnabled),
     m_config(config)
-
 {
 
 }
@@ -144,9 +152,20 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     qCDebug(dcTcpSocketServer()) << "Incomming connection" << sslSocket;
     connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
     connect(sslSocket, &QSslSocket::disconnected, this, &SslServer::onClientDisconnected);
-    connect(sslSocket, &QSslSocket::encrypted, [this, sslSocket](){
+
+    typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
+    connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, &SslServer::onSocketError);
+    connect(sslSocket, &QSslSocket::encrypted, this, [this, sslSocket](){
         qCDebug(dcTcpSocketServer()) << "SSL encryption established for" << sslSocket;
         emit clientConnected(sslSocket);
+    });
+
+    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+    connect(sslSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, [](const QList<QSslError> &errors) {
+        qCWarning(dcTcpSocketServer()) << "SSL Errors happened in the client connections:";
+        foreach (const QSslError &error, errors) {
+            qCWarning(dcTcpSocketServer()) << "SSL Error:" << error.error() << error.errorString();
+        }
     });
 
     if (!sslSocket->setSocketDescriptor(socketDescriptor)) {
@@ -156,8 +175,9 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     }
 
     if (m_sslEnabled) {
-        sslSocket->setSslConfiguration(m_config);
         qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
+        sslSocket->setSslConfiguration(m_config);
+        //addPendingConnection(sslSocket);
         sslSocket->startServerEncryption();
     } else {
         emit clientConnected(sslSocket);
@@ -178,6 +198,11 @@ void SslServer::onSocketReadyRead()
     QByteArray data = sslSocket->readAll();
     qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
     emit dataAvailable(sslSocket, data);
+}
+
+void SslServer::onSocketError(QAbstractSocket::SocketError error)
+{
+    qCWarning(dcTcpSocketServer()) << "Socket error occurred" << error;
 }
 
 }

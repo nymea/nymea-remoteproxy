@@ -34,7 +34,7 @@ namespace remoteproxy {
 
 LogEngine::LogEngine(QObject *parent) : QObject(parent)
 {
-    m_currentDay = QDateTime::currentDateTime().date().day();
+    m_currentDay = QDateTime::currentDateTimeUtc().date().day();
     m_tunnelsFileName = "/var/log/nymea-remoteproxy-tunnels";
     m_statisticsFileName = "/var/log/nymea-remoteproxy-statistics";
 }
@@ -79,9 +79,9 @@ void LogEngine::logStatistics(int tunnelCount, int connectionCount, int troughpu
     textStream << logString.join(" ") << endl;
 
     // Check if we have to rotate the logfile
-    if (m_currentDay != QDateTime::currentDateTime().date().day()) {
+    if (m_currentDay != QDateTime::currentDateTimeUtc().date().day()) {
         // Day changed
-        m_currentDay = QDateTime::currentDateTime().date().day();
+        m_currentDay = QDateTime::currentDateTimeUtc().date().day();
         rotateLogs();
     }
 }
@@ -98,7 +98,7 @@ void LogEngine::rotateLogs()
         m_statisticsFile.close();
 
     // Rename the current files
-    QString postfix =  "-" + QDateTime::currentDateTime().toString("yyyyMMddhhmmss") + ".log";
+    QString postfix =  "-" + QDateTime::currentDateTimeUtc().toString("yyyyMMddhhmmss") + ".log";
 
     m_tunnelsFile.rename(m_tunnelsFileName + postfix);
     qCDebug(dcApplication()) << "Rotate logfile" << m_tunnelsFile.fileName();
@@ -120,7 +120,7 @@ void LogEngine::rotateLogs()
 
 QString LogEngine::createTimestamp()
 {
-    return QString::number(QDateTime::currentDateTime().toTime_t());
+    return QString::number(QDateTime::currentDateTimeUtc().toTime_t());
 }
 
 void LogEngine::enable()

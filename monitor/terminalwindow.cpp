@@ -35,6 +35,9 @@
 TerminalWindow::TerminalWindow(QObject *parent) :
     QObject(parent)
 {
+    // Init view tabs
+    m_tabs << ViewClients << ViewTunnels << ViewTunnelProxy;
+
     // Create main window
     m_mainWindow = initscr();
 
@@ -71,7 +74,9 @@ TerminalWindow::TerminalWindow(QObject *parent) :
 
     // Draw borders
     drawWindowBorder(m_headerWindow);
-    drawWindowBorder(m_contentWindow);
+    //drawWindowBorder(m_contentWindow);
+
+    scrollok(m_contentWindow, true);
 
     //box(m_headerWindow, 0 , 0);
     //box(m_contentWindow, 0 , 0);
@@ -87,11 +92,7 @@ TerminalWindow::TerminalWindow(QObject *parent) :
 
 TerminalWindow::~TerminalWindow()
 {
-    clear();
-    delwin(m_headerWindow);
-    delwin(m_contentWindow);
-    delwin(m_mainWindow);
-    endwin();
+    cleanup();
 }
 
 const char *TerminalWindow::convertString(const QString &string)
@@ -101,7 +102,7 @@ const char *TerminalWindow::convertString(const QString &string)
 
 QString TerminalWindow::getDurationString(uint timestamp)
 {
-    uint duration = QDateTime::currentDateTime().toTime_t() - timestamp;
+    uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
     int seconds = static_cast<int>(duration % 60);
     duration /= 60;
     int minutes = static_cast<int>(duration % 60);
@@ -165,19 +166,72 @@ void TerminalWindow::drawWindowBorder(WINDOW *window)
     }
 }
 
+void TerminalWindow::moveTabRight()
+{
+    int currentIndex = m_tabs.indexOf(m_view);
+    if (currentIndex + 1 >= m_tabs.count()) {
+        m_view = m_tabs.at(0);
+    } else {
+        m_view = m_tabs.at( currentIndex + 1);
+    }
+}
+
+void TerminalWindow::moveTabLeft()
+{
+    int currentIndex = m_tabs.indexOf(m_view);
+    if (currentIndex - 1 < 0) {
+        m_view = m_tabs.at(m_tabs.count() - 1);
+    } else {
+        m_view = m_tabs.at( currentIndex - 1);
+    }
+}
+
 void TerminalWindow::paintHeader()
 {
-    QString headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
-            .arg(m_dataMap.value("serverName", "-").toString())
-            .arg(m_dataMap.value("serverVersion", "-").toString())
-            .arg(m_dataMap.value("apiVersion", "-").toString())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
-            .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
-            .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
-            .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
-            .arg((m_view == ViewClients ? "-- Clients --" : "-- Tunnels --"));
+    QString windowName;
+    QString headerString;
+    switch (m_view) {
+    case ViewClients:
+        windowName = "-- Clients --";
+        headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
+                .arg(m_dataMap.value("serverName", "-").toString())
+                .arg(m_dataMap.value("serverVersion", "-").toString())
+                .arg(m_dataMap.value("apiVersion", "-").toString())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
+                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
+                .arg(windowName);
+        break;
+    case ViewTunnels:
+        windowName = "-- Tunnels --";
+        headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
+                .arg(m_dataMap.value("serverName", "-").toString())
+                .arg(m_dataMap.value("serverVersion", "-").toString())
+                .arg(m_dataMap.value("apiVersion", "-").toString())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
+                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
+                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
+                .arg(windowName);
+        break;
+    case ViewTunnelProxy:
+        windowName = "-- TunnelProxy --";
+        headerString = QString(" Server: %1 (%2) | API: %3 | Total: %4 | Servers: %5 | Clients: %6 | %7 | %8")
+                .arg(m_dataMap.value("serverName", "-").toString())
+                .arg(m_dataMap.value("serverVersion", "-").toString())
+                .arg(m_dataMap.value("apiVersion", "-").toString())
+                .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("totalClientCount", 0).toInt())
+                .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("serverConnectionsCount", 0).toInt())
+                .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("clientConnectionsCount", 0).toInt())
+                .arg(humanReadableTraffic(m_dataMap.value("tunnelProxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(windowName);
+        break;
+    }
 
     int delta = m_terminalSizeX - headerString.count();
 
@@ -185,10 +239,9 @@ void TerminalWindow::paintHeader()
     for (int i = 0; i < delta; i++)
         headerString.append(" ");
 
-
-    wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
+    //wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
     mvwprintw(m_headerWindow, 1, 2, convertString(headerString));
-    wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
+    //wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
 }
 
 void TerminalWindow::paintContentClients()
@@ -219,7 +272,6 @@ void TerminalWindow::paintContentClients()
         mvwprintw(m_contentWindow, i, 2, convertString(clientPrint.trimmed()));
         i++;
     }
-
 }
 
 void TerminalWindow::paintContentTunnels()
@@ -234,7 +286,6 @@ void TerminalWindow::paintContentTunnels()
         // Tunnel time
         uint timeStamp = tunnelMap.value("timestamp").toUInt();
         QString tunnelConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
-
 
         QString tunnelPrint = QString("%1 | %2 | %3 | %4 | %5 (%6) <---> %7 (%8)")
                 .arg(tunnelConnectionTime)
@@ -252,9 +303,73 @@ void TerminalWindow::paintContentTunnels()
     }
 }
 
+void TerminalWindow::paintContentTunnelProxy()
+{
+    QVariantMap tunnelProxyMap = m_dataMap.value("tunnelProxyStatistic").toMap();
+    int i = 1;
+
+    foreach (const QVariant &serverVariant, tunnelProxyMap.value("tunnelConnections").toList()) {
+        QVariantMap serverMap = serverVariant.toMap();
+        uint timeStamp = serverMap.value("timestamp").toUInt();
+        QString serverConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
+        int rxDataCountBytes = serverMap.value("rxDataCount").toInt();
+        int txDataCountBytes = serverMap.value("txDataCount").toInt();
+        QString serverLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
+                .arg(serverConnectionTime)
+                .arg(serverMap.value("address").toString(), - 16)
+                .arg(humanReadableTraffic(rxDataCountBytes), - 10)
+                .arg(humanReadableTraffic(txDataCountBytes), - 10)
+                .arg(serverMap.value("name").toString(), -30);
+
+        QVariantList clientList = serverMap.value("clientConnections").toList();
+        mvwaddch(m_contentWindow, i, 2, ACS_LTEE);
+        mvwaddch(m_contentWindow, i, 3, ACS_HLINE);
+        if (clientList.isEmpty()) {
+            mvwaddch(m_contentWindow, i, 4, ACS_HLINE);
+        } else {
+            mvwaddch(m_contentWindow, i, 4, ACS_TTEE);
+        }
+        mvwaddch(m_contentWindow, i, 5, ACS_HLINE);
+        mvwprintw(m_contentWindow, i, 6, convertString(serverLinePrint.trimmed()));
+        i++;
+
+        for (int cc = 0; cc < clientList.count(); cc++) {
+            QVariantMap clientMap = clientList.at(cc).toMap();
+
+            mvwaddch(m_contentWindow, i, 2, ACS_VLINE);
+
+            if (cc >= clientList.count() - 1) {
+                mvwaddch(m_contentWindow, i, 4, ACS_LLCORNER);
+            } else {
+                mvwaddch(m_contentWindow, i, 4, ACS_LTEE);
+            }
+            mvwaddch(m_contentWindow, i, 5, ACS_HLINE);
+
+            QString clientLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
+                    .arg(QDateTime::fromTime_t(clientMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss"))
+                    .arg(clientMap.value("address").toString(), - 16)
+                    .arg(humanReadableTraffic(clientMap.value("rxDataCount").toInt()), - 10)
+                    .arg(humanReadableTraffic(clientMap.value("txDataCount").toInt()), - 10)
+                    .arg(clientMap.value("name").toString(), -30);
+
+            mvwprintw(m_contentWindow, i, 6, convertString(clientLinePrint.trimmed()));
+
+            i++;
+        }
+    }
+}
+
+void TerminalWindow::cleanup()
+{
+    clear();
+    delwin(m_headerWindow);
+    delwin(m_contentWindow);
+    delwin(m_mainWindow);
+    endwin();
+}
+
 void TerminalWindow::eventLoop()
 {
-
     werase(m_headerWindow);
     werase(m_contentWindow);
 
@@ -263,17 +378,13 @@ void TerminalWindow::eventLoop()
     int keyInteger = getch();
     switch (keyInteger) {
     case KEY_LEFT:
-        m_view = ViewClients;
+        moveTabLeft();
         break;
     case KEY_RIGHT:
-        m_view = ViewTunnels;
+        moveTabRight();
         break;
     case 27: // Esc
-        clear();
-        delwin(m_headerWindow);
-        delwin(m_contentWindow);
-        delwin(m_mainWindow);
-        endwin();
+        cleanup();
         qDebug() << "Closing window monitor. Have a nice day!";
         exit(0);
         break;
@@ -292,11 +403,25 @@ void TerminalWindow::eventLoop()
     case ViewTunnels:
         paintContentTunnels();
         break;
+    case ViewTunnelProxy:
+        paintContentTunnelProxy();
+        break;
+    }
+
+    switch (keyInteger) {
+    case KEY_DOWN:
+        scroll(m_contentWindow);
+        scrl(1);
+        break;
+    case KEY_UP:
+        scroll(m_contentWindow);
+        scrl(-1);
+        break;
     }
 
     // Draw borders
     drawWindowBorder(m_headerWindow);
-    drawWindowBorder(m_contentWindow);
+    //drawWindowBorder(m_contentWindow);
 
     wrefresh(m_headerWindow);
     wrefresh(m_contentWindow);

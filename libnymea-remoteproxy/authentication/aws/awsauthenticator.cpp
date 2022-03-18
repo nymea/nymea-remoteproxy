@@ -26,7 +26,7 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "engine.h"
-#include "proxyclient.h"
+#include "proxy/proxyclient.h"
 #include "awsauthenticator.h"
 #include "loggingcategories.h"
 

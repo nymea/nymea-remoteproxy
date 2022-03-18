@@ -33,6 +33,7 @@
 #include <QCommandLineOption>
 
 #include "proxyclient.h"
+#include "../version.h"
 
 static QHash<QString, bool> s_loggingFilters;
 static const char *const normal = "\033[0m";
@@ -103,8 +104,8 @@ int main(int argc, char *argv[])
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
 
-    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default wss://dev-remoteproxy.nymea.io:443", "url");
-    urlOption.setDefaultValue("wss://dev-remoteproxy.nymea.io:443");
+    QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default ssl://dev-remoteproxy.nymea.io:4433", "url");
+    urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:4433");
     parser.addOption(urlOption);
 
     QCommandLineOption tokenOption(QStringList() << "t" << "token", "The AWS token for authentication.", "token");
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
     QCommandLineOption nonceOption(QStringList() << "n" << "nonce", "The shared connection unique nonce for this tunnel.", "nonce");
     parser.addOption(nonceOption);
 
-    QCommandLineOption insecureOption(QStringList() << "i" << "igore-ssl", "Ignore SSL certificate errors.");
+    QCommandLineOption insecureOption(QStringList() << "i" << "ignore-ssl", "Ignore SSL certificate errors.");
     parser.addOption(insecureOption);
 
     QCommandLineOption pingPongOption(QStringList() << "p" << "pingpong", "Start a ping pong traffic trough the remote connection.");
@@ -126,6 +127,9 @@ int main(int argc, char *argv[])
 
     QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the client. If not specified, a new one will be created", "uuid");
     parser.addOption(uuidOption);
+
+    QCommandLineOption wsOption(QStringList() << "ws", "Use web socket as tronsport instead of TCP sockets.");
+    parser.addOption(wsOption);
 
     QCommandLineOption verboseOption(QStringList() << "verbose", "Print more information about the connection.");
     parser.addOption(verboseOption);
@@ -159,16 +163,27 @@ int main(int argc, char *argv[])
         qCCritical(dcProxyClient()) << "Invalid proxy server url passed." << parser.value(urlOption);
         exit(-1);
     }
+    qCDebug(dcProxyClient()) << "Using URL" << serverUrl;
 
     QUuid uuid(parser.value(uuidOption));
     if (uuid.isNull()) {
         uuid = QUuid::createUuid();
     }
 
-    ProxyClient client(parser.value(nameOption), uuid);
-    client.setInsecure(parser.isSet(insecureOption));
-    client.setPingpong(parser.isSet(pingPongOption));
-    client.start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+    ProxyClient *client = nullptr;
+    if (parser.isSet(wsOption)) {
+        qCDebug(dcProxyClient()) << "Using web sockets as transport layer";
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeWebSocket);
+        client->setInsecure(parser.isSet(insecureOption));
+        client->setPingpong(parser.isSet(pingPongOption));
+        client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+    } else {
+        qCDebug(dcProxyClient()) << "Using TCP as transport layer";
+        client = new ProxyClient(parser.value(nameOption), uuid, RemoteProxyConnection::ConnectionTypeTcpSocket);
+        client->setInsecure(parser.isSet(insecureOption));
+        client->setPingpong(parser.isSet(pingPongOption));
+        client->start(serverUrl, parser.value(tokenOption), parser.value(nonceOption));
+    }
 
     return application.exec();
 }

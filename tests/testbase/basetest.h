@@ -56,8 +56,11 @@ public:
 protected:
     ProxyConfiguration *m_configuration = nullptr;
 
-    QUrl m_serverUrl = QUrl("wss://127.0.0.1:1212");
-    QUrl m_serverUrlTcp = QUrl("ssl://127.0.0.1:1213");
+    QUrl m_serverUrlProxyWebSocket = QUrl("wss://127.0.0.1:1212");
+    QUrl m_serverUrlProxyTcp = QUrl("ssl://127.0.0.1:1213");
+
+    QUrl m_serverUrlTunnelProxyWebSocket = QUrl("wss://127.0.0.1:2212");
+    QUrl m_serverUrlTunnelProxyTcp = QUrl("ssl://127.0.0.1:2213");
 
     QSslConfiguration m_sslConfiguration;
 
@@ -73,17 +76,30 @@ protected:
     void loadConfiguration(const QString &fileName);
     void setAuthenticator(Authenticator *authenticator);
 
+    void resetDebugCategories();
+    void addDebugCategory(const QString &debugCategory);
+
     void cleanUpEngine();
     void restartEngine();
     void startEngine();
     void startServer();
     void stopServer();
 
-    QVariant invokeWebSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
-    QVariant injectWebSocketData(const QByteArray &data);
+    QVariant invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
+    QVariant injectWebSocketProxyData(const QByteArray &data);
 
-    QVariant invokeTcpSocketApiCall(const QString &method, const QVariantMap params = QVariantMap(), bool remainsConnected = true);
-    QVariant injectTcpSocketData(const QByteArray &data);
+    QVariant invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
+    QVariant injectTcpSocketProxyData(const QByteArray &data);
+
+    QVariant invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
+    QVariant injectWebSocketTunnelProxyData(const QByteArray &data);
+
+    QVariant invokeTcpSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
+    QVariant injectTcpSocketTunnelProxyData(const QByteArray &data);
+
+    QPair<QVariant, QSslSocket *> invokeTcpSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(), bool slipEnabled = false, QSslSocket *existingSocket = nullptr);
+    QPair<QVariant, QWebSocket *> invokeWebSocketTunnelProxyApiCallPersistant(const QString &method, const QVariantMap params = QVariantMap(),  bool slipEnabled = false, QWebSocket *existingSocket = nullptr);
+
 
     bool createRemoteConnection(const QString &token, const QString &nonce, QObject *parent);
 
@@ -108,8 +124,7 @@ public slots:
         connection->ignoreSslErrors();
     }
 
-    inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error)
-    {
+    inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error) {
         QJsonDocument jsonDoc = QJsonDocument::fromVariant(response);
         QVERIFY2(response.toMap().value("status").toString() == QString("success"),
                  QString("\nExpected status: \"success\"\nGot: %2\nFull message: %3")
@@ -128,6 +143,13 @@ public slots:
         verifyError(response, "authenticationError", JsonTypes::authenticationErrorToString(error));
     }
 
+    inline void verifyTunnelProxyError(const QVariant &response, TunnelProxyServer::TunnelProxyError error = TunnelProxyServer::TunnelProxyErrorNoError) {
+        verifyError(response, "tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+    }
+
+private:
+    QString m_defaultDebugCategories = "*.debug=false\ndefault.debug=true\nApplication.debug=true\n";
+    QString m_currentDebugCategories;
 };
 
 #endif // BASETEST_H

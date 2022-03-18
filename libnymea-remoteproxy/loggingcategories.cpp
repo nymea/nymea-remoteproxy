@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -40,6 +40,8 @@ Q_LOGGING_CATEGORY(dcAuthentication, "Authentication")
 Q_LOGGING_CATEGORY(dcAuthenticationProcess, "AuthenticationProcess")
 Q_LOGGING_CATEGORY(dcProxyServer, "ProxyServer")
 Q_LOGGING_CATEGORY(dcProxyServerTraffic, "ProxyServerTraffic")
+Q_LOGGING_CATEGORY(dcTunnelProxyServer, "TunnelProxyServer")
+Q_LOGGING_CATEGORY(dcTunnelProxyServerTraffic, "TunnelProxyServerTraffic")
 Q_LOGGING_CATEGORY(dcMonitorServer, "MonitorServer")
 Q_LOGGING_CATEGORY(dcAwsCredentialsProvider, "AwsCredentialsProvider")
 Q_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic, "AwsCredentialsProviderTraffic")

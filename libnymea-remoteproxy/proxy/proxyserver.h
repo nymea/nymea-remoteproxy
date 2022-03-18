@@ -33,9 +33,9 @@
 #include <QObject>
 
 #include "proxyclient.h"
-#include "jsonrpcserver.h"
 #include "tunnelconnection.h"
-#include "transportinterface.h"
+#include "server/jsonrpcserver.h"
+#include "server/transportinterface.h"
 
 namespace remoteproxy {
 
@@ -47,6 +47,8 @@ public:
     ~ProxyServer();
 
     bool running() const;
+    void setRunning(bool running);
+
     void registerTransportInterface(TransportInterface *interface);
 
     QVariantMap currentStatistics();
@@ -78,13 +80,8 @@ private:
     int m_totalTunnelCount = 0;
     int m_totalTraffic = 0;
 
-
-    // Set private properties
-    void setRunning(bool running);
-
     void loadStatistics();
     void saveStatistics();
-
 
     // Helper methods
     ProxyClient *getRemoteClient(ProxyClient *proxyClient);
@@ -99,7 +96,7 @@ private slots:
     void onClientDataAvailable(const QUuid &clientId, const QByteArray &data);
 
     void onProxyClientAuthenticated();
-    void onProxyClientTimeoutOccured();
+    void onProxyClientTimeoutOccurred();
 
 public slots:
     void startServer();

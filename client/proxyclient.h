@@ -41,7 +41,7 @@ class ProxyClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit ProxyClient(const QString &name, const QUuid &uuid, QObject *parent = nullptr);
+    explicit ProxyClient(const QString &name, const QUuid &uuid, RemoteProxyConnection::ConnectionType connectionType, QObject *parent = nullptr);
 
     void setInsecure(bool insecure);
     void setPingpong(bool enable);
@@ -57,7 +57,7 @@ private:
     RemoteProxyConnection *m_connection = nullptr;
 
 private slots:
-    void onErrorOccured(QAbstractSocket::SocketError error);
+    void onErrorOccurred(QAbstractSocket::SocketError error);
     void onClientReady();
     void onAuthenticationFinished();
     void onRemoteConnectionEstablished();

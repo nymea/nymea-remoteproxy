@@ -112,7 +112,7 @@ In order to get information about the server you can start the command with the 
     Version: 0.1.5
     API version: 0.3
     
-    Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
+    Copyright © 2018 Simon Stürz <simon.stuerz@nymea.io>
     
     
     Options:
@@ -131,7 +131,7 @@ In order to get information about the server you can start the command with the 
       --verbose                            Print more verbose.
     
 
-# Server API
+# Proxy server API
 
 Once a client connects to the proxy server, he must authenticate him self by passing the token received from the nymea-cloud mqtt connection request.
 
@@ -208,6 +208,9 @@ If anything goes wrong, or the tunnel partner disconnects from the proxy, the se
         "status": "success"
     }
 
+
+# Proxy server
+
 ## Authenticate the connection
 
 The first data a client **must** send to the proxy server is the authentication request. This request contains the `token` which will be verified agains the nymea-cloud infrastructure and a `nonce` which has to be uniq for each connection attempt and shared between the 2 clients. The `uuid` should be a persistant uuid for this client and the name should make clear which type of connection this is and which client is connecting. The name and uuid will be sent to the tunnel partner during the tunnel establishmend.
@@ -270,76 +273,82 @@ Once the other client is here and ready, the server will send a notification to 
 
 #### Response
 
-    "id": 1,
-    "params": {
-        "methods": {
-            "Authentication.Authenticate": {
-                "description": "Authenticate this connection. The returned AuthenticationError informs about the result. If the authentication was not successfull, the server will close the connection immediatly after sending the error response. The given id should be a unique id the other tunnel client can understand. Once the authentication was successfull, you can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before getting this notification, the server will close the connection. If the tunnel client does not show up within 10 seconds, the server will close the connection.",
-                "params": {
-                    "name": "String",
-                    "o:nonce": "String",
-                    "token": "String",
-                    "uuid": "String"
+    {
+        "id": 1,
+        "params": {
+            "methods": {
+                "Authentication.Authenticate": {
+                    "description": "Authenticate this connection. The returned AuthenticationError informs about the result. If the authentication was not successfull, the server will close the connection immediatly after sending the error response. The given id should be a unique id the other tunnel client can understand. Once the authentication was successfull, you can wait for the RemoteProxy.TunnelEstablished notification. If you send any data before getting this notification, the server will close the connection. If the tunnel client does not show up within 10 seconds, the server will close the connection.",
+                    "params": {
+                        "name": "String",
+                        "o:nonce": "String",
+                        "token": "String",
+                        "uuid": "String"
+                    },
+                    "returns": {
+                        "authenticationError": "$ref:AuthenticationError"
+                    }
                 },
-                "returns": {
-                    "authenticationError": "$ref:AuthenticationError"
+                "RemoteProxy.Hello": {
+                    "description": "Once connected to this server, a client can get information about the server by saying Hello. The response informs the client about this proxy server.",
+                    "params": {
+                    },
+                    "returns": {
+                        "apiVersion": "String",
+                        "name": "String",
+                        "server": "String",
+                        "version": "String"
+                    }
+                },
+                "RemoteProxy.Introspect": {
+                    "description": "Introspect this API.",
+                    "params": {
+                    },
+                    "returns": {
+                        "methods": "Object",
+                        "notifications": "Object",
+                        "types": "Object"
+                    }
                 }
             },
-            "RemoteProxy.Hello": {
-                "description": "Once connected to this server, a client can get information about the server by saying Hello. The response informs the client about this proxy server.",
-                "params": {
-                },
-                "returns": {
-                    "apiVersion": "String",
-                    "name": "String",
-                    "server": "String",
-                    "version": "String"
+            "notifications": {
+                "RemoteProxy.TunnelEstablished": {
+                    "description": "Emitted whenever the tunnel has been established successfully. This is the last message from the remote proxy server! Any following data will be from the other tunnel client until the connection will be closed. The parameter contain some information about the other tunnel client.",
+                    "params": {
+                        "name": "String",
+                        "uuid": "String"
+                    }
                 }
             },
-            "RemoteProxy.Introspect": {
-                "description": "Introspect this API.",
-                "params": {
-                },
-                "returns": {
-                    "methods": "Object",
-                    "notifications": "Object",
-                    "types": "Object"
-                }
+            "types": {
+                "AuthenticationError": [
+                    "AuthenticationErrorNoError",
+                    "AuthenticationErrorUnknown",
+                    "AuthenticationErrorTimeout",
+                    "AuthenticationErrorAborted",
+                    "AuthenticationErrorAuthenticationFailed",
+                    "AuthenticationErrorProxyError"
+                ],
+                "BasicType": [
+                    "Uuid",
+                    "String",
+                    "Int",
+                    "UInt",
+                    "Double",
+                    "Bool",
+                    "Variant",
+                    "Object"
+                ]
             }
         },
-        "notifications": {
-            "RemoteProxy.TunnelEstablished": {
-                "description": "Emitted whenever the tunnel has been established successfully. This is the last message from the remote proxy server! Any following data will be from the other tunnel client until the connection will be closed. The parameter contain some information about the other tunnel client.",
-                "params": {
-                    "name": "String",
-                    "uuid": "String"
-                }
-            }
-        },
-        "types": {
-            "AuthenticationError": [
-                "AuthenticationErrorNoError",
-                "AuthenticationErrorUnknown",
-                "AuthenticationErrorTimeout",
-                "AuthenticationErrorAborted",
-                "AuthenticationErrorAuthenticationFailed",
-                "AuthenticationErrorProxyError"
-            ],
-            "BasicType": [
-                "Uuid",
-                "String",
-                "Int",
-                "UInt",
-                "Double",
-                "Bool",
-                "Variant",
-                "Object"
-            ]
-        }
-    },
-    "status": "success"
-}
+        "status": "success"
+    }
     
+
+# Proxy server
+
+
+
 # Server monitor
 
 The server provides a live monitor interface on a local socket server. You can follow the monitor data with:
@@ -358,7 +367,7 @@ There is also the package `nymea-remoteproxy-monitor` package and application wh
     Server version: 0.1.5
     API version: 0.3
     
-    Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
+    Copyright © 2018 Simon Stürz <simon.stuerz@nymea.io>
     
     
     Options:
@@ -384,7 +393,7 @@ The client allowes you to test the proxy server and create a dummy client for te
     Version: 0.1.5
     API version: 0.3
     
-    Copyright © 2018 Simon Stürz <simon.stuerz@guh.io>
+    Copyright © 2018 Simon Stürz <simon.stuerz@nymea.io>
     
     
     Options:

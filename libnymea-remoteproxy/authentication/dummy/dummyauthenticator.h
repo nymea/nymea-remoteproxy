@@ -30,7 +30,7 @@
 
 #include <QObject>
 
-#include "proxyclient.h"
+#include "proxy/proxyclient.h"
 #include "authentication/authenticator.h"
 
 namespace remoteproxy {

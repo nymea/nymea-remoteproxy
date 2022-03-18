@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -36,10 +36,13 @@
 
 namespace remoteproxy {
 
-ProxyServer::ProxyServer(QObject *parent) : QObject(parent)
+ProxyServer::ProxyServer(QObject *parent) :
+    QObject(parent)
 {
     qRegisterMetaType<ProxyClient *>("ProxyClient *");
     m_jsonRpcServer = new JsonRpcServer(this);
+    m_jsonRpcServer->registerHandler(m_jsonRpcServer);
+    m_jsonRpcServer->registerHandler(new AuthenticationHandler(this));
 
     loadStatistics();
 }
@@ -120,7 +123,7 @@ void ProxyServer::setRunning(bool running)
     if (m_running == running)
         return;
 
-    qCDebug(dcProxyServer()) << "The proxy server is now up and running";
+    qCDebug(dcProxyServer()) << "The proxy server is" << (running ? "up and running." : "not running any more.");
     m_running = running;
     emit runningChanged();
 }
@@ -196,13 +199,13 @@ void ProxyServer::establishTunnel(ProxyClient *firstClient, ProxyClient *secondC
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsFirst),
-                              Q_ARG(ProxyClient *, tunnel.clientOne()));
+                              Q_ARG(TransportClient*, tunnel.clientOne()));
 
     QMetaObject::invokeMethod(m_jsonRpcServer, QString("sendNotification").toLatin1().data(), Qt::QueuedConnection,
                               Q_ARG(QString, m_jsonRpcServer->name()),
                               Q_ARG(QString, "TunnelEstablished"),
                               Q_ARG(QVariantMap, notificationParamsSecond),
-                              Q_ARG(ProxyClient *, tunnel.clientTwo()));
+                              Q_ARG(TransportClient*, tunnel.clientTwo()));
 }
 
 void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
@@ -213,7 +216,7 @@ void ProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &a
 
     ProxyClient *proxyClient = new ProxyClient(interface, clientId, address, this);
     connect(proxyClient, &ProxyClient::authenticated, this, &ProxyServer::onProxyClientAuthenticated);
-    connect(proxyClient, &ProxyClient::timeoutOccured, this, &ProxyServer::onProxyClientTimeoutOccured);
+    connect(proxyClient, &ProxyClient::timeoutOccurred, this, &ProxyServer::onProxyClientTimeoutOccurred);
 
     m_totalClientCount += 1;
     saveStatistics();
@@ -372,23 +375,23 @@ void ProxyServer::onProxyClientAuthenticated()
     }
 }
 
-void ProxyServer::onProxyClientTimeoutOccured()
+void ProxyServer::onProxyClientTimeoutOccurred()
 {
     ProxyClient *proxyClient = static_cast<ProxyClient *>(sender());
-    qCDebug(dcProxyServer()) << "Timeout occured for" << proxyClient;    
+    qCDebug(dcProxyServer()) << "Timeout occurred for" << proxyClient;
     switch (proxyClient->timerWaitState()) {
     case ProxyClient::TimerWaitStateInactive:
-        proxyClient->killConnection("Proxy timeout occuret. The socket was inactive.");
+        proxyClient->killConnection("Proxy timeout occurred. The socket was inactive.");
         break;
     case ProxyClient::TimerWaitStateAlone:
-        proxyClient->killConnection("Proxy timeout occuret. The tunnel partner did not show up.");
+        proxyClient->killConnection("Proxy timeout occurred. The tunnel partner did not show up.");
         break;
     }
 }
 
 void ProxyServer::startServer()
 {
-    qCDebug(dcProxyServer()) << "Start proxy server.";
+    qCDebug(dcProxyServer()) << "Starting proxy server...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->startServer();
     }
@@ -397,7 +400,7 @@ void ProxyServer::startServer()
 
 void ProxyServer::stopServer()
 {
-    qCDebug(dcProxyServer()) << "Stop proxy server.";
+    qCDebug(dcProxyServer()) << "Stopping proxy...";
     foreach (TransportInterface *interface, m_transportInterfaces) {
         interface->stopServer();
     }

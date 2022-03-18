@@ -51,6 +51,8 @@
 #include "authentication/aws/awsauthenticator.h"
 #include "authentication/dummy/dummyauthenticator.h"
 
+#include "../version.h"
+
 using namespace remoteproxy;
 
 static QHash<QString, bool> s_loggingFilters;
@@ -174,7 +176,7 @@ int main(int argc, char *argv[])
     }
 
     // Verify webserver configuration
-    if (configuration->webSocketServerHost().isNull()) {
+    if (configuration->webSocketServerProxyHost().isNull()) {
         qCCritical(dcApplication()) << "Invalid web socket host address passed.";
         exit(-1);
     }

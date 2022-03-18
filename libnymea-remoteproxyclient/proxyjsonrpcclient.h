@@ -47,8 +47,17 @@ class JsonRpcClient : public QObject
 public:
     explicit JsonRpcClient(ProxyConnection *connection, QObject *parent = nullptr);
 
+    // General
     JsonReply *callHello();
+
+    // Proxy
     JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token, const QString &nonce);
+
+    // Tunnel proxy
+    JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);
+    JsonReply *callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
+    JsonReply *callDisconnectClient(quint16 socketAddress);
+    JsonReply *callPing(uint timestamp);
 
 private:
     ProxyConnection *m_connection = nullptr;
@@ -58,11 +67,13 @@ private:
 
     QHash<int, JsonReply *> m_replies;
 
-    void sendRequest(const QVariantMap &request);
-    void processDataPackage(const QByteArray &data);
+    void sendRequest(const QVariantMap &request, bool slipEnabled = false);
+    void processDataPacket(const QByteArray &data);
 
 signals:
     void tunnelEstablished(const QString clientName, const QString &clientUuid);
+    void tunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress);
+    void tunnelProxyClientDisonnected(quint16 socketAddress);
 
 public slots:
     void processData(const QByteArray &data);

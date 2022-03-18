@@ -27,6 +27,7 @@
 
 #include "proxyjsonrpcclient.h"
 #include "proxyconnection.h"
+#include "../common/slipdataprocessor.h"
 
 #include <QJsonDocument>
 
@@ -66,14 +67,73 @@ JsonReply *JsonRpcClient::callAuthenticate(const QUuid &clientUuid, const QStrin
     return reply;
 }
 
-void JsonRpcClient::sendRequest(const QVariantMap &request)
+JsonReply *JsonRpcClient::callRegisterServer(const QUuid &serverUuid, const QString &serverName)
 {
-    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact);
-    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << data;
+    QVariantMap params;
+    params.insert("serverName", serverName);
+    params.insert("serverUuid", serverUuid.toString());
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "RegisterServer", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap());
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
+JsonReply *JsonRpcClient::callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid)
+{
+    QVariantMap params;
+    params.insert("clientUuid", clientUuid);
+    params.insert("clientName", clientName);
+    params.insert("serverUuid", serverUuid.toString());
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "RegisterClient", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap());
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
+JsonReply *JsonRpcClient::callDisconnectClient(quint16 socketAddress)
+{
+    QVariantMap params;
+    params.insert("socketAddress", socketAddress);
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "DisconnectClient", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap(), true);
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
+JsonReply *JsonRpcClient::callPing(uint timestamp)
+{
+    QVariantMap params;
+    params.insert("timestamp", timestamp);
+
+    JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "Ping", params, this);
+    qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
+    sendRequest(reply->requestMap(), true);
+    m_replies.insert(m_commandId, reply);
+    return reply;
+}
+
+void JsonRpcClient::sendRequest(const QVariantMap &request, bool slipEnabled)
+{
+    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
+
+    if (slipEnabled) {
+        SlipDataProcessor::Frame frame;
+        frame.socketAddress = 0x0000;
+        frame.data = data;
+        data = SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame));
+    }
+
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Sending" << qUtf8Printable(data);
     m_connection->sendData(data);
 }
 
-void JsonRpcClient::processDataPackage(const QByteArray &data)
+void JsonRpcClient::processDataPacket(const QByteArray &data)
 {
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
@@ -83,6 +143,8 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
     }
 
     QVariantMap dataMap = jsonDoc.toVariant().toMap();
+
+    qCDebug(dcRemoteProxyClientJsonRpcTraffic()) << "Data received" << qUtf8Printable(data);
 
     // check if this is a reply to a request
     int commandId = dataMap.value("id").toInt();
@@ -96,7 +158,7 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
         }
 
         reply->setResponse(dataMap);
-        reply->finished();
+        emit reply->finished();
         return;
     }
 
@@ -113,6 +175,15 @@ void JsonRpcClient::processDataPackage(const QByteArray &data)
             QString clientName = notificationParams.value("name").toString();
             QString clientUuid = notificationParams.value("uuid").toString();
             emit tunnelEstablished(clientName, clientUuid);
+        } else if (nameSpace == "TunnelProxy" && notificationName == "ClientConnected") {
+            QString clientName = notificationParams.value("clientName").toString();
+            QUuid clientUuid = notificationParams.value("clientUuid").toUuid();
+            QString clientPeerAddress = notificationParams.value("clientPeerAddress").toString();
+            quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
+            emit tunnelProxyClientConnected(clientName, clientUuid, clientPeerAddress, socketAddress);
+        } else if (nameSpace == "TunnelProxy" && notificationName == "ClientDisconnected") {
+            quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
+            emit tunnelProxyClientDisonnected(socketAddress);
         }
     }
 }
@@ -125,12 +196,12 @@ void JsonRpcClient::processData(const QByteArray &data)
     m_dataBuffer.append(data);
     int splitIndex = m_dataBuffer.indexOf("}\n{");
     while (splitIndex > -1) {
-        processDataPackage(m_dataBuffer.left(splitIndex + 1));
+        processDataPacket(m_dataBuffer.left(splitIndex + 1));
         m_dataBuffer = m_dataBuffer.right(m_dataBuffer.length() - splitIndex - 2);
         splitIndex = m_dataBuffer.indexOf("}\n{");
     }
-    if (m_dataBuffer.trimmed().endsWith("}")) {
-        processDataPackage(m_dataBuffer);
+    if (m_dataBuffer.endsWith("}\n") || m_dataBuffer.endsWith("}")) {
+        processDataPacket(m_dataBuffer);
         m_dataBuffer.clear();
     }
 }
