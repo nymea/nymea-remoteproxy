@@ -1,2 +1,3 @@
 usr/lib/@DEB_HOST_MULTIARCH@/libnymea-remoteproxy.so
 usr/include/nymea-remoteproxy/* usr/include/nymea-remoteproxy
+usr/lib/@DEB_HOST_MULTIARCH@/pkgconfig/nymea-remoteproxy.pc
