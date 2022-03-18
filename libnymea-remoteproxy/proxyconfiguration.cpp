@@ -71,6 +71,7 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     settings.endGroup();
 
     settings.beginGroup("SSL");
+    setSslEnabled(settings.value("enabled", true).toBool());
     setSslCertificateFileName(settings.value("certificate", "/etc/ssl/certs/ssl-cert-snakeoil.pem").toString());
     setSslCertificateKeyFileName(settings.value("certificateKey", "/etc/ssl/private/ssl-cert-snakeoil.key").toString());
     setSslCertificateChainFileName(settings.value("certificateChain", "").toString());
@@ -256,6 +257,16 @@ void ProxyConfiguration::setAwsCredentialsUrl(const QUrl &url)
     m_awsCredentialsUrl = url;
 }
 
+bool ProxyConfiguration::sslEnabled() const
+{
+    return m_sslEnabled;
+}
+
+void ProxyConfiguration::setSslEnabled(bool enabled)
+{
+    m_sslEnabled = enabled;
+}
+
 QString ProxyConfiguration::sslCertificateFileName() const
 {
     return m_sslCertificateFileName;
@@ -349,6 +360,7 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Authorizer lambda function:" << configuration->awsAuthorizerLambdaFunctionName() << endl;
     debug.nospace() << "  - Credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
     debug.nospace() << "SSL configuration" << endl;
+    debug.nospace() << "  - Enabled:" << configuration->sslEnabled() << endl;
     debug.nospace() << "  - Certificate:" << configuration->sslCertificateFileName() << endl;
     debug.nospace() << "  - Certificate key:" << configuration->sslCertificateKeyFileName() << endl;
     debug.nospace() << "  - Certificate chain:" << configuration->sslCertificateChainFileName() << endl;

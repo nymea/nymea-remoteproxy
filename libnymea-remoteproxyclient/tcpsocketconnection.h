@@ -25,26 +25,27 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef WEBSOCKETCONNECTOR_H
-#define WEBSOCKETCONNECTOR_H
+#ifndef TCPSOCKETCONNECTION_H
+#define TCPSOCKETCONNECTION_H
 
-#include <QDebug>
 #include <QObject>
-#include <QWebSocket>
+#include <QTcpSocket>
+#include <QSslSocket>
 #include <QLoggingCategory>
 
 #include "proxyconnection.h"
 
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClientWebSocket)
+Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClienTcpSocket)
 
 namespace remoteproxyclient {
 
-class WebSocketConnection : public ProxyConnection
+class TcpSocketConnection : public ProxyConnection
 {
     Q_OBJECT
+
 public:
-    explicit WebSocketConnection(QObject *parent = nullptr);
-    ~WebSocketConnection() override;
+    explicit TcpSocketConnection(QObject *parent = nullptr);
+    ~TcpSocketConnection() override;
 
     void sendData(const QByteArray &data) override;
 
@@ -52,13 +53,15 @@ public:
     void ignoreSslErrors(const QList<QSslError> &errors) override;
 
 private:
-    QWebSocket *m_webSocket = nullptr;
+    QSslSocket *m_tcpSocket = nullptr;
+    bool m_ssl = false;
 
 private slots:
     void onDisconnected();
+    void onEncrypted();
     void onError(QAbstractSocket::SocketError error);
     void onStateChanged(QAbstractSocket::SocketState state);
-    void onTextMessageReceived(const QString &message);
+    void onReadyRead();
 
 public slots:
     void connectServer(const QUrl &serverUrl) override;
@@ -68,4 +71,4 @@ public slots:
 
 }
 
-#endif // WEBSOCKETCONNECTOR_H
+#endif // TCPSOCKETCONNECTION_H

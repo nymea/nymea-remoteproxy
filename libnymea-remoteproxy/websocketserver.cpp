@@ -32,26 +32,17 @@
 
 namespace remoteproxy {
 
-WebSocketServer::WebSocketServer(const QSslConfiguration &sslConfiguration, QObject *parent) :
+WebSocketServer::WebSocketServer(bool sslEnabled, const QSslConfiguration &sslConfiguration, QObject *parent) :
     TransportInterface(parent),
+    m_sslEnabled(sslEnabled),
     m_sslConfiguration(sslConfiguration)
 {
-    m_serverName = "Websocket server";
+    m_serverName = "WebSocket";
 }
 
 WebSocketServer::~WebSocketServer()
 {
     stopServer();
-}
-
-QUrl WebSocketServer::serverUrl() const
-{
-    return m_serverUrl;
-}
-
-void WebSocketServer::setServerUrl(const QUrl &serverUrl)
-{
-    m_serverUrl = serverUrl;
 }
 
 bool WebSocketServer::running() const
@@ -93,12 +84,16 @@ void WebSocketServer::onClientConnected()
 {
     // Got a new client connected
     QWebSocket *client = m_server->nextPendingConnection();
+    if (!client) {
+        qCWarning(dcWebSocketServer()) << "Next pending connection dissapeared. Doing nothing.";
+        return;
+    }
 
     // Check websocket version
     if (client->version() != QWebSocketProtocol::Version13) {
         qCWarning(dcWebSocketServer()) << "Client with invalid protocol version" << client->version() << ". Rejecting.";
         client->close(QWebSocketProtocol::CloseCodeProtocolError, QString("invalid protocol version: %1 != Supported Version 13").arg(client->version()));
-        delete client;
+        client->deleteLater();
         return;
     }
 
@@ -149,7 +144,10 @@ void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCWarning(dcWebSocketServer()) << "Client error occurred:" << error << client->errorString();
+    qCWarning(dcWebSocketServer()) << "Client error occurred:" << client << client->peerAddress().toString() << error << client->errorString() << "Closing the socket.";
+
+    // Note: on any error which can occure, make sure the socket will be closed in any case
+    client->close();
 }
 
 void WebSocketServer::onAcceptError(QAbstractSocket::SocketError error)
@@ -164,8 +162,12 @@ void WebSocketServer::onServerError(QWebSocketProtocol::CloseCode closeCode)
 
 bool WebSocketServer::startServer()
 {
-    m_server = new QWebSocketServer(QCoreApplication::applicationName(), QWebSocketServer::SecureMode, this);
-    m_server->setSslConfiguration(sslConfiguration());
+    if (m_sslEnabled) {
+        m_server = new QWebSocketServer(QCoreApplication::applicationName(), QWebSocketServer::SecureMode, this);
+        m_server->setSslConfiguration(sslConfiguration());
+    } else {
+        m_server = new QWebSocketServer(QCoreApplication::applicationName(), QWebSocketServer::NonSecureMode, this);
+    }
 
     connect (m_server, &QWebSocketServer::newConnection, this, &WebSocketServer::onClientConnected);
     connect (m_server, &QWebSocketServer::acceptError, this, &WebSocketServer::onAcceptError);
@@ -188,16 +190,18 @@ bool WebSocketServer::stopServer()
     // Clean up client connections
     foreach (QWebSocket *client, m_clientList.values()) {
         client->close(QWebSocketProtocol::CloseCodeNormal, "Stop server");
+        client->flush();
+        client->abort();
     }
 
     // Delete the server object
-    if (m_server) {
-        qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
-        m_server->close();
-        delete m_server;
-        m_server = nullptr;
-    }
+    if (!m_server)
+        return true;
 
+    qCDebug(dcWebSocketServer()) << "Stop server" << m_server->serverName() << serverUrl().toString();
+    m_server->close();
+    delete m_server;
+    m_server = nullptr;
     return true;
 }
 

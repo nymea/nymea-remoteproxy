@@ -43,6 +43,12 @@ class ProxyClient : public QObject
     Q_OBJECT
 
 public:
+    enum TimerWaitState {
+        TimerWaitStateInactive,
+        TimerWaitStateAlone
+    };
+    Q_ENUM(TimerWaitState)
+
     explicit ProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent = nullptr);
 
     QUuid clientId() const;
@@ -84,12 +90,20 @@ public:
     void addTxDataCount(int dataCount);
 
     // Actions for this client
+    TimerWaitState timerWaitState() const;
+    void resetTimer();
     void sendData(const QByteArray &data);
     void killConnection(const QString &reason);
 
+    // Json server methods
+    int generateMessageId();
+    QList<QByteArray> processData(const QByteArray &data);
+    int bufferSize() const;
+
 private:
     TransportInterface *m_interface = nullptr;
-    QTimer m_timer;
+    QTimer *m_timer = nullptr;
+    TimerWaitState m_timerWaitState = TimerWaitStateInactive;
 
     QUuid m_clientId;
     QHostAddress m_peerAddress;
@@ -104,6 +118,11 @@ private:
     QString m_nonce;
 
     QString m_userName;
+
+    // Json data information
+    int m_messageId = 0;
+    QByteArray m_dataBuffers;
+    bool m_bufferSizeViolation = false;
 
     quint64 m_rxDataCount = 0;
     quint64 m_txDataCount = 0;

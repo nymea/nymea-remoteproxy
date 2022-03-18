@@ -25,47 +25,76 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef WEBSOCKETCONNECTOR_H
-#define WEBSOCKETCONNECTOR_H
+#ifndef TCPSOCKETSERVER_H
+#define TCPSOCKETSERVER_H
 
-#include <QDebug>
+#include <QUuid>
 #include <QObject>
-#include <QWebSocket>
-#include <QLoggingCategory>
+#include <QTcpServer>
+#include <QSslConfiguration>
 
-#include "proxyconnection.h"
+#include "transportinterface.h"
 
-Q_DECLARE_LOGGING_CATEGORY(dcRemoteProxyClientWebSocket)
+namespace remoteproxy {
 
-namespace remoteproxyclient {
 
-class WebSocketConnection : public ProxyConnection
+class SslServer: public QTcpServer
 {
     Q_OBJECT
 public:
-    explicit WebSocketConnection(QObject *parent = nullptr);
-    ~WebSocketConnection() override;
-
-    void sendData(const QByteArray &data) override;
-
-    void ignoreSslErrors() override;
-    void ignoreSslErrors(const QList<QSslError> &errors) override;
+    explicit SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *parent = nullptr);
+    ~SslServer() override = default;
 
 private:
-    QWebSocket *m_webSocket = nullptr;
+    bool m_sslEnabled = false;
+    QSslConfiguration m_config;
+
+signals:
+    void clientConnected(QSslSocket *socket);
+    void clientDisconnected(QSslSocket *socket);
+    void dataAvailable(QSslSocket *socket, const QByteArray &data);
+
+protected:
+    void incomingConnection(qintptr socketDescriptor) override;
 
 private slots:
-    void onDisconnected();
-    void onError(QAbstractSocket::SocketError error);
-    void onStateChanged(QAbstractSocket::SocketState state);
-    void onTextMessageReceived(const QString &message);
+    void onClientDisconnected();
+    void onSocketReadyRead();
+
+};
+
+
+class TcpSocketServer : public TransportInterface
+{
+    Q_OBJECT
+public:
+    explicit TcpSocketServer(bool sslEnabled, const QSslConfiguration &sslConfiguration, QObject *parent = nullptr);
+    ~TcpSocketServer() override;
+
+    void sendData(const QUuid &clientId, const QByteArray &data) override;
+    void killClientConnection(const QUuid &clientId, const QString &killReason) override;
+
+    bool running() const override;
+
+private:
+    bool m_sslEnabled;
+    QSslConfiguration m_sslConfiguration;
+
+     QHash<QUuid, QTcpSocket *> m_clientList;
+
+    SslServer *m_server = nullptr;
+
+private slots:
+    void onDataAvailable(QSslSocket *client, const QByteArray &data);
+    void onClientConnected(QSslSocket *client);
+    void onClientDisconnected(QSslSocket *client);
 
 public slots:
-    void connectServer(const QUrl &serverUrl) override;
-    void disconnectServer() override;
+    bool startServer() override;
+    bool stopServer() override;
 
 };
 
 }
 
-#endif // WEBSOCKETCONNECTOR_H
+#endif // TCPSOCKETSERVER_H

@@ -173,80 +173,10 @@ void JsonRpcServer::unregisterHandler(JsonHandler *handler)
     m_handlers.remove(handler->name());
 }
 
-void JsonRpcServer::setup()
+void JsonRpcServer::processDataPackage(ProxyClient *proxyClient, const QByteArray &data)
 {
-    registerHandler(this);
-    registerHandler(new AuthenticationHandler(this));
-}
-
-void JsonRpcServer::asyncReplyFinished()
-{
-    JsonReply *reply = static_cast<JsonReply *>(sender());
-    reply->deleteLater();
-
-    ProxyClient *proxyClient = m_asyncReplies.take(reply);
-    qCDebug(dcJsonRpc()) << "Async reply finished" << reply->handler()->name() << reply->method() << reply->clientId().toString();
-
-    if (!proxyClient) {
-        qCWarning(dcJsonRpc()) << "Got an async reply but the client does not exist any more";
-        return;
-    }
-
-    if (!reply->timedOut()) {
-        Q_ASSERT_X(reply->handler()->validateReturns(reply->method(), reply->data()).first
-                   ,"validating return value", formatAssertion(reply->handler()->name(),
-                                                               reply->method(), reply->handler(), reply->data()).toLatin1().data());
-
-        QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
-        if (!returnValidation.first) {
-            qCWarning(dcJsonRpc()) << "Return value validation failed. This should never happen. Please check the source code.";
-        }
-
-        sendResponse(proxyClient, reply->commandId(), reply->data());
-
-        if (!reply->success()) {
-            // Disconnect this client since the request was not successfully
-            proxyClient->interface()->killClientConnection(proxyClient->clientId(), "API call was not successfully.");
-        }
-
-    } else {
-        sendErrorResponse(proxyClient, reply->commandId(), "Command timed out");
-        // Disconnect this client since he requested something that created a timeout
-        proxyClient->killConnection("API call timeouted.");
-    }
-}
-
-void JsonRpcServer::registerClient(ProxyClient *proxyClient)
-{
-    qCDebug(dcJsonRpc()) << "Register client" << proxyClient;
-    if (m_clients.contains(proxyClient)) {
-        qCWarning(dcJsonRpc()) << "Client already registered" << proxyClient;
-        return;
-    }
-    m_clients.append(proxyClient);
-}
-
-void JsonRpcServer::unregisterClient(ProxyClient *proxyClient)
-{
-    qCDebug(dcJsonRpc()) << "Unregister client" << proxyClient;
-    if (!m_clients.contains(proxyClient)) {
-        qCWarning(dcJsonRpc()) << "Client was not registered" << proxyClient;
-        return;
-    }
-
-    m_clients.removeAll(proxyClient);
-}
-
-void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data)
-{
-    if (!m_clients.contains(proxyClient))
-        return;
-
-    qCDebug(dcJsonRpcTraffic()) << "Incoming data from" << proxyClient << ": " << data;
-
     QJsonParseError error;
     QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
-
     if(error.error != QJsonParseError::NoError) {
         qCWarning(dcJsonRpc) << "Failed to parse JSON data" << data << ":" << error.errorString();
         sendErrorResponse(proxyClient, -1, QString("Failed to parse JSON data: %1").arg(error.errorString()));
@@ -319,6 +249,99 @@ void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data
         reply->setCommandId(commandId);
         sendResponse(proxyClient, commandId, reply->data());
         reply->deleteLater();
+    }
+}
+
+void JsonRpcServer::setup()
+{
+    registerHandler(this);
+    registerHandler(new AuthenticationHandler(this));
+}
+
+void JsonRpcServer::asyncReplyFinished()
+{
+    JsonReply *reply = static_cast<JsonReply *>(sender());
+    reply->deleteLater();
+
+    ProxyClient *proxyClient = m_asyncReplies.take(reply);
+    qCDebug(dcJsonRpc()) << "Async reply finished" << reply->handler()->name() << reply->method() << reply->clientId().toString();
+
+    if (!proxyClient) {
+        qCWarning(dcJsonRpc()) << "Got an async reply but the client does not exist any more.";
+        return;
+    }
+
+    if (!reply->timedOut()) {
+        Q_ASSERT_X(reply->handler()->validateReturns(reply->method(), reply->data()).first
+                   ,"validating return value", formatAssertion(reply->handler()->name(),
+                                                               reply->method(), reply->handler(), reply->data()).toLatin1().data());
+
+        QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
+        if (!returnValidation.first) {
+            qCWarning(dcJsonRpc()) << "Return value validation failed. This should never happen. Please check the source code.";
+        }
+
+        sendResponse(proxyClient, reply->commandId(), reply->data());
+
+        if (!reply->success()) {
+            // Disconnect this client since the request was not successfully
+            proxyClient->interface()->killClientConnection(proxyClient->clientId(), "API call was not successfully.");
+        }
+
+    } else {
+        qCWarning(dcJsonRpc()) << "The reply timeouted.";
+        sendErrorResponse(proxyClient, reply->commandId(), "Command timed out");
+        // Disconnect this client since he requested something that created a timeout
+        proxyClient->killConnection("API call timeouted.");
+    }
+}
+
+void JsonRpcServer::registerClient(ProxyClient *proxyClient)
+{
+    qCDebug(dcJsonRpc()) << "Register client" << proxyClient;
+    if (m_clients.contains(proxyClient)) {
+        qCWarning(dcJsonRpc()) << "Client already registered" << proxyClient;
+        return;
+    }
+    m_clients.append(proxyClient);
+}
+
+void JsonRpcServer::unregisterClient(ProxyClient *proxyClient)
+{
+    qCDebug(dcJsonRpc()) << "Unregister client" << proxyClient;
+    if (!m_clients.contains(proxyClient)) {
+        qCWarning(dcJsonRpc()) << "Client was not registered" << proxyClient;
+        return;
+    }
+    m_clients.removeAll(proxyClient);
+
+    if (m_asyncReplies.values().contains(proxyClient)) {
+        qCWarning(dcJsonRpc()) << "Client was still waiting for a reply. Clean up reply";
+        JsonReply *reply = m_asyncReplies.key(proxyClient);
+        m_asyncReplies.remove(reply);
+        // Note: the reply will be deleted in the finished slot
+    }
+}
+
+void JsonRpcServer::processData(ProxyClient *proxyClient, const QByteArray &data)
+{
+    if (!m_clients.contains(proxyClient))
+        return;
+
+    qCDebug(dcJsonRpcTraffic()) << "Incoming data from" << proxyClient << ": " << data;
+
+    // Handle package fragmentation
+    QList<QByteArray> packages = proxyClient->processData(data);
+
+    // Make sure the buffer size is in range
+    if (proxyClient->bufferSize() > 1024 * 10) {
+        qCWarning(dcJsonRpc()) << "Data buffer size violation from" << proxyClient;
+        proxyClient->killConnection("Data buffer size violation.");
+        return;
+    }
+
+    foreach (const QByteArray &package, packages) {
+        processDataPackage(proxyClient, package);
     }
 }
 
