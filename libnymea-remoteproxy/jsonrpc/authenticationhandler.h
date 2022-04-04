@@ -48,13 +48,6 @@ public:
 
     Q_INVOKABLE JsonReply *Authenticate(const QVariantMap &params, TransportClient *transportClient);
 
-private:
-    QHash<AuthenticationReply *, JsonReply *> m_runningAuthentications;
-
-private slots:
-    void onAuthenticationFinished();
-
-
 };
 
 }
