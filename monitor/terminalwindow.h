@@ -68,7 +68,6 @@ private:
     QVariantMap m_dataMap;
     QHash<QString, QVariantMap> m_clientHash;
 
-    const char *convertString(const QString &string);
     QString getDurationString(uint timestamp);
 
     QString humanReadableTraffic(int bytes);
