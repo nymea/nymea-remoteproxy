@@ -869,8 +869,8 @@ void RemoteProxyTestsProxy::remoteConnection()
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    remoteConnectionEstablishedOne.wait(1000);
+    remoteConnectionEstablishedTwo.wait(1000);
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -887,12 +887,12 @@ void RemoteProxyTestsProxy::remoteConnection()
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
 
     connectionOne->sendData(dataOne);
-    remoteConnectionDataTwo.wait(500);
+    remoteConnectionDataTwo.wait(1000);
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
-    remoteConnectionDataOne.wait(500);
+    remoteConnectionDataOne.wait(1000);
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 
