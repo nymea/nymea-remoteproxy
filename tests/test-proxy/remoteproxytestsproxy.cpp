@@ -1147,6 +1147,8 @@ void RemoteProxyTestsProxy::inactiveTimeout()
     // Start the server
     startServer();
 
+    m_configuration->setInactiveTimeout(4000);
+
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Sleepy test client", this);
     connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
