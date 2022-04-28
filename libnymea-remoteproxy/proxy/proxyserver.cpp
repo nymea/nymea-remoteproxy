@@ -300,6 +300,10 @@ void ProxyServer::onClientDataAvailable(const QUuid &clientId, const QByteArray 
         // Calculate server statisitcs
         m_troughputCounter += data.count();
         proxyClient->addRxDataCount(data.count());
+
+        if (!remoteClient)
+            return;
+
         remoteClient->addTxDataCount(data.count());
 
         m_totalTraffic += data.count();
