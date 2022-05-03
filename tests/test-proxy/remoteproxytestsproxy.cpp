@@ -1116,16 +1116,12 @@ void RemoteProxyTestsProxy::jsonRpcTimeout()
     // Start the server
     startServer();
 
-    m_configuration->setAuthenticationTimeout(3000);
-    m_configuration->setJsonRpcTimeout(1000);
-    m_configuration->setInactiveTimeout(2000);
-
     // Configure result (authentication takes longer than json rpc timeout
     m_mockAuthenticator->setExpectedAuthenticationError();
-    m_mockAuthenticator->setTimeoutDuration(4000);
-    m_configuration->setAuthenticationTimeout(4000);
+    m_mockAuthenticator->setTimeoutDuration(10000);
+    m_configuration->setAuthenticationTimeout(10000);
     m_configuration->setJsonRpcTimeout(1000);
-    m_configuration->setInactiveTimeout(2000);
+    m_configuration->setInactiveTimeout(10000);
 
     // Create request
     QVariantMap params;
@@ -1147,7 +1143,7 @@ void RemoteProxyTestsProxy::inactiveTimeout()
     // Start the server
     startServer();
 
-    m_configuration->setInactiveTimeout(4000);
+    m_configuration->setInactiveTimeout(1000);
 
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Sleepy test client", this);
     connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
