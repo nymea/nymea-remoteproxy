@@ -508,26 +508,26 @@ void RemoteProxyTestsProxy::authenticate_data()
     QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorNoError;
+                             << 500 << Authenticator::AuthenticationErrorNoError;
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << "nonce"
-                             << 100 << Authenticator::AuthenticationErrorNoError;
+                             << 500 << Authenticator::AuthenticationErrorNoError;
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << "nonce"
-                             << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
+                             << 300 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
 
     QTest::newRow("failed") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                            << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
+                            << 300 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
     QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                                    << 200 << Authenticator::AuthenticationErrorProxyError;
+                                    << 500 << Authenticator::AuthenticationErrorProxyError;
 
     QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorAborted;
+                             << 300 << Authenticator::AuthenticationErrorAborted;
 
     QTest::newRow("unknown") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorUnknown;
+                             << 300 << Authenticator::AuthenticationErrorUnknown;
 
 }
 
@@ -542,6 +542,10 @@ void RemoteProxyTestsProxy::authenticate()
 
     // Start the server
     startServer();
+
+    m_configuration->setAuthenticationTimeout(8000);
+    m_configuration->setJsonRpcTimeout(10000);
+    m_configuration->setInactiveTimeout(10000);
 
     // Configure result
     m_mockAuthenticator->setExpectedAuthenticationError(expectedError);

@@ -266,8 +266,7 @@ QVariant BaseTest::invokeTcpSocketProxyApiCall(const QString &method, const QVar
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
     socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
+    dataSpy.wait();
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
         return QVariant();
