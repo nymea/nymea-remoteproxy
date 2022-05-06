@@ -51,28 +51,10 @@ QString AwsAuthenticator::name() const
     return "AWS authenticator";
 }
 
-void AwsAuthenticator::onAuthenticationProcessFinished(Authenticator::AuthenticationError error, const UserInformation &userInformation)
-{
-    AuthenticationProcess *process = static_cast<AuthenticationProcess *>(sender());
-    AuthenticationReply *reply = m_runningProcesses.take(process);
-
-    if (error == AuthenticationErrorNoError) {
-        qCDebug(dcAuthentication()) << name() << reply->proxyClient() << "finished successfully." << userInformation;
-    } else {
-        qCDebug(dcAuthentication()) << name() << reply->proxyClient() << "finished with error" << error;
-    }
-
-    reply->proxyClient()->setUserName(userInformation.email());
-
-    setReplyError(reply, error);
-    setReplyFinished(reply);
-}
-
 AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
 {
     qCDebug(dcAuthentication()) << name() << "Start authenticating" << proxyClient;
-    AuthenticationReply *reply = createAuthenticationReply(proxyClient, this);
-
+    AuthenticationReply *reply = createAuthenticationReply(proxyClient, proxyClient);
     if (!m_credentialsProvider->isValid()) {
         qCWarning(dcAuthentication()) << name() << "There are no credentials for authenticating.";
         setReplyError(reply, AuthenticationErrorProxyError);
@@ -83,12 +65,21 @@ AuthenticationReply *AwsAuthenticator::authenticate(ProxyClient *proxyClient)
     AuthenticationProcess *process = new AuthenticationProcess(m_manager,
                                                                m_credentialsProvider->accessKey(),
                                                                m_credentialsProvider->secretAccessKey(),
-                                                               m_credentialsProvider->sessionToken(), this);
+                                                               m_credentialsProvider->sessionToken(), reply);
 
-    connect(process, &AuthenticationProcess::authenticationFinished, this, &AwsAuthenticator::onAuthenticationProcessFinished);
+    connect(process, &AuthenticationProcess::authenticationFinished, proxyClient, [=](Authenticator::AuthenticationError error, const UserInformation &userInformation = UserInformation()){
+        if (error == AuthenticationErrorNoError) {
+            qCDebug(dcAuthentication()) << name() << proxyClient << "finished successfully." << userInformation;
+        } else {
+            qCDebug(dcAuthentication()) << name() << proxyClient << "finished with error" << error;
+        }
 
-    // Configure process
-    m_runningProcesses.insert(process, reply);
+        proxyClient->setUserName(userInformation.email());
+
+        setReplyError(reply, error);
+        setReplyFinished(reply);
+    });
+
 
     // Start authentication process
     process->authenticate(proxyClient->token());

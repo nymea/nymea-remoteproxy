@@ -130,14 +130,14 @@ void RemoteProxyTestsProxy::monitorServer()
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
     QVERIFY(connectionOne->connectServer(m_serverUrlProxyTcp));
-    connectionOneReadySpy.wait();
+    if (connectionOneReadySpy.count() < 1) connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
     QVERIFY(connectionTwo->connectServer(m_serverUrlProxyTcp));
-    connectionTwoReadySpy.wait();
+    if (connectionTwoReadySpy.count() < 1) connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
 
@@ -145,7 +145,7 @@ void RemoteProxyTestsProxy::monitorServer()
     QSignalSpy remoteConnectionEstablishedOne(connectionOne, &RemoteProxyConnection::remoteConnectionEstablished);
     QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionOne->authenticate(m_testToken));
-    connectionOneAuthenticatedSpy.wait();
+    if (connectionOneAuthenticatedSpy.count() < 1) connectionOneAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
     QVERIFY(connectionOne->isAuthenticated());
@@ -155,14 +155,17 @@ void RemoteProxyTestsProxy::monitorServer()
     QSignalSpy remoteConnectionEstablishedTwo(connectionTwo, &RemoteProxyConnection::remoteConnectionEstablished);
     QSignalSpy connectionTwoAuthenticatedSpy(connectionTwo, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionTwo->authenticate(m_testToken));
-    connectionTwoAuthenticatedSpy.wait();
+    if (connectionTwoAuthenticatedSpy.count() < 1) connectionTwoAuthenticatedSpy.wait();
     QVERIFY(connectionTwoAuthenticatedSpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -174,16 +177,15 @@ void RemoteProxyTestsProxy::monitorServer()
     QCOMPARE(connectionTwo->tunnelPartnerName(), nameConnectionOne);
     QCOMPARE(QUuid(connectionTwo->tunnelPartnerUuid()), uuidConnectionOne);
 
-
     // Get monitor data
     QLocalSocket *monitor = new QLocalSocket(this);
     QSignalSpy connectedSpy(monitor, &QLocalSocket::connected);
     monitor->connectToServer(m_configuration->monitorSocketFileName());
-    connectedSpy.wait(200);
+    if (connectedSpy.count() < 1) connectedSpy.wait();
     QVERIFY(connectedSpy.count() == 1);
 
     QSignalSpy dataSpy(monitor, &QLocalSocket::readyRead);
-    dataSpy.wait();
+    if (dataSpy.count() < 1) dataSpy.wait();
     QVERIFY(dataSpy.count() == 1);
     QByteArray data = monitor->readAll();
     qDebug() << data;
@@ -192,7 +194,7 @@ void RemoteProxyTestsProxy::monitorServer()
 
     QSignalSpy disconnectedSpy(monitor, &QLocalSocket::connected);
     monitor->disconnectFromServer();
-    disconnectedSpy.wait(200);
+    if (disconnectedSpy.count() < 1) disconnectedSpy.wait();
 
     // Clean up
     monitor->deleteLater();
@@ -315,7 +317,7 @@ void RemoteProxyTestsProxy::websocketBinaryData()
     // Send binary data and make sure the server disconnects this socket
     QSignalSpy spyDisconnected(client, SIGNAL(disconnected()));
     client->sendBinaryMessage("trying to upload stuff...stuff...more stuff... other stuff");
-    spyConnection.wait(200);
+    spyConnection.wait(1000);
     QVERIFY(spyConnection.count() == 1);
 
     // Clean up
@@ -508,26 +510,26 @@ void RemoteProxyTestsProxy::authenticate_data()
     QTest::addColumn<Authenticator::AuthenticationError>("expectedError");
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorNoError;
+                             << 500 << Authenticator::AuthenticationErrorNoError;
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << "nonce"
-                             << 100 << Authenticator::AuthenticationErrorNoError;
+                             << 500 << Authenticator::AuthenticationErrorNoError;
 
     QTest::newRow("success") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << "nonce"
-                             << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
+                             << 300 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
 
     QTest::newRow("failed") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                            << 100 << Authenticator::AuthenticationErrorAuthenticationFailed;
+                            << 300 << Authenticator::AuthenticationErrorAuthenticationFailed;
 
     QTest::newRow("not responding") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                                    << 200 << Authenticator::AuthenticationErrorProxyError;
+                                    << 500 << Authenticator::AuthenticationErrorProxyError;
 
     QTest::newRow("aborted") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorAborted;
+                             << 300 << Authenticator::AuthenticationErrorAborted;
 
     QTest::newRow("unknown") << QUuid::createUuid().toString() << "Testclient, hello form the test!" << m_testToken << ""
-                             << 100 << Authenticator::AuthenticationErrorUnknown;
+                             << 300 << Authenticator::AuthenticationErrorUnknown;
 
 }
 
@@ -542,6 +544,10 @@ void RemoteProxyTestsProxy::authenticate()
 
     // Start the server
     startServer();
+
+    m_configuration->setAuthenticationTimeout(8000);
+    m_configuration->setJsonRpcTimeout(10000);
+    m_configuration->setInactiveTimeout(10000);
 
     // Configure result
     m_mockAuthenticator->setExpectedAuthenticationError(expectedError);
@@ -630,8 +636,11 @@ void RemoteProxyTestsProxy::authenticateNonce()
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -648,12 +657,12 @@ void RemoteProxyTestsProxy::authenticateNonce()
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
 
     connectionOne->sendData(dataOne);
-    remoteConnectionDataTwo.wait(500);
+    remoteConnectionDataTwo.wait();
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
-    remoteConnectionDataOne.wait(500);
+    remoteConnectionDataOne.wait();
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 
@@ -750,8 +759,7 @@ void RemoteProxyTestsProxy::clientConnectionWebSocket()
     // Disconnect and clean up
     QSignalSpy spyDisconnected(connection, &RemoteProxyConnection::disconnected);
     connection->disconnectServer();
-    // FIXME: check why it waits the full time here
-    spyDisconnected.wait(500);
+    if (spyDisconnected.count() < 1) spyDisconnected.wait();
 
     QVERIFY(spyDisconnected.count() >= 1);
     QVERIFY(!connection->isConnected());
@@ -800,8 +808,8 @@ void RemoteProxyTestsProxy::clientConnectionTcpSocket()
     // Disconnect and clean up
     QSignalSpy spyDisconnected(connection, &RemoteProxyConnection::disconnected);
     connection->disconnectServer();
-    // FIXME: check why it waits the full time here
-    spyDisconnected.wait(500);
+
+    if (spyDisconnected.count() < 1) spyDisconnected.wait();
 
     QVERIFY(spyDisconnected.count() >= 1);
     QVERIFY(!connection->isConnected());
@@ -869,8 +877,11 @@ void RemoteProxyTestsProxy::remoteConnection()
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -887,12 +898,12 @@ void RemoteProxyTestsProxy::remoteConnection()
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
 
     connectionOne->sendData(dataOne);
-    remoteConnectionDataTwo.wait(500);
+    remoteConnectionDataTwo.wait();
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
-    remoteConnectionDataOne.wait(500);
+    remoteConnectionDataOne.wait();
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 
@@ -957,21 +968,21 @@ void RemoteProxyTestsProxy::trippleConnection()
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
     QVERIFY(connectionOne->connectServer(m_serverUrlProxyTcp));
-    connectionOneReadySpy.wait();
+    if (connectionOneReadySpy.count() < 1) connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
     QVERIFY(connectionTwo->connectServer(m_serverUrlProxyTcp));
-    connectionTwoReadySpy.wait();
+    if (connectionTwoReadySpy.count() < 1) connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
 
     // Authenticate one
     QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionOne->authenticate(m_testToken, nonce));
-    connectionOneAuthenticatedSpy.wait();
+    if (connectionOneAuthenticatedSpy.count() < 1) connectionOneAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
     QVERIFY(connectionOne->isAuthenticated());
@@ -983,13 +994,14 @@ void RemoteProxyTestsProxy::trippleConnection()
     QSignalSpy remoteConnectionEstablishedTwo(connectionTwo, &RemoteProxyConnection::remoteConnectionEstablished);
     QSignalSpy connectionTwoAuthenticatedSpy(connectionTwo, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionTwo->authenticate(m_testToken, nonce));
-    connectionTwoAuthenticatedSpy.wait();
+    if (connectionTwoAuthenticatedSpy.count() < 1) connectionTwoAuthenticatedSpy.wait();
     QVERIFY(connectionTwoAuthenticatedSpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
 
     // Now connect a third connection and make sure the client will be closed
 
@@ -997,17 +1009,17 @@ void RemoteProxyTestsProxy::trippleConnection()
     QSignalSpy connectionThreeReadySpy(connectionThree, &RemoteProxyConnection::ready);
     QSignalSpy connectionThreeDisconnectedSpy(connectionThree, &RemoteProxyConnection::disconnected);
     QVERIFY(connectionThree->connectServer(m_serverUrlProxyTcp));
-    connectionThreeReadySpy.wait();
+    if (connectionThreeReadySpy.count() < 1) connectionThreeReadySpy.wait();
     QVERIFY(connectionThreeReadySpy.count() == 1);
     QVERIFY(connectionThree->isConnected());
 
     // Authenticate three
     QSignalSpy connectionThreeAuthenticatedSpy(connectionThree, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionThree->authenticate(m_testToken, nonce));
-    connectionThreeAuthenticatedSpy.wait();
+    if (connectionThreeAuthenticatedSpy.count() < 1) connectionThreeAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
 
-    connectionThreeDisconnectedSpy.wait(200);
+    if (connectionThreeDisconnectedSpy.count() < 1) connectionThreeDisconnectedSpy.wait();
     QVERIFY(connectionThreeDisconnectedSpy.count() >= 1);
 
     // Make sure the one and two are still connected
@@ -1042,21 +1054,21 @@ void RemoteProxyTestsProxy::duplicateUuid()
     // Connect one
     QSignalSpy connectionOneReadySpy(connectionOne, &RemoteProxyConnection::ready);
     QVERIFY(connectionOne->connectServer(m_serverUrlProxyTcp));
-    connectionOneReadySpy.wait();
+    if (connectionOneReadySpy.count() < 1) connectionOneReadySpy.wait();
     QVERIFY(connectionOneReadySpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
 
     // Connect two
     QSignalSpy connectionTwoReadySpy(connectionTwo, &RemoteProxyConnection::ready);
     QVERIFY(connectionTwo->connectServer(m_serverUrlProxyTcp));
-    connectionTwoReadySpy.wait();
+    if (connectionTwoReadySpy.count() < 1) connectionTwoReadySpy.wait();
     QVERIFY(connectionTwoReadySpy.count() == 1);
     QVERIFY(connectionTwo->isConnected());
 
     // Authenticate one
     QSignalSpy connectionOneAuthenticatedSpy(connectionOne, &RemoteProxyConnection::authenticated);
     QVERIFY(connectionOne->authenticate(m_testToken));
-    connectionOneAuthenticatedSpy.wait();
+    if (connectionOneAuthenticatedSpy.count() < 1) connectionOneAuthenticatedSpy.wait();
     QVERIFY(connectionOneAuthenticatedSpy.count() == 1);
     QVERIFY(connectionOne->isConnected());
     QVERIFY(connectionOne->isAuthenticated());
@@ -1067,10 +1079,10 @@ void RemoteProxyTestsProxy::duplicateUuid()
     QSignalSpy disconnectSpyTwo(connectionTwo, &RemoteProxyConnection::disconnected);
 
     QVERIFY(connectionTwo->authenticate(m_testToken));
-    disconnectSpyOne.wait(200);
+    if (disconnectSpyOne.count() < 1 ) disconnectSpyOne.wait();
     QVERIFY(disconnectSpyOne.count() >= 1);
 
-    disconnectSpyTwo.wait(200);
+    if (disconnectSpyTwo.count() < 1 ) disconnectSpyTwo.wait();
     QVERIFY(disconnectSpyTwo.count() >= 1);
 
     connectionOne->deleteLater();
@@ -1116,16 +1128,12 @@ void RemoteProxyTestsProxy::jsonRpcTimeout()
     // Start the server
     startServer();
 
-    m_configuration->setAuthenticationTimeout(3000);
-    m_configuration->setJsonRpcTimeout(1000);
-    m_configuration->setInactiveTimeout(2000);
-
     // Configure result (authentication takes longer than json rpc timeout
     m_mockAuthenticator->setExpectedAuthenticationError();
-    m_mockAuthenticator->setTimeoutDuration(4000);
-    m_configuration->setAuthenticationTimeout(4000);
+    m_mockAuthenticator->setTimeoutDuration(10000);
+    m_configuration->setAuthenticationTimeout(10000);
     m_configuration->setJsonRpcTimeout(1000);
-    m_configuration->setInactiveTimeout(2000);
+    m_configuration->setInactiveTimeout(10000);
 
     // Create request
     QVariantMap params;
@@ -1147,6 +1155,8 @@ void RemoteProxyTestsProxy::inactiveTimeout()
     // Start the server
     startServer();
 
+    m_configuration->setInactiveTimeout(1000);
+
     RemoteProxyConnection *connection = new RemoteProxyConnection(QUuid::createUuid(), "Sleepy test client", this);
     connect(connection, &RemoteProxyConnection::sslErrors, this, &BaseTest::ignoreConnectionSslError);
 
@@ -1154,11 +1164,13 @@ void RemoteProxyTestsProxy::inactiveTimeout()
     QSignalSpy connectionReadySpy(connection, &RemoteProxyConnection::ready);
     QSignalSpy connectionDisconnectedSpy(connection, &RemoteProxyConnection::disconnected);
     QVERIFY(connection->connectServer(m_serverUrlProxyTcp));
-    connectionReadySpy.wait();
+    if (connectionReadySpy.count() < 1) connectionReadySpy.wait();
     QVERIFY(connectionReadySpy.count() == 1);
 
     // Now wait for disconnected
-    connectionDisconnectedSpy.wait();
+    if (connectionDisconnectedSpy.count() < 1)
+        connectionDisconnectedSpy.wait();
+
     QVERIFY(connectionDisconnectedSpy.count() >= 1);
 
     // Clean up
@@ -1285,8 +1297,11 @@ void RemoteProxyTestsProxy::tcpRemoteConnection()
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -1303,12 +1318,12 @@ void RemoteProxyTestsProxy::tcpRemoteConnection()
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
 
     connectionOne->sendData(dataOne);
-    remoteConnectionDataTwo.wait(500);
+    remoteConnectionDataTwo.wait();
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
-    remoteConnectionDataOne.wait(500);
+    remoteConnectionDataOne.wait();
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 
@@ -1379,8 +1394,11 @@ void RemoteProxyTestsProxy::tcpWebsocketRemoteConnection()
     QVERIFY(connectionTwo->isAuthenticated());
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     QVERIFY(remoteConnectionEstablishedOne.count() == 1);
     QVERIFY(remoteConnectionEstablishedTwo.count() == 1);
@@ -1397,12 +1415,12 @@ void RemoteProxyTestsProxy::tcpWebsocketRemoteConnection()
     QSignalSpy remoteConnectionDataTwo(connectionTwo, &RemoteProxyConnection::dataReady);
 
     connectionOne->sendData(dataOne);
-    remoteConnectionDataTwo.wait(500);
+    remoteConnectionDataTwo.wait();
     QVERIFY(remoteConnectionDataTwo.count() == 1);
     QCOMPARE(remoteConnectionDataTwo.at(0).at(0).toByteArray().trimmed(), dataOne);
 
     connectionTwo->sendData(dataTwo);
-    remoteConnectionDataOne.wait(500);
+    remoteConnectionDataOne.wait();
     QVERIFY(remoteConnectionDataOne.count() == 1);
     QCOMPARE(remoteConnectionDataOne.at(0).at(0).toByteArray().trimmed(), dataTwo);
 

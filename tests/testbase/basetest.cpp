@@ -125,7 +125,7 @@ void BaseTest::startServer()
         QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
         Engine::instance()->setDeveloperModeEnabled(true);
         Engine::instance()->start(m_configuration);
-        runningSpy.wait(200);
+        runningSpy.wait();
         QVERIFY(runningSpy.count() == 1);
     }
 
@@ -266,8 +266,7 @@ QVariant BaseTest::invokeTcpSocketProxyApiCall(const QString &method, const QVar
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
     socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
+    dataSpy.wait();
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
         return QVariant();
@@ -368,7 +367,7 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
         return false;
     }
 
-    connectionOneAuthenticatedSpy.wait(500);
+    connectionOneAuthenticatedSpy.wait();
     if (connectionOneAuthenticatedSpy.count() != 1) {
         qWarning() << "Could not authenticate client one";
         return false;
@@ -387,7 +386,7 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
         return false;
     }
 
-    connectionTwoAuthenticatedSpy.wait(500);
+    connectionTwoAuthenticatedSpy.wait();
     if (connectionTwoAuthenticatedSpy.count() != 1) {
         qWarning() << "Could not authenticate client two";
         return false;
@@ -399,8 +398,11 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
     }
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait(500);
-    remoteConnectionEstablishedTwo.wait(500);
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     if (remoteConnectionEstablishedOne.count() != 1 || remoteConnectionEstablishedTwo.count() != 1) {
         qWarning() << "Could not establish remote connection";
@@ -433,8 +435,6 @@ QVariant BaseTest::injectTcpSocketProxyData(const QByteArray &data)
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
     socket->write(data + '\n');
     dataSpy.wait();
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
         return QVariant();
@@ -578,8 +578,7 @@ QVariant BaseTest::invokeTcpSocketTunnelProxyApiCall(const QString &method, cons
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
     socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
+    dataSpy.wait();
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
         return QVariant();
@@ -631,8 +630,6 @@ QVariant BaseTest::injectTcpSocketTunnelProxyData(const QByteArray &data)
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
     socket->write(data + '\n');
     dataSpy.wait();
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
         return QVariant();
@@ -697,8 +694,7 @@ QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersist
         socket->write(payload);
     }
 
-    // FIXME: check why it waits the full time here
-    dataSpy.wait(500);
+    dataSpy.wait();
     if (dataSpy.count() < 1) {
         qWarning() << "No data received";
         return QPair<QVariant, QSslSocket *>(QVariant(), socket);

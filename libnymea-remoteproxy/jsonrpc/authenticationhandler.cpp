@@ -79,36 +79,28 @@ JsonReply *AuthenticationHandler::Authenticate(const QVariantMap &params, Transp
     proxyClient->setNonce(nonce);
 
     AuthenticationReply *authReply = Engine::instance()->authenticator()->authenticate(proxyClient);
-    connect(authReply, &AuthenticationReply::finished, this, &AuthenticationHandler::onAuthenticationFinished);
+    connect(authReply, &AuthenticationReply::finished, jsonReply, [=](){
+        authReply->deleteLater();
 
-    m_runningAuthentications.insert(authReply, jsonReply);
+        qCDebug(dcJsonRpc()) << "Authentication reply finished";
+        if (authReply->error() != Authenticator::AuthenticationErrorNoError) {
+            qCWarning(dcJsonRpc()) << "Authentication error occurred" << authReply->error();
+            jsonReply->setSuccess(false);
+        } else {
+            // Successfully authenticated
+            jsonReply->setSuccess(true);
+        }
+
+        // Set client authenticated if still there
+        if (!authReply->proxyClient().isNull()) {
+            authReply->proxyClient()->setAuthenticated(authReply->error() == Authenticator::AuthenticationErrorNoError);
+            jsonReply->setData(errorToReply(authReply->error()));
+        }
+
+        emit jsonReply->finished();
+    });
 
     return jsonReply;
-}
-
-void AuthenticationHandler::onAuthenticationFinished()
-{
-    AuthenticationReply *authenticationReply = static_cast<AuthenticationReply *>(sender());
-    authenticationReply->deleteLater();
-
-    qCDebug(dcJsonRpc()) << "Authentication reply finished";
-    JsonReply *jsonReply = m_runningAuthentications.take(authenticationReply);
-
-    if (authenticationReply->error() != Authenticator::AuthenticationErrorNoError) {
-        qCWarning(dcJsonRpc()) << "Authentication error occurred" << authenticationReply->error();
-        jsonReply->setSuccess(false);
-    } else {
-        // Successfully authenticated
-        jsonReply->setSuccess(true);
-    }
-
-    // Set client authenticated if still there
-    if (!authenticationReply->proxyClient().isNull()) {
-        authenticationReply->proxyClient()->setAuthenticated(authenticationReply->error() == Authenticator::AuthenticationErrorNoError);
-        jsonReply->setData(errorToReply(authenticationReply->error()));
-    }
-
-    emit jsonReply->finished();
 }
 
 }
