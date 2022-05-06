@@ -398,8 +398,11 @@ bool BaseTest::createRemoteConnection(const QString &token, const QString &nonce
     }
 
     // Wait for both to be connected
-    remoteConnectionEstablishedOne.wait();
-    remoteConnectionEstablishedTwo.wait();
+    if (remoteConnectionEstablishedOne.count() < 1)
+        remoteConnectionEstablishedOne.wait();
+
+    if (remoteConnectionEstablishedTwo.count() < 1)
+        remoteConnectionEstablishedTwo.wait();
 
     if (remoteConnectionEstablishedOne.count() != 1 || remoteConnectionEstablishedTwo.count() != 1) {
         qWarning() << "Could not establish remote connection";
