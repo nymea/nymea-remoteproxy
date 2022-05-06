@@ -95,11 +95,6 @@ TerminalWindow::~TerminalWindow()
     cleanup();
 }
 
-const char *TerminalWindow::convertString(const QString &string)
-{
-    return reinterpret_cast<const char *>(string.toLatin1().data());
-}
-
 QString TerminalWindow::getDurationString(uint timestamp)
 {
     uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
@@ -240,7 +235,7 @@ void TerminalWindow::paintHeader()
         headerString.append(" ");
 
     //wattron(m_headerWindow, A_BOLD | COLOR_PAIR(1));
-    mvwprintw(m_headerWindow, 1, 2, convertString(headerString));
+    mvwprintw(m_headerWindow, 1, 2, "%s", headerString.toLatin1().constData());
     //wattroff(m_headerWindow, A_BOLD | COLOR_PAIR(1));
 }
 
@@ -269,7 +264,7 @@ void TerminalWindow::paintContentClients()
                 .arg((clientMap.value("tunnelConnected").toBool() ? "T" : "-"))
                 .arg(clientMap.value("name").toString(), -30);
 
-        mvwprintw(m_contentWindow, i, 2, convertString(clientPrint.trimmed()));
+        mvwprintw(m_contentWindow, i, 2, "%s", clientPrint.trimmed().toLatin1().constData());
         i++;
     }
 }
@@ -298,7 +293,7 @@ void TerminalWindow::paintContentTunnels()
                 .arg(clientTwo.value("address").toString())
                 ;
 
-        mvwprintw(m_contentWindow, i, 2, convertString(tunnelPrint));
+        mvwprintw(m_contentWindow, i, 2, "%s", tunnelPrint.toLatin1().constData());
         i++;
     }
 }
@@ -330,7 +325,7 @@ void TerminalWindow::paintContentTunnelProxy()
             mvwaddch(m_contentWindow, i, 4, ACS_TTEE);
         }
         mvwaddch(m_contentWindow, i, 5, ACS_HLINE);
-        mvwprintw(m_contentWindow, i, 6, convertString(serverLinePrint.trimmed()));
+        mvwprintw(m_contentWindow, i, 6, "%s", serverLinePrint.trimmed().toLatin1().constData());
         i++;
 
         for (int cc = 0; cc < clientList.count(); cc++) {
@@ -352,7 +347,7 @@ void TerminalWindow::paintContentTunnelProxy()
                     .arg(humanReadableTraffic(clientMap.value("txDataCount").toInt()), - 10)
                     .arg(clientMap.value("name").toString(), -30);
 
-            mvwprintw(m_contentWindow, i, 6, convertString(clientLinePrint.trimmed()));
+            mvwprintw(m_contentWindow, i, 6, "%s", clientLinePrint.trimmed().toLatin1().constData());
 
             i++;
         }
