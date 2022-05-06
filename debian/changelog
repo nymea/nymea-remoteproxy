@@ -1,3 +1,13 @@
+nymea-remoteproxy (1.1.0) jammy; urgency=medium
+
+  [ Simon Stürz ]
+  * Fix authentication reply crash if client already disconnected
+
+  [ Michael Zanetti ]
+  * Fix format string function with variable input
+
+ -- jenkins <developer@nymea.io>  Fri, 06 May 2022 18:55:22 +0200
+
 nymea-remoteproxy (1.0.0) xenial; urgency=medium
 
   [ Simon Stürz ]
