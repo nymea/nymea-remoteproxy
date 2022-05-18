@@ -42,6 +42,7 @@
 #include "server/jsonrpcserver.h"
 #include "server/tcpsocketserver.h"
 #include "server/websocketserver.h"
+#include "server/unixsocketserver.h"
 #include "authentication/authenticator.h"
 #include "tunnelproxy/tunnelproxyserver.h"
 
@@ -75,6 +76,7 @@ public:
 
     TcpSocketServer *tcpSocketServerProxy() const;
     WebSocketServer *webSocketServerProxy() const;
+    UnixSocketServer *unixSocketServerProxy() const;
 
     TcpSocketServer *tcpSocketServerTunnelProxy() const;
     WebSocketServer *webSocketServerTunnelProxy() const;
@@ -103,6 +105,7 @@ private:
 
     TcpSocketServer *m_tcpSocketServerProxy = nullptr;
     WebSocketServer *m_webSocketServerProxy = nullptr;
+    UnixSocketServer *m_unixSocketServerProxy = nullptr;
 
     TcpSocketServer *m_tcpSocketServerTunnelProxy = nullptr;
     WebSocketServer *m_webSocketServerTunnelProxy = nullptr;

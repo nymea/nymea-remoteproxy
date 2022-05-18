@@ -27,6 +27,7 @@ HEADERS += \
     proxy/tunnelconnection.h \
     server/tcpsocketserver.h \
     server/transportinterface.h \
+    server/unixsocketserver.h \
     server/websocketserver.h \
     server/jsonrpcserver.h \
     server/transportclient.h \
@@ -60,6 +61,7 @@ SOURCES += \
     server/tcpsocketserver.cpp \
     server/transportinterface.cpp \
     server/transportclient.cpp \
+    server/unixsocketserver.cpp \
     server/websocketserver.cpp \
     server/jsonrpcserver.cpp \
     server/monitorserver.cpp \

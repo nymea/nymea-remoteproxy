@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
                                              "registered nymea deamons to establish a tunnel connection.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2021 nymea GmbH <developer@nymea.io>\n")
+                                             "Copyright %3 2022 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
                                      .arg(QChar(0xA9)));
@@ -173,18 +173,6 @@ int main(int argc, char *argv[])
             qWarning() << "Error opening log file" << configuration->logFileName();
             exit(-1);
         }
-    }
-
-    // Verify webserver configuration
-    if (configuration->webSocketServerProxyHost().isNull()) {
-        qCCritical(dcApplication()) << "Invalid web socket host address passed.";
-        exit(-1);
-    }
-
-    // Verify tcp server configuration
-    if (configuration->tcpServerHost().isNull()) {
-        qCCritical(dcApplication()) << "Invalid TCP server host address passed.";
-        exit(-1);
     }
 
     // Verify SSL configuration
