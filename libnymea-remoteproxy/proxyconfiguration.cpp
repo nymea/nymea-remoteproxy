@@ -87,8 +87,8 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
     setTcpServerPort(static_cast<quint16>(settings.value("port", 1213).toInt()));
     settings.endGroup();
 
-    settings.beginGroup("LocalSocketServer");
-    setTcpServerHost(QHostAddress(settings.value("localSocketFileName", "/run/nymea-remoteproxy.socket").toString()));
+    settings.beginGroup("UnixSocketServer");
+    setUnixSocketFileName(settings.value("unixSocketFileName", "/run/nymea-remoteproxy.socket").toString());
     settings.endGroup();
 
     settings.beginGroup("WebSocketServerTunnelProxy");
@@ -356,9 +356,14 @@ void ProxyConfiguration::setTcpServerPort(quint16 port)
     m_tcpServerPort = port;
 }
 
-QString ProxyConfiguration::localSocketFileName() const
+QString ProxyConfiguration::unixSocketFileName() const
 {
-    return m_localSocketFileName;
+    return m_unixSocketFileName;
+}
+
+void ProxyConfiguration::setUnixSocketFileName(const QString &unixSocketFileName)
+{
+    m_unixSocketFileName = unixSocketFileName;
 }
 
 QHostAddress ProxyConfiguration::webSocketServerTunnelProxyHost() const
@@ -445,8 +450,8 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "TcpServer Proxy" << endl;
     debug.nospace() << "  - Host:" << configuration->tcpServerHost().toString() << endl;
     debug.nospace() << "  - Port:" << configuration->tcpServerPort() << endl;
-    debug.nospace() << "LocalSocket Proxy" << endl;
-    debug.nospace() << "  - Socket file:" << configuration->localSocketFileName() << endl;
+    debug.nospace() << "UnixSocketServer Proxy" << endl;
+    debug.nospace() << "  - Filename:" << configuration->unixSocketFileName() << endl;
     debug.nospace() << "WebSocketServer TunnelProxy" << endl;
     debug.nospace() << "  - Host:" << configuration->webSocketServerTunnelProxyHost().toString() << endl;
     debug.nospace() << "  - Port:" << configuration->webSocketServerTunnelProxyPort() << endl;

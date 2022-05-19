@@ -83,6 +83,7 @@ void RemoteProxyTestsProxy::dummyAuthenticator()
     // Make sure the server is running
     QVERIFY(Engine::instance()->running());
     QVERIFY(Engine::instance()->webSocketServerProxy()->running());
+    QVERIFY(Engine::instance()->unixSocketServerProxy()->running());
     QVERIFY(Engine::instance()->proxyServer()->running());
 
     // Create request

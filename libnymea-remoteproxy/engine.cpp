@@ -77,7 +77,7 @@ void Engine::start(ProxyConfiguration *configuration)
     m_proxyServer = new ProxyServer(this);
     m_webSocketServerProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
     m_tcpSocketServerProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
-    m_unixSocketServerProxy = new UnixSocketServer(m_configuration->localSocketFileName(), this);
+    m_unixSocketServerProxy = new UnixSocketServer(m_configuration->unixSocketFileName(), this);
 
     // Configure websocket server
     QUrl websocketServerUrl;

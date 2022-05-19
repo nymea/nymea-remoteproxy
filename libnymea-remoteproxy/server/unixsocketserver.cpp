@@ -37,7 +37,7 @@ UnixSocketServer::UnixSocketServer(QString socketFileName, QObject *parent) :
     TransportInterface(parent),
     m_socketFileName(socketFileName)
 {
-    m_serverName = "LOCAL";
+    m_serverName = "unix";
 }
 
 UnixSocketServer::~UnixSocketServer()
@@ -94,14 +94,14 @@ bool UnixSocketServer::startServer()
     m_server = new QLocalServer(this);
     m_server->setSocketOptions(QLocalServer::UserAccessOption | QLocalServer::GroupAccessOption | QLocalServer::OtherAccessOption);
     if (!m_server->listen(m_socketFileName)) {
-        qCWarning(dcUnixSocketServer()) << "Could not start local server for monitor on" << m_serverName << m_server->errorString();
+        qCWarning(dcUnixSocketServer()) << "Could not start local server for monitor on" << m_socketFileName << m_server->errorString();
         delete m_server;
         m_server = nullptr;
         return false;
     }
 
     connect(m_server, &QLocalServer::newConnection, this, &UnixSocketServer::onClientConnected);
-    qCDebug(dcUnixSocketServer()) << "Started successfully on" << m_serverName;
+    qCDebug(dcUnixSocketServer()) << "Started successfully on" << m_serverName << m_socketFileName;
     return true;
 }
 
@@ -110,7 +110,7 @@ bool UnixSocketServer::stopServer()
     if (!m_server)
         return true;
 
-    qCDebug(dcUnixSocketServer()) << "Stopping server" << m_serverName;
+    qCDebug(dcUnixSocketServer()) << "Stopping server" << m_socketFileName;
     foreach (QLocalSocket *clientConnection, m_clientList) {
         clientConnection->close();
     }

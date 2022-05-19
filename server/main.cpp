@@ -175,6 +175,18 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Verify webserver configuration
+    if (configuration->webSocketServerProxyHost().isNull()) {
+        qCCritical(dcApplication()) << "Invalid web socket host address passed.";
+        exit(-1);
+    }
+
+    // Verify tcp server configuration
+    if (configuration->tcpServerHost().isNull()) {
+        qCCritical(dcApplication()) << "Invalid TCP server host address passed.";
+        exit(-1);
+    }
+
     // Verify SSL configuration
     if (configuration->sslEnabled() && configuration->sslConfiguration().isNull()) {
         qCCritical(dcApplication()) << "SSL is enabled but no SSL configuration specified.";

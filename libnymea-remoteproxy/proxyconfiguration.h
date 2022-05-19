@@ -113,8 +113,9 @@ public:
     quint16 tcpServerPort() const;
     void setTcpServerPort(quint16 port);
 
-    // LocalServer
-    QString localSocketFileName() const;
+    // UnixSocketServer
+    QString unixSocketFileName() const;
+    void setUnixSocketFileName(const QString &unixSocketFileName);
 
     // WebSocketServer (tunnel)
     QHostAddress webSocketServerTunnelProxyHost() const;
@@ -164,8 +165,8 @@ private:
     QHostAddress m_tcpServerHost = QHostAddress::LocalHost;
     quint16 m_tcpServerPort = 1213;
 
-    // LocalSocketServer (proxy)
-    QString m_localSocketFileName = "/run/nymea-remoteproxy.socket";
+    // UnixSocketServer (proxy)
+    QString m_unixSocketFileName = "/run/nymea-remoteproxy.socket";
 
     // WebSocketServer (tunnel)
     QHostAddress m_webSocketServerTunnelProxyHost = QHostAddress::LocalHost;
