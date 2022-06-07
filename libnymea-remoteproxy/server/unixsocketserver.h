@@ -25,31 +25,44 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef LOGGINGCATEGORIES_H
-#define LOGGINGCATEGORIES_H
+#ifndef UNIXSOCKETSERVER_H
+#define UNIXSOCKETSERVER_H
 
-#include <QDebug>
-#include <QLoggingCategory>
+#include <QObject>
+#include <QUuid>
+#include <QLocalServer>
+#include <QLocalSocket>
 
-Q_DECLARE_LOGGING_CATEGORY(dcApplication)
-Q_DECLARE_LOGGING_CATEGORY(dcEngine)
-Q_DECLARE_LOGGING_CATEGORY(dcJsonRpc)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnel)
-Q_DECLARE_LOGGING_CATEGORY(dcJsonRpcTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcWebSocketServer)
-Q_DECLARE_LOGGING_CATEGORY(dcWebSocketServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcTcpSocketServer)
-Q_DECLARE_LOGGING_CATEGORY(dcTcpSocketServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcAuthentication)
-Q_DECLARE_LOGGING_CATEGORY(dcAuthenticationProcess)
-Q_DECLARE_LOGGING_CATEGORY(dcProxyServer)
-Q_DECLARE_LOGGING_CATEGORY(dcProxyServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyServer)
-Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcMonitorServer)
-Q_DECLARE_LOGGING_CATEGORY(dcUnixSocketServer)
-Q_DECLARE_LOGGING_CATEGORY(dcUnixSocketServerTraffic)
-Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProvider)
-Q_DECLARE_LOGGING_CATEGORY(dcAwsCredentialsProviderTraffic)
+#include "transportinterface.h"
 
-#endif // LOGGINGCATEGORIES_H
+namespace remoteproxy {
+
+class UnixSocketServer : public TransportInterface
+{
+    Q_OBJECT
+public:
+    explicit UnixSocketServer(QString socketFileName, QObject *parent = nullptr);
+    ~UnixSocketServer() override;
+
+    void sendData(const QUuid &clientId, const QByteArray &data) override;
+    void killClientConnection(const QUuid &clientId, const QString &killReason) override;
+
+    bool running() const override;
+
+public slots:
+    bool startServer() override;
+    bool stopServer() override;
+
+private:
+    QString m_socketFileName;
+    QLocalServer *m_server = nullptr;
+    QHash<QUuid, QLocalSocket *> m_clientList;
+
+private slots:
+    void onClientConnected();
+
+};
+
+}
+
+#endif // UNIXSOCKETSERVER_H

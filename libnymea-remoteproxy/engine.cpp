@@ -77,6 +77,7 @@ void Engine::start(ProxyConfiguration *configuration)
     m_proxyServer = new ProxyServer(this);
     m_webSocketServerProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
     m_tcpSocketServerProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+    m_unixSocketServerProxy = new UnixSocketServer(m_configuration->unixSocketFileName(), this);
 
     // Configure websocket server
     QUrl websocketServerUrl;
@@ -95,6 +96,7 @@ void Engine::start(ProxyConfiguration *configuration)
     // Register the transport interfaces in the proxy server
     m_proxyServer->registerTransportInterface(m_webSocketServerProxy);
     m_proxyServer->registerTransportInterface(m_tcpSocketServerProxy);
+    m_proxyServer->registerTransportInterface(m_unixSocketServerProxy);
 
     // Start the server
     qCDebug(dcEngine()) << "Starting the proxy servers...";
@@ -209,6 +211,11 @@ TcpSocketServer *Engine::tcpSocketServerProxy() const
 WebSocketServer *Engine::webSocketServerProxy() const
 {
     return m_webSocketServerProxy;
+}
+
+UnixSocketServer *Engine::unixSocketServerProxy() const
+{
+    return m_unixSocketServerProxy;
 }
 
 TcpSocketServer *Engine::tcpSocketServerTunnelProxy() const
