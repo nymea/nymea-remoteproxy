@@ -26,6 +26,7 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "terminalwindow.h"
+#include "utils.h"
 
 #include <QTime>
 #include <QDebug>
@@ -93,33 +94,6 @@ TerminalWindow::TerminalWindow(QObject *parent) :
 TerminalWindow::~TerminalWindow()
 {
     cleanup();
-}
-
-QString TerminalWindow::getDurationString(uint timestamp)
-{
-    uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
-    int seconds = static_cast<int>(duration % 60);
-    duration /= 60;
-    int minutes = static_cast<int>(duration % 60);
-    duration /= 60;
-    int hours = static_cast<int>(duration % 24);
-    return QString::asprintf("%02d:%02d:%02d", hours, minutes, seconds);
-}
-
-QString TerminalWindow::humanReadableTraffic(int bytes)
-{
-    double dataCount = bytes;
-    QStringList list;
-    list << "KB" << "MB" << "GB" << "TB";
-
-    QStringListIterator i(list);
-    QString unit("B");
-
-    while(dataCount >= 1024.0 && i.hasNext()) {
-        unit = i.next();
-        dataCount /= 1024.0;
-    }
-    return QString().setNum(dataCount,'f',2) + " " + unit;
 }
 
 void TerminalWindow::resizeWindow()
@@ -196,8 +170,8 @@ void TerminalWindow::paintHeader()
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
-                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
-                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
+                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
                 .arg(windowName);
         break;
     case ViewTunnels:
@@ -210,8 +184,8 @@ void TerminalWindow::paintHeader()
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
                 .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
-                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
-                .arg(humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
+                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
                 .arg(windowName);
         break;
     case ViewTunnelProxy:
@@ -223,7 +197,7 @@ void TerminalWindow::paintHeader()
                 .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("totalClientCount", 0).toInt())
                 .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("serverConnectionsCount", 0).toInt())
                 .arg(m_dataMap.value("tunnelProxyStatistic").toMap().value("clientConnectionsCount", 0).toInt())
-                .arg(humanReadableTraffic(m_dataMap.value("tunnelProxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
+                .arg(Utils::humanReadableTraffic(m_dataMap.value("tunnelProxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
                 .arg(windowName);
         break;
     }
@@ -258,8 +232,8 @@ void TerminalWindow::paintContentClients()
                 .arg(clientConnectionTime)
                 .arg(clientMap.value("duration").toString())
                 .arg(clientMap.value("address").toString(), - 16)
-                .arg(humanReadableTraffic(rxDataCountBytes), - 10)
-                .arg(humanReadableTraffic(txDataCountBytes), - 10)
+                .arg(Utils::humanReadableTraffic(rxDataCountBytes), - 10)
+                .arg(Utils::humanReadableTraffic(txDataCountBytes), - 10)
                 .arg((clientMap.value("authenticated").toBool() ? "A" : "-"))
                 .arg((clientMap.value("tunnelConnected").toBool() ? "T" : "-"))
                 .arg(clientMap.value("name").toString(), -30);
@@ -284,8 +258,8 @@ void TerminalWindow::paintContentTunnels()
 
         QString tunnelPrint = QString("%1 | %2 | %3 | %4 | %5 (%6) <---> %7 (%8)")
                 .arg(tunnelConnectionTime)
-                .arg(getDurationString(timeStamp))
-                .arg(humanReadableTraffic(clientOne.value("rxDataCount").toInt() + clientOne.value("txDataCount").toInt()), - 10)
+                .arg(Utils::getDurationString(timeStamp))
+                .arg(Utils::humanReadableTraffic(clientOne.value("rxDataCount").toInt() + clientOne.value("txDataCount").toInt()), - 10)
                 .arg(clientOne.value("userName").toString())
                 .arg(clientOne.value("name").toString())
                 .arg(clientOne.value("address").toString())
@@ -312,8 +286,8 @@ void TerminalWindow::paintContentTunnelProxy()
         QString serverLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
                 .arg(serverConnectionTime)
                 .arg(serverMap.value("address").toString(), - 16)
-                .arg(humanReadableTraffic(rxDataCountBytes), - 10)
-                .arg(humanReadableTraffic(txDataCountBytes), - 10)
+                .arg(Utils::humanReadableTraffic(rxDataCountBytes), - 10)
+                .arg(Utils::humanReadableTraffic(txDataCountBytes), - 10)
                 .arg(serverMap.value("name").toString(), -30);
 
         QVariantList clientList = serverMap.value("clientConnections").toList();
@@ -343,8 +317,8 @@ void TerminalWindow::paintContentTunnelProxy()
             QString clientLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
                     .arg(QDateTime::fromTime_t(clientMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss"))
                     .arg(clientMap.value("address").toString(), - 16)
-                    .arg(humanReadableTraffic(clientMap.value("rxDataCount").toInt()), - 10)
-                    .arg(humanReadableTraffic(clientMap.value("txDataCount").toInt()), - 10)
+                    .arg(Utils::humanReadableTraffic(clientMap.value("rxDataCount").toInt()), - 10)
+                    .arg(Utils::humanReadableTraffic(clientMap.value("txDataCount").toInt()), - 10)
                     .arg(clientMap.value("name").toString(), -30);
 
             mvwprintw(m_contentWindow, i, 6, "%s", clientLinePrint.trimmed().toLatin1().constData());
@@ -437,7 +411,7 @@ void TerminalWindow::refreshWindow(const QVariantMap &dataMap)
 
     foreach (const QVariant &clientVariant, statisticMap.value("clients").toList()) {
         QVariantMap clientMap = clientVariant.toMap();
-        clientMap.insert("duration", getDurationString(clientMap.value("timestamp").toUInt()));
+        clientMap.insert("duration", Utils::getDurationString(clientMap.value("timestamp").toUInt()));
         m_clientHash.insert(clientMap.value("id").toString(), clientMap);
     }
 }

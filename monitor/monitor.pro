@@ -5,11 +5,14 @@ TEMPLATE = app
 
 HEADERS += \
     monitorclient.h \
+    noninteractivemonitor.h \
     terminalwindow.h \
-    monitor.h
+    monitor.h \
+    utils.h
 
 SOURCES += main.cpp \
     monitorclient.cpp \
+    noninteractivemonitor.cpp \
     terminalwindow.cpp \
     monitor.cpp
 

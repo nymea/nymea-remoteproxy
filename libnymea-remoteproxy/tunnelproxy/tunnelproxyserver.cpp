@@ -328,6 +328,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
     }
 
     qCDebug(dcTunnelProxyServerTraffic()) << "Client data available" << tunnelProxyClient << qUtf8Printable(data);
+    tunnelProxyClient->addRxDataCount(data.count());
 
     if (tunnelProxyClient->type() == TunnelProxyClient::TypeClient) {
         // Send the data to the server using slip encoded frame
@@ -344,8 +345,11 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         frame.socketAddress = clientConnection->socketAddress();
         frame.data = data;
         qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << "\n" << data;
-        clientConnection->serverConnection()->transportClient()->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+        QByteArray rawData = SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame));
+        clientConnection->serverConnection()->transportClient()->sendData(rawData);
+        clientConnection->serverConnection()->transportClient()->addTxDataCount(rawData.count());
         m_troughputCounter += data.count();
+
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
         // Data coming from a connected server connection
         if (tunnelProxyClient->slipEnabled()) {
@@ -376,7 +380,8 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
 
                     qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
                     clientConnection->transportClient()->sendData(frame.data);
-                    m_troughputCounter += data.count();
+                    clientConnection->transportClient()->addTxDataCount(frame.data.count());
+                    m_troughputCounter += frame.data.count();
                 }
             }
         } else {

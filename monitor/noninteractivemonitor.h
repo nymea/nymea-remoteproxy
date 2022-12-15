@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,69 +25,24 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TERMINALWINDOW_H
-#define TERMINALWINDOW_H
+#ifndef NONINTERACTIVEMONITOR_H
+#define NONINTERACTIVEMONITOR_H
 
 #include <QObject>
-#include <QTimer>
-#include <QVariantMap>
+#include "monitorclient.h"
 
-#include <ncurses.h>
-
-class TerminalWindow : public QObject
+class NonInteractiveMonitor : public QObject
 {
     Q_OBJECT
 public:
-
-    enum View {
-        ViewClients,
-        ViewTunnels,
-        ViewTunnelProxy
-    };
-    Q_ENUM(View)
-
-    explicit TerminalWindow(QObject *parent = nullptr);
-    ~TerminalWindow();
+    explicit NonInteractiveMonitor(const QString &serverName, QObject *parent = nullptr);
 
 private:
-    WINDOW *m_mainWindow = nullptr;
-    WINDOW *m_headerWindow = nullptr;
-    WINDOW *m_contentWindow = nullptr;
-
-    int m_headerHeight = 3;
-    int m_terminalSizeX = 0;
-    int m_terminalSizeY = 0;
-
-    View m_view = ViewClients;
-    int m_tunnelProxyScollIndex = 0;
-
-
-    // Tabs
-    QList<View> m_tabs;
-
-    QVariantMap m_dataMap;
-    QHash<QString, QVariantMap> m_clientHash;
-
-
-    // content paint methods
-    void resizeWindow();
-    void drawWindowBorder(WINDOW *window);
-    void moveTabRight();
-    void moveTabLeft();
-
-    void paintHeader();
-    void paintContentClients();
-    void paintContentTunnels();
-    void paintContentTunnelProxy();
-
-    void cleanup();
+    MonitorClient *m_monitorClient = nullptr;
 
 private slots:
-    void eventLoop();
-
-public slots:
-    void refreshWindow(const QVariantMap &dataMap);
+    void onConnected();
 
 };
 
-#endif // TERMINALWINDOW_H
+#endif // NONINTERACTIVEMONITOR_H

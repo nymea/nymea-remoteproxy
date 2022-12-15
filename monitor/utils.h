@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,69 +25,41 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef TERMINALWINDOW_H
-#define TERMINALWINDOW_H
+#ifndef UTILS_H
+#define UTILS_H
 
-#include <QObject>
-#include <QTimer>
-#include <QVariantMap>
+#include <QString>
+#include <QDateTime>
 
-#include <ncurses.h>
+class Utils {
 
-class TerminalWindow : public QObject
-{
-    Q_OBJECT
 public:
+    Utils() = default;
 
-    enum View {
-        ViewClients,
-        ViewTunnels,
-        ViewTunnelProxy
-    };
-    Q_ENUM(View)
+    inline static QString getDurationString(uint timestamp) {
+        uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
+        int seconds = static_cast<int>(duration % 60);
+        duration /= 60;
+        int minutes = static_cast<int>(duration % 60);
+        duration /= 60;
+        int hours = static_cast<int>(duration % 24);
+        return QString::asprintf("%02d:%02d:%02d", hours, minutes, seconds);
+    }
 
-    explicit TerminalWindow(QObject *parent = nullptr);
-    ~TerminalWindow();
+    inline static QString humanReadableTraffic(int bytes) {
+        double dataCount = bytes;
+        QStringList list;
+        list << "KB" << "MB" << "GB" << "TB";
 
-private:
-    WINDOW *m_mainWindow = nullptr;
-    WINDOW *m_headerWindow = nullptr;
-    WINDOW *m_contentWindow = nullptr;
+        QStringListIterator i(list);
+        QString unit("B");
 
-    int m_headerHeight = 3;
-    int m_terminalSizeX = 0;
-    int m_terminalSizeY = 0;
-
-    View m_view = ViewClients;
-    int m_tunnelProxyScollIndex = 0;
-
-
-    // Tabs
-    QList<View> m_tabs;
-
-    QVariantMap m_dataMap;
-    QHash<QString, QVariantMap> m_clientHash;
-
-
-    // content paint methods
-    void resizeWindow();
-    void drawWindowBorder(WINDOW *window);
-    void moveTabRight();
-    void moveTabLeft();
-
-    void paintHeader();
-    void paintContentClients();
-    void paintContentTunnels();
-    void paintContentTunnelProxy();
-
-    void cleanup();
-
-private slots:
-    void eventLoop();
-
-public slots:
-    void refreshWindow(const QVariantMap &dataMap);
-
+        while(dataCount >= 1024.0 && i.hasNext()) {
+            unit = i.next();
+            dataCount /= 1024.0;
+        }
+        return QString().setNum(dataCount,'f',2) + " " + unit;
+    }
 };
 
-#endif // TERMINALWINDOW_H
+#endif // UTILS_H
