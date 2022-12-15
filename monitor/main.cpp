@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -33,6 +33,7 @@
 #include <QCommandLineOption>
 
 #include "monitor.h"
+#include "noninteractivemonitor.h"
 #include "../version.h"
 
 int main(int argc, char *argv[])
@@ -58,6 +59,10 @@ int main(int argc, char *argv[])
     QCommandLineOption socketOption(QStringList() << "s" << "socket", "The socket descriptor for the nymea-remoteproxy monitor socket. Default is /tmp/nymea-remoteproxy-monitor.sock", "socket");
     socketOption.setDefaultValue("/tmp/nymea-remoteproxy-monitor.sock");
     parser.addOption(socketOption);
+
+    QCommandLineOption noninteractiveOption(QStringList() << "n" << "non-interactive", "Connect to the server, list all data and close the connection. This works only for the tunnelproxy.");
+    parser.addOption(noninteractiveOption);
+
     parser.process(application);
 
     // Check socket file
@@ -72,7 +77,13 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    Monitor monitor(parser.value(socketOption));
+    if (parser.isSet(noninteractiveOption)) {
+        NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption));
+        Q_UNUSED(monitor);
+    } else {
+        Monitor *monitor = new Monitor(parser.value(socketOption));
+        Q_UNUSED(monitor);
+    }
 
     return application.exec();
 }
