@@ -207,13 +207,14 @@ int main(int argc, char *argv[])
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
-
     Authenticator *authenticator = nullptr;
     if (parser.isSet(mockAuthenticatorOption)) {
         authenticator = qobject_cast<Authenticator *>(new DummyAuthenticator(nullptr));
     } else {
-        // Create default authenticator
-        authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(configuration->awsCredentialsUrl(), nullptr));
+        if (configuration->proxyEnabled()) {
+            // Create default authenticator
+            authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(configuration->awsCredentialsUrl(), nullptr));
+        }
     }
 
     // Configure and start the engines
