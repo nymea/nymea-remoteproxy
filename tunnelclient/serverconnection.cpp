@@ -1,17 +1,23 @@
 #include "serverconnection.h"
 
-ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, bool insecure, QObject *parent) :
+ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, bool insecure, bool echo, QObject *parent) :
     QObject(parent),
     m_serverUrl(serverUrl),
     m_name(name),
     m_uuid(uuid),
-    m_insecure(insecure)
+    m_insecure(insecure),
+    m_echo(echo)
 {
 
     m_socketServer = new TunnelProxySocketServer(m_uuid, m_name, this);
 
     connect(m_socketServer, &TunnelProxySocketServer::clientConnected, this, [=](TunnelProxySocket *tunnelProxySocket){
         qDebug() << "[+] Client connected" << tunnelProxySocket;
+        if (m_echo) {
+            connect(tunnelProxySocket, &TunnelProxySocket::dataReceived, m_socketServer, [tunnelProxySocket](const QByteArray &data){
+                tunnelProxySocket->writeData(data);
+            });
+        }
     });
 
     connect(m_socketServer, &TunnelProxySocketServer::clientDisconnected, this, [=](TunnelProxySocket *tunnelProxySocket){
@@ -35,7 +41,6 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
             }
         }
     });
-
 }
 
 void ServerConnection::startServer()

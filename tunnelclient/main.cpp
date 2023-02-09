@@ -113,10 +113,11 @@ int main(int argc, char *argv[])
                                              "or server on the tunnel proxy interface.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2021 nymea GmbH <developer@nymea.io>\n")
+                                             "Copyright %3 %4 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
-                                     .arg(QChar(0xA9)));
+                                     .arg(QChar(0xA9))
+                                     .arg(COPYRIGHT_YEAR_STRING));
 
     QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default ssl://dev-remoteproxy.nymea.io:2213", "url");
     urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:2213");
@@ -133,6 +134,9 @@ int main(int argc, char *argv[])
 
     QCommandLineOption nameOption(QStringList() << "n" << "name", "The name of the connecting client. If not specified a default name will be selected.", "name");
     parser.addOption(nameOption);
+
+    QCommandLineOption randomDataOption(QStringList() << "r" << "random", "Send random data trough the tunnel. If you start a server, it will echo any client data received.");
+    parser.addOption(randomDataOption);
 
     QCommandLineOption uuidOption(QStringList() << "uuid", "The uuid of the connecting client. If not specified, a new one will be created.", "uuid");
     parser.addOption(uuidOption);
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
 
 
         // Create the server connection
-        ServerConnection *server = new ServerConnection(serverUrl, name, uuid, parser.isSet(insecureOption));
+        ServerConnection *server = new ServerConnection(serverUrl, name, uuid, parser.isSet(insecureOption), parser.isSet(randomDataOption));
         server->startServer();
 
     } else {
@@ -238,7 +242,7 @@ int main(int argc, char *argv[])
         QLoggingCategory::installFilter(loggingCategoryFilter);
 
         // Create the server connection
-        ClientConnection *client = new ClientConnection(serverUrl, name, uuid, serverUuid, parser.isSet(insecureOption));
+        ClientConnection *client = new ClientConnection(serverUrl, name, uuid, serverUuid, parser.isSet(insecureOption), parser.isSet(randomDataOption));
         client->connectToServer();
     }
 

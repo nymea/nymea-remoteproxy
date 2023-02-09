@@ -99,10 +99,11 @@ int main(int argc, char *argv[])
                                              "a server application as client perspective.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2021 nymea GmbH <developer@nymea.io>\n")
+                                             "Copyright %3 %4 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
-                                     .arg(QChar(0xA9)));
+                                     .arg(QChar(0xA9))
+                                     .arg(COPYRIGHT_YEAR_STRING));
 
     QCommandLineOption urlOption(QStringList() << "u" << "url", "The proxy server url. Default ssl://dev-remoteproxy.nymea.io:4433", "url");
     urlOption.setDefaultValue("ssl://dev-remoteproxy.nymea.io:4433");
