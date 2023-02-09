@@ -54,6 +54,7 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
 
     settings.beginGroup("ProxyServer");
     setServerName(settings.value("name", "nymea-remoteproxy").toString());
+    setProxyEnabled(settings.value("proxyEnabled", true).toBool());
     setWriteLogFile(settings.value("writeLogs", false).toBool());
     setLogFileName(settings.value("logFile", "/var/log/nymea-remoteproxy.log").toString());
     setLogEngineEnabled(settings.value("logEngineEnabled", false).toBool());
@@ -241,6 +242,16 @@ void ProxyConfiguration::setAloneTimeout(int timeout)
     m_aloneTimeout = timeout;
 }
 
+bool ProxyConfiguration::proxyEnabled() const
+{
+    return m_proxyEnabled;
+}
+
+void ProxyConfiguration::setProxyEnabled(bool proxyEnabled)
+{
+    m_proxyEnabled = proxyEnabled;
+}
+
 QString ProxyConfiguration::awsRegion() const
 {
     return m_awsRegion;
@@ -419,10 +430,6 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "  - Authentication timeout:" << configuration->authenticationTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Inactive timeout:" << configuration->inactiveTimeout() << " [ms]" << endl;
     debug.nospace() << "  - Alone timeout:" << configuration->aloneTimeout() << " [ms]" << endl;
-    debug.nospace() << "AWS configuration" << endl;
-    debug.nospace() << "  - Region:" << configuration->awsRegion() << endl;
-    debug.nospace() << "  - Authorizer lambda function:" << configuration->awsAuthorizerLambdaFunctionName() << endl;
-    debug.nospace() << "  - Credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
     debug.nospace() << "SSL configuration" << endl;
     debug.nospace() << "  - Enabled:" << configuration->sslEnabled() << endl;
     debug.nospace() << "  - Certificate:" << configuration->sslCertificateFileName() << endl;
@@ -444,14 +451,22 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "      Locality name:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::LocalityName) << endl;
     debug.nospace() << "      State/Province:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::StateOrProvinceName) << endl;
     debug.nospace() << "      Email address:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::EmailAddress) << endl;
-    debug.nospace() << "WebSocketServer Proxy" << endl;
-    debug.nospace() << "  - Host:" << configuration->webSocketServerProxyHost().toString() << endl;
-    debug.nospace() << "  - Port:" << configuration->webSocketServerProxyPort() << endl;
-    debug.nospace() << "TcpServer Proxy" << endl;
-    debug.nospace() << "  - Host:" << configuration->tcpServerHost().toString() << endl;
-    debug.nospace() << "  - Port:" << configuration->tcpServerPort() << endl;
-    debug.nospace() << "UnixSocketServer Proxy" << endl;
-    debug.nospace() << "  - Filename:" << configuration->unixSocketFileName() << endl;
+    if (configuration->proxyEnabled()) {
+        debug.nospace() << "AWS configuration" << endl;
+        debug.nospace() << "  - Region:" << configuration->awsRegion() << endl;
+        debug.nospace() << "  - Authorizer lambda function:" << configuration->awsAuthorizerLambdaFunctionName() << endl;
+        debug.nospace() << "  - Credentials URL:" << configuration->awsCredentialsUrl().toString() << endl;
+        debug.nospace() << "WebSocketServer Proxy" << endl;
+        debug.nospace() << "  - Host:" << configuration->webSocketServerProxyHost().toString() << endl;
+        debug.nospace() << "  - Port:" << configuration->webSocketServerProxyPort() << endl;
+        debug.nospace() << "TcpServer Proxy" << endl;
+        debug.nospace() << "  - Host:" << configuration->tcpServerHost().toString() << endl;
+        debug.nospace() << "  - Port:" << configuration->tcpServerPort() << endl;
+        debug.nospace() << "UnixSocketServer Proxy" << endl;
+        debug.nospace() << "  - Filename:" << configuration->unixSocketFileName() << endl;
+    } else {
+        debug.nospace() << "Proxy Server: disabled" << endl;
+    }
     debug.nospace() << "WebSocketServer TunnelProxy" << endl;
     debug.nospace() << "  - Host:" << configuration->webSocketServerTunnelProxyHost().toString() << endl;
     debug.nospace() << "  - Port:" << configuration->webSocketServerTunnelProxyPort() << endl;

@@ -64,10 +64,8 @@ void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString 
     if (!client)
         return;
 
-    if (client->state() == QAbstractSocket::ConnectedState) {
-        qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
-        client->close();
-    }
+    qCDebug(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+    client->close();
 }
 
 bool TcpSocketServer::running() const

@@ -74,6 +74,9 @@ public:
     int aloneTimeout() const;
     void setAloneTimeout(int timeout);
 
+    bool proxyEnabled() const;
+    void setProxyEnabled(bool proxyEnabled);
+
     // AWS
     QString awsRegion() const;
     void setAwsRegion(const QString &region);
@@ -144,6 +147,8 @@ private:
     int m_authenticationTimeout = 8000;
     int m_inactiveTimeout = 8000;
     int m_aloneTimeout = 8000;
+
+    bool m_proxyEnabled = true;
 
     // AWS
     QString m_awsRegion;
