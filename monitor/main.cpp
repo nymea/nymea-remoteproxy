@@ -50,10 +50,11 @@ int main(int argc, char *argv[])
     parser.setApplicationDescription(QString("\nThe nymea remote proxy monitor allowes to monitor the live server activity on the a local instance.\n\n"
                                              "Server version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2022 nymea GmbH <developer@nymea.io>\n")
+                                             "Copyright %3 %4 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
-                                     .arg(QChar(0xA9)));
+                                     .arg(QChar(0xA9))
+                                     .arg(COPYRIGHT_YEAR_STRING));
 
 
     QCommandLineOption socketOption(QStringList() << "s" << "socket", "The socket descriptor for the nymea-remoteproxy monitor socket. Default is /tmp/nymea-remoteproxy-monitor.sock", "socket");

@@ -1,15 +1,22 @@
 #include "clientconnection.h"
 
-ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, const QUuid &serverUuid, bool insecure, QObject *parent) :
+ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, const QUuid &serverUuid, bool insecure, bool sendRandomData, QObject *parent) :
     QObject(parent),
     m_serverUrl(serverUrl),
     m_name(name),
     m_uuid(uuid),
     m_serverUuid(serverUuid),
-    m_insecure(insecure)
+    m_insecure(insecure),
+    m_sendRandomData(sendRandomData)
 {
-
     m_remoteConnection = new TunnelProxyRemoteConnection(m_uuid, m_name);
+    m_timer.setSingleShot(true);
+    connect(&m_timer, &QTimer::timeout, this, [=](){
+        if (m_remoteConnection->remoteConnected()) {
+            m_remoteConnection->sendData(generateRandomString(100).toUtf8());
+            m_timer.start(1000);
+        }
+    });
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::stateChanged, this, [this](TunnelProxyRemoteConnection::State state){
         qDebug() << state;
@@ -22,12 +29,16 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
         }
     });
 
-    connect(m_remoteConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged, this, [](bool remoteConnected){
+    connect(m_remoteConnection, &TunnelProxyRemoteConnection::remoteConnectedChanged, this, [this](bool remoteConnected){
         qDebug() << "Remote connection" << (remoteConnected ? "established successfully" : "disconnected");
+        if (remoteConnected) {
+            m_timer.start(1000);
+        }
     });
 
-    connect(m_remoteConnection, &TunnelProxyRemoteConnection::dataReady, this, [](const QByteArray &data){
-        qDebug() << "Data received" << data;
+    connect(m_remoteConnection, &TunnelProxyRemoteConnection::dataReady, this, [this](const QByteArray &data){
+        if (!m_sendRandomData)
+            qDebug() << "Data received" << data;
     });
 
     connect(m_remoteConnection, &TunnelProxyRemoteConnection::errorOccurred, this, [](QAbstractSocket::SocketError error){
@@ -49,4 +60,14 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
 void ClientConnection::connectToServer()
 {
     m_remoteConnection->connectServer(m_serverUrl, m_serverUuid);
+}
+
+QString ClientConnection::generateRandomString(uint length) const
+{
+    const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+    QString randomString;
+    for(uint i = 0; i < length; i++) {
+        randomString.append(possibleCharacters.at(qrand() % possibleCharacters.length()));
+    }
+    return randomString;
 }

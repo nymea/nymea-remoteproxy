@@ -50,15 +50,15 @@ private:
     QSslConfiguration m_config;
 
 signals:
-    void clientConnected(QSslSocket *socket);
-    void clientDisconnected(QSslSocket *socket);
+    void socketConnected(QSslSocket *socket);
+    void socketDisconnected(QSslSocket *socket);
     void dataAvailable(QSslSocket *socket, const QByteArray &data);
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
 
 private slots:
-    void onClientDisconnected();
+    void onSocketDisconnected();
     void onSocketReadyRead();
     void onSocketError(QAbstractSocket::SocketError);
 
@@ -87,8 +87,8 @@ private:
 
 private slots:
     void onDataAvailable(QSslSocket *client, const QByteArray &data);
-    void onClientConnected(QSslSocket *client);
-    void onClientDisconnected(QSslSocket *client);
+    void onSocketConnected(QSslSocket *client);
+    void onSocketDisconnected(QSslSocket *client);
 
 public slots:
     bool startServer() override;

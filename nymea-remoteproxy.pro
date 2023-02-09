@@ -4,6 +4,7 @@ include(nymea-remoteproxy.pri)
 SERVER_NAME=nymea-remoteproxy
 API_VERSION_MAJOR=0
 API_VERSION_MINOR=5
+COPYRIGHT_YEAR=2023
 
 # Parse and export SERVER_VERSION
 SERVER_VERSION=$$system('dpkg-parsechangelog | sed -n -e "s/^Version: //p"')

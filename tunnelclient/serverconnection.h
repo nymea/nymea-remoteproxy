@@ -12,7 +12,7 @@ class ServerConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit ServerConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, bool insecure, QObject *parent = nullptr);
+    explicit ServerConnection(const QUrl &serverUrl, const QString &name, const QUuid &uuid, bool insecure, bool echo, QObject *parent = nullptr);
 
     void startServer();
 
@@ -21,6 +21,7 @@ private:
     QString m_name;
     QUuid m_uuid;
     bool m_insecure = false;
+    bool m_echo = false;
 
     TunnelProxySocketServer *m_socketServer = nullptr;
 };

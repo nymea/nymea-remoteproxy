@@ -3,16 +3,24 @@
 CHILD_PROCESSES=()
 SERVER_URL=tcp://127.0.0.1:2213
 
+SERVER_COUNTER=0
+CLIENT_COUNTER=0
+TOTAL_COUNTER=0
+
 # Start server: Arguments: serverName serverUuid
 function createServer() {
     echo "--> Create server"
-    nymea-remoteproxy-tunnelclient -s -n "$1" --uuid "$2" -u $SERVER_URL -i & CHILD_PROCESSES+=("$!")
+    SERVER_COUNTER=$(($SERVER_COUNTER + 1))
+    TOTAL_COUNTER=$(($TOTAL_COUNTER + 1))
+    nymea-remoteproxy-tunnelclient -s -r -n "$1" --uuid "$2" -u $SERVER_URL -i & CHILD_PROCESSES+=("$!")
 }
 
 # Create client: Arguments: clientName serverUuid
 function createClient() {
     echo "--> Create client"
-    nymea-remoteproxy-tunnelclient -c -n "$1" --server-uuid "$2" -u $SERVER_URL -i & CHILD_PROCESSES+=("$!")
+    CLIENT_COUNTER=$(($CLIENT_COUNTER + 1))
+    TOTAL_COUNTER=$(($TOTAL_COUNTER + 1))
+    nymea-remoteproxy-tunnelclient -c -r -n "$1" --server-uuid "$2" -u $SERVER_URL -i & CHILD_PROCESSES+=("$!")
 }
 
 
@@ -38,7 +46,6 @@ function cleanup {
 
 trap cleanup EXIT
 
-
 createTunnelConnections 5
 createTunnelConnections 3
 createTunnelConnections 9
@@ -51,5 +58,12 @@ createTunnelConnections 3
 createTunnelConnections 2
 createTunnelConnections 1
 createTunnelConnections 8
+
+sleep 10
+
+echo "------------------------------"
+echo "Total: $TOTAL_COUNTER"
+echo "Servers: $SERVER_COUNTER"
+echo "Clients: $CLIENT_COUNTER"
 
 sleep 300

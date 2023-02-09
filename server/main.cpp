@@ -118,10 +118,11 @@ int main(int argc, char *argv[])
                                              "registered nymea deamons to establish a tunnel connection.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
-                                             "Copyright %3 2022 nymea GmbH <developer@nymea.io>\n")
+                                             "Copyright %3 %4 nymea GmbH <developer@nymea.io>\n")
                                      .arg(SERVER_VERSION_STRING)
                                      .arg(API_VERSION_STRING)
-                                     .arg(QChar(0xA9)));
+                                     .arg(QChar(0xA9))
+                                     .arg(COPYRIGHT_YEAR_STRING));
 
     QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.",
                                      "logfile", "/var/log/nymea-remoteproxy.log");
