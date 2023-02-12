@@ -58,7 +58,7 @@ private:
     int m_terminalSizeX = 0;
     int m_terminalSizeY = 0;
 
-    View m_view = ViewClients;
+    View m_view = ViewTunnelProxy;
     int m_tunnelProxyScollIndex = 0;
 
 
