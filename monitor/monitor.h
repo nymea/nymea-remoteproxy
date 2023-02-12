@@ -37,11 +37,12 @@ class Monitor : public QObject
 {
     Q_OBJECT
 public:
-    explicit Monitor(const QString &serverName, QObject *parent = nullptr);
+    explicit Monitor(const QString &serverName, bool jsonMode, QObject *parent = nullptr);
 
 private:
     TerminalWindow *m_terminal = nullptr;
     MonitorClient *m_monitorClient = nullptr;
+    bool m_jsonMode = false;
 
 private slots:
     void onConnected();

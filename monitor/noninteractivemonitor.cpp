@@ -33,7 +33,7 @@
 NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, QObject *parent)
     : QObject{parent}
 {
-    m_monitorClient = new MonitorClient(serverName, this);
+    m_monitorClient = new MonitorClient(serverName, false, this);
     connect(m_monitorClient, &MonitorClient::connected, this, &NonInteractiveMonitor::onConnected);
 
     m_monitorClient->connectMonitor();
@@ -42,17 +42,24 @@ NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, QObject 
 void NonInteractiveMonitor::onConnected()
 {
     connect(m_monitorClient, &MonitorClient::dataReady, this, [](const QVariantMap &dataMap){
+
+        QVariantMap tunnelProxyMap = dataMap.value("tunnelProxyStatistic").toMap();
+
         qInfo().noquote() << "---------------------------------------------------------------------";
         qInfo().noquote() << "Server name:" << dataMap.value("serverName", "-").toString();
         qInfo().noquote() << "Server version:" << dataMap.value("serverVersion", "-").toString();
         qInfo().noquote() << "API version:" << dataMap.value("apiVersion", "-").toString();
-        qInfo().noquote() << "Total client count:" << dataMap.value("tunnelProxyStatistic").toMap().value("totalClientCount", 0).toInt();
-        qInfo().noquote() << "Server connections:" << dataMap.value("tunnelProxyStatistic").toMap().value("serverConnectionsCount", 0).toInt();
-        qInfo().noquote() << "Client connections:" << dataMap.value("tunnelProxyStatistic").toMap().value("clientConnectionsCount", 0).toInt();
-        qInfo().noquote() << "Data troughput:" << Utils::humanReadableTraffic(dataMap.value("tunnelProxyStatistic").toMap().value("troughput", 0).toInt()) + " / s";
+        qInfo().noquote() << "Total client count:" << tunnelProxyMap.value("totalClientCount", 0).toInt();
+        qInfo().noquote() << "Server connections:" << tunnelProxyMap.value("serverConnectionsCount", 0).toInt();
+        qInfo().noquote() << "Client connections:" << tunnelProxyMap.value("clientConnectionsCount", 0).toInt();
+        qInfo().noquote() << "Data troughput:" << Utils::humanReadableTraffic(tunnelProxyMap.value("troughput", 0).toInt()) + " / s";
+        qInfo().noquote() << "---------------------------------------------------------------------";
+        QVariantMap transportsMap = tunnelProxyMap.value("transports").toMap();
+        foreach(const QString &transportInterface, transportsMap.keys()) {
+            qInfo().noquote().nospace() << "Connections on " << transportInterface << ": " << transportsMap.value(transportInterface).toInt();
+        }
         qInfo().noquote() << "---------------------------------------------------------------------";
 
-        QVariantMap tunnelProxyMap = dataMap.value("tunnelProxyStatistic").toMap();
         foreach (const QVariant &serverVariant, tunnelProxyMap.value("tunnelConnections").toList()) {
             QVariantMap serverMap = serverVariant.toMap();
             QVariantList clientList = serverMap.value("clientConnections").toList();

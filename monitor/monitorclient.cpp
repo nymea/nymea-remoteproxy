@@ -29,9 +29,10 @@
 
 #include <QJsonDocument>
 
-MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
+MonitorClient::MonitorClient(const QString &serverName, bool jsonMode, QObject *parent) :
     QObject(parent),
-    m_serverName(serverName)
+    m_serverName(serverName),
+    m_jsonMode(jsonMode)
 {
     m_socket = new QLocalSocket(this);
 
@@ -65,7 +66,10 @@ void MonitorClient::onReadyRead()
         return;
     }
 
-    //qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
+    if (m_jsonMode) {
+        qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
+        return;
+    }
 
     QVariantMap dataMap = jsonDoc.toVariant().toMap();
     emit dataReady(dataMap);

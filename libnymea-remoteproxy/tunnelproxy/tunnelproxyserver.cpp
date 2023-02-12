@@ -201,6 +201,11 @@ QVariantMap TunnelProxyServer::currentStatistics()
     statisticsMap.insert("totalClientCount", m_proxyClients.count());
     statisticsMap.insert("serverConnectionsCount", m_tunnelProxyServerConnections.count());
     statisticsMap.insert("clientConnectionsCount", m_tunnelProxyClientConnections.count());
+    QVariantMap transports;
+    foreach (TransportInterface *transportInterface, m_transportInterfaces) {
+        transports.insert(transportInterface->name(), transportInterface->connectionsCount());
+    }
+    statisticsMap.insert("transports", transports);
     statisticsMap.insert("troughput", m_troughput);
 
     QVariantList tunnelConnections;
@@ -267,8 +272,8 @@ void TunnelProxyServer::tick()
 void TunnelProxyServer::onClientConnected(const QUuid &clientId, const QHostAddress &address)
 {
     TransportInterface *interface = static_cast<TransportInterface *>(sender());
-
     qCDebug(dcTunnelProxyServer()) << "New client connected"  << interface->serverName() << clientId.toString() << address.toString();
+
     TunnelProxyClient *tunnelProxyClient = new TunnelProxyClient(interface, clientId, address, this);
     m_proxyClients.insert(clientId, tunnelProxyClient);
     m_jsonRpcServer->registerClient(tunnelProxyClient);

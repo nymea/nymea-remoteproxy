@@ -81,6 +81,16 @@ void WebSocketServer::killClientConnection(const QUuid &clientId, const QString 
     client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
 }
 
+QString WebSocketServer::name() const
+{
+    return "WebSocketServer";
+}
+
+uint WebSocketServer::connectionsCount() const
+{
+    return m_clientList.count();
+}
+
 void WebSocketServer::onClientConnected()
 {
     // Got a new client connected

@@ -73,6 +73,16 @@ void UnixSocketServer::killClientConnection(const QUuid &clientId, const QString
     }
 }
 
+QString UnixSocketServer::name() const
+{
+    return "UnixSocketServer";
+}
+
+uint UnixSocketServer::connectionsCount() const
+{
+    return m_clientList.count();
+}
+
 bool UnixSocketServer::running() const
 {
     if (!m_server)
