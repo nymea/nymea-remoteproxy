@@ -37,11 +37,12 @@ class MonitorClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit MonitorClient(const QString &serverName, QObject *parent = nullptr);
+    explicit MonitorClient(const QString &serverName, bool jsonMode, QObject *parent = nullptr);
 
 private:
     QString m_serverName;
     QLocalSocket *m_socket = nullptr;
+    bool m_jsonMode = false;
 
 signals:
     void connected();

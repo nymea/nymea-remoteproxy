@@ -64,6 +64,9 @@ int main(int argc, char *argv[])
     QCommandLineOption noninteractiveOption(QStringList() << "n" << "non-interactive", "Connect to the server, list all data and close the connection. This works only for the tunnelproxy.");
     parser.addOption(noninteractiveOption);
 
+    QCommandLineOption jsonOption(QStringList() << "j" << "json", "Connect to the server and print the raw json data.");
+    parser.addOption(jsonOption);
+
     parser.process(application);
 
     // Check socket file
@@ -82,7 +85,7 @@ int main(int argc, char *argv[])
         NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption));
         Q_UNUSED(monitor);
     } else {
-        Monitor *monitor = new Monitor(parser.value(socketOption));
+        Monitor *monitor = new Monitor(parser.value(socketOption), parser.isSet(jsonOption));
         Q_UNUSED(monitor);
     }
 

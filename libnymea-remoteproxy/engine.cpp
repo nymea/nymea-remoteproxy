@@ -294,6 +294,11 @@ void Engine::onTimerTick()
                                    serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
 
         m_currentTimeCounter = 0;
+
+
+        if (m_tunnelProxyServer) {
+            m_tunnelProxyServer->tick();
+        }
     }
 }
 
