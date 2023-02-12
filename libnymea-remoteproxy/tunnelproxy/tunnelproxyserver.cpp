@@ -205,6 +205,11 @@ QVariantMap TunnelProxyServer::currentStatistics()
 
     QVariantList tunnelConnections;
     foreach (TunnelProxyServerConnection *serverConnection, m_tunnelProxyServerConnections) {
+
+        // Show only active clients
+        if (serverConnection->clientConnections().isEmpty())
+            continue;
+
         QVariantMap serverMap;
         serverMap.insert("id", serverConnection->transportClient()->clientId().toString());
         serverMap.insert("address", serverConnection->transportClient()->peerAddress().toString());
