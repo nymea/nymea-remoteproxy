@@ -42,6 +42,24 @@ MonitorClient::MonitorClient(const QString &serverName, bool jsonMode, QObject *
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccurred(QLocalSocket::LocalSocketError)));
 }
 
+void MonitorClient::processBufferData()
+{
+    QJsonParseError error;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(m_dataBuffer, &error);
+    if(error.error != QJsonParseError::NoError) {
+        qWarning() << "Failed to parse JSON data:" << error.errorString();
+        return;
+    }
+
+    if (m_jsonMode) {
+        qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
+        return;
+    }
+
+    QVariantMap dataMap = jsonDoc.toVariant().toMap();
+    emit dataReady(dataMap);
+}
+
 void MonitorClient::onConnected()
 {
     qDebug() << "Monitor connected to" << m_serverName;
@@ -56,23 +74,20 @@ void MonitorClient::onDisconnected()
 
 void MonitorClient::onReadyRead()
 {
+    // Note: the server sends the data compact with '\n' at the end
     QByteArray data = m_socket->readAll();
 
-    QJsonParseError error;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
-
-    if(error.error != QJsonParseError::NoError) {
-        qWarning() << "Failed to parse JSON data" << data << ":" << error.errorString();
+    int index = data.indexOf("}\n");
+    if (index < 0) {
+        // Append the entire data and continue
+        m_dataBuffer.append(data);
         return;
+    } else {
+        m_dataBuffer.append(data.left(index + 1));
+        processBufferData();
+        m_dataBuffer.clear();
+        m_dataBuffer.append(data.right(data.length() - index - 2));
     }
-
-    if (m_jsonMode) {
-        qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
-        return;
-    }
-
-    QVariantMap dataMap = jsonDoc.toVariant().toMap();
-    emit dataReady(dataMap);
 }
 
 void MonitorClient::onErrorOccurred(QLocalSocket::LocalSocketError socketError)

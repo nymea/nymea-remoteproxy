@@ -64,7 +64,6 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     returns.insert("timestamp", JsonTypes::basicTypeToString(JsonTypes::UInt));
     setReturns("Ping", returns);
 
-
     // Client
     params.clear(); returns.clear();
     setDescription("RegisterClient", "Register a new TunnelProxy client on TunnelProxy server with the given serverUuid. "

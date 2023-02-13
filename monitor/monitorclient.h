@@ -43,6 +43,9 @@ private:
     QString m_serverName;
     QLocalSocket *m_socket = nullptr;
     bool m_jsonMode = false;
+    QByteArray m_dataBuffer;
+
+    void processBufferData();
 
 signals:
     void connected();
