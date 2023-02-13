@@ -289,12 +289,12 @@ void Engine::onTimerTick()
 
         QVariantMap serverStatistics = createServerStatistic();
         m_monitorServer->updateClients(serverStatistics);
+
         m_logEngine->logStatistics(serverStatistics.value("proxyStatistic").toMap().value("tunnelCount").toInt(),
                                    serverStatistics.value("proxyStatistic").toMap().value("clientCount").toInt(),
                                    serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
 
         m_currentTimeCounter = 0;
-
 
         if (m_tunnelProxyServer) {
             m_tunnelProxyServer->tick();

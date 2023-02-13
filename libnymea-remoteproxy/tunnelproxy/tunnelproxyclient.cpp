@@ -1,6 +1,7 @@
 #include "tunnelproxyclient.h"
 #include "loggingcategories.h"
 #include "server/transportinterface.h"
+#include "../engine.h"
 #include "../common/slipdataprocessor.h"
 
 namespace remoteproxy {
@@ -8,7 +9,15 @@ namespace remoteproxy {
 TunnelProxyClient::TunnelProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent) :
     TransportClient(interface, clientId, address, parent)
 {
-
+    // Note: a client is not inactive any more once registered successfully as client or server.
+    // This makes sure we have not any inactive sockets connected to the proxy blocking resources.
+    // The tunnelproxy server will call makeClientActive once registered successfuly to stop this timer.
+    m_inactiveTimer.setInterval(Engine::instance()->configuration()->inactiveTimeout());
+    connect(&m_inactiveTimer, &QTimer::timeout, this, [this](){
+        m_interface->killClientConnection(m_clientId, "Tunnelproxy timeout occurred. The socket was inactive.");
+    });
+    m_inactiveTimer.setSingleShot(true);
+    m_inactiveTimer.start();
 }
 
 TunnelProxyClient::Type TunnelProxyClient::type() const
@@ -67,6 +76,11 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
     }
 
     return packets;
+}
+
+void TunnelProxyClient::makeClientActive()
+{
+    m_inactiveTimer.stop();
 }
 
 QDebug operator<<(QDebug debug, TunnelProxyClient *tunnelProxyClient)

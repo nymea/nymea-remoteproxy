@@ -2,6 +2,7 @@
 #define TUNNELPROXYCLIENT_H
 
 #include <QObject>
+#include <QTimer>
 
 #include "server/transportclient.h"
 
@@ -26,10 +27,13 @@ public:
     // Json server methods
     QList<QByteArray> processData(const QByteArray &data) override;
 
+    void makeClientActive();
+
 signals:
     void typeChanged(Type type);
 
 private:
+    QTimer m_inactiveTimer;
     Type m_type = TypeNone;
 
 };
