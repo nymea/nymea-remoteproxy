@@ -98,6 +98,10 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
         return TunnelProxyServer::TunnelProxyErrorAlreadyRegistered;
     }
 
+    // This client has been registered successfully.
+    // Make sure it does not get disconnected any more because due to inactivity.
+    tunnelProxyClient->makeClientActive();
+
     tunnelProxyClient->setType(TunnelProxyClient::TypeServer);
     tunnelProxyClient->setUuid(serverUuid);
     tunnelProxyClient->setName(serverName);
@@ -139,6 +143,10 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
         tunnelProxyClient->killConnectionAfterResponse("Unknown server");
         return TunnelProxyServer::TunnelProxyErrorServerNotFound;
     }
+
+    // This client has been registered successfully.
+    // Make sure it does not get disconnected any more because due to inactivity.
+    tunnelProxyClient->makeClientActive();
 
     // Not registered yet, we have a connected server for the requested server uuid
     tunnelProxyClient->setType(TunnelProxyClient::TypeClient);
