@@ -212,7 +212,7 @@ QVariantMap TunnelProxyServer::currentStatistics()
     statisticsMap.insert("clientConnectionsCount", m_tunnelProxyClientConnections.count());
     QVariantMap transports;
     foreach (TransportInterface *transportInterface, m_transportInterfaces) {
-        transports.insert(transportInterface->name(), transportInterface->connectionsCount());
+        transports.insert(transportInterface->serverName(), transportInterface->connectionsCount());
     }
     statisticsMap.insert("transports", transports);
     statisticsMap.insert("troughput", m_troughput);
@@ -306,7 +306,6 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
         } else {
             foreach (TunnelProxyClientConnection *clientConnection, serverConnection->clientConnections()) {
                 serverConnection->unregisterClientConnection(clientConnection);
-                clientConnection->setSocketAddress(0xFFFF);
                 clientConnection->transportClient()->killConnection("Server disconnected");
             }
 

@@ -64,15 +64,16 @@ void TunnelProxyServerConnection::registerClientConnection(TunnelProxyClientConn
 {
     quint16 socketAddress = getFreeAddress();
     clientConnection->setSocketAddress(socketAddress);
+    clientConnection->setServerConnection(this);
     m_clientConnectionsAddresses.insert(socketAddress, clientConnection);
     m_clientConnections.insert(clientConnection->clientUuid(), clientConnection);
-    clientConnection->setServerConnection(this);
 }
 
 void TunnelProxyServerConnection::unregisterClientConnection(TunnelProxyClientConnection *clientConnection)
 {
     m_clientConnections.remove(clientConnection->clientUuid());
     m_clientConnectionsAddresses.remove(clientConnection->socketAddress());
+    clientConnection->setSocketAddress(0xFFFF);
     clientConnection->setServerConnection(nullptr);
 }
 
