@@ -46,7 +46,6 @@ public:
     virtual void sendData(const QUuid &clientId, const QByteArray &data) = 0;
     virtual void killClientConnection(const QUuid &clientId, const QString &killReason) = 0;
 
-    virtual QString name() const = 0;
     virtual uint connectionsCount() const = 0;
 
     QUrl serverUrl() const;

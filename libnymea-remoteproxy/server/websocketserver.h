@@ -53,7 +53,6 @@ public:
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void killClientConnection(const QUuid &clientId, const QString &killReason) override;
 
-    QString name() const override;
     uint connectionsCount() const override;
 
 private:

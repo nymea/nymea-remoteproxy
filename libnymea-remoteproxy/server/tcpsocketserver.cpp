@@ -70,11 +70,6 @@ void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString 
     client->close();
 }
 
-QString TcpSocketServer::name() const
-{
-    return "TcpSocketServer";
-}
-
 uint TcpSocketServer::connectionsCount() const
 {
     return m_clientList.count();
