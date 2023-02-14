@@ -27,16 +27,15 @@
 
 #include "tunnelproxyclientconnection.h"
 #include "server/transportclient.h"
+#include "tunnelproxy/tunnelproxyserverconnection.h"
 
 namespace remoteproxy {
 
-TunnelProxyClientConnection::TunnelProxyClientConnection(TransportClient *transportClient, TunnelProxyServerConnection *serverConnection, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent) :
+TunnelProxyClientConnection::TunnelProxyClientConnection(TransportClient *transportClient, const QUuid &clientUuid, const QString &clientName, QObject *parent) :
     QObject(parent),
     m_transportClient(transportClient),
-    m_serverConnection(serverConnection),
     m_clientUuid(clientUuid),
-    m_clientName(clientName),
-    m_serverUuid(serverUuid)
+    m_clientName(clientName)
 {
 
 }
@@ -49,6 +48,17 @@ TransportClient *TunnelProxyClientConnection::transportClient() const
 TunnelProxyServerConnection *TunnelProxyClientConnection::serverConnection() const
 {
     return m_serverConnection;
+}
+
+void TunnelProxyClientConnection::setServerConnection(TunnelProxyServerConnection *serverConnection)
+{
+    m_serverConnection = serverConnection;
+    if (m_serverConnection) {
+        m_serverUuid = m_serverConnection->serverUuid();
+    } else {
+        m_serverUuid = QUuid();
+    }
+
 }
 
 QUuid TunnelProxyClientConnection::clientUuid() const

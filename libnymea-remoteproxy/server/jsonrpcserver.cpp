@@ -301,7 +301,13 @@ void JsonRpcServer::asyncReplyFinished()
 
         if (!reply->success()) {
             // Disconnect this client since the request was not successfully
-            transportClient->interface()->killClientConnection(transportClient->clientId(), "API call was not successfully.");
+            transportClient->killConnectionAfterResponse("API call was not successfully.");
+        }
+
+
+        // If the server decided to kill the connection after the response, do it now
+        if (transportClient->killConnectionRequested()) {
+            transportClient->killConnection(transportClient->killConnectionReason());
         }
 
     } else {
