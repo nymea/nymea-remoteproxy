@@ -62,16 +62,18 @@ QList<TunnelProxyClientConnection *> TunnelProxyServerConnection::clientConnecti
 
 void TunnelProxyServerConnection::registerClientConnection(TunnelProxyClientConnection *clientConnection)
 {
-    m_clientConnections.insert(clientConnection->clientUuid(), clientConnection);
     quint16 socketAddress = getFreeAddress();
     clientConnection->setSocketAddress(socketAddress);
     m_clientConnectionsAddresses.insert(socketAddress, clientConnection);
+    m_clientConnections.insert(clientConnection->clientUuid(), clientConnection);
+    clientConnection->setServerConnection(this);
 }
 
 void TunnelProxyServerConnection::unregisterClientConnection(TunnelProxyClientConnection *clientConnection)
 {
     m_clientConnections.remove(clientConnection->clientUuid());
     m_clientConnectionsAddresses.remove(clientConnection->socketAddress());
+    clientConnection->setServerConnection(nullptr);
 }
 
 TunnelProxyClientConnection *TunnelProxyServerConnection::getClientConnection(quint16 socketAddress)

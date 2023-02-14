@@ -153,7 +153,8 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     tunnelProxyClient->setUuid(clientUuid);
     tunnelProxyClient->setName(clientName);
 
-    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, serverConnection, clientUuid, clientName, serverUuid);
+    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, clientUuid, clientName, this);
+    clientConnection->setServerConnection(serverConnection);
     m_tunnelProxyClientConnections.insert(clientUuid, clientConnection);
 
     qCDebug(dcTunnelProxyServer()) << "Register client" << clientConnection << "-->" << serverConnection;
@@ -303,7 +304,6 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
         if (!serverConnection) {
             qCWarning(dcTunnelProxyServer()) << "Could not find server connection for disconnected tunnel proxy client claiming to be a server.";
         } else {
-
             foreach (TunnelProxyClientConnection *clientConnection, serverConnection->clientConnections()) {
                 serverConnection->unregisterClientConnection(clientConnection);
                 clientConnection->setSocketAddress(0xFFFF);
@@ -319,11 +319,12 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
         if (!clientConnection) {
             qCWarning(dcTunnelProxyServer()) << "Could not find client connection for disconnected tunnel proxy client claiming to be a client.";
         } else {
-            if (clientConnection->serverConnection()) {
+            TunnelProxyServerConnection *serverConnection = clientConnection->serverConnection();
+            if (serverConnection) {
                 QVariantMap params;
                 params.insert("socketAddress", clientConnection->socketAddress());
-                clientConnection->serverConnection()->unregisterClientConnection(clientConnection);
-                m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, clientConnection->serverConnection()->transportClient());
+                serverConnection->unregisterClientConnection(clientConnection);
+                m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, serverConnection->transportClient());
             }
 
             clientConnection->deleteLater();
