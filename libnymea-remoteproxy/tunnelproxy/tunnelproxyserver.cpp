@@ -392,8 +392,11 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
                     TunnelProxyClientConnection *clientConnection = serverConnection->getClientConnection(frame.socketAddress);
                     if (!clientConnection) {
                         qCWarning(dcTunnelProxyServer()) << "The server connection wants to send data to a client connection which has not been registered to the server.";
-                        // FIXME: tell the server this client does not exist
-                        return;
+                        qCWarning(dcTunnelProxyServer()) << "Notifying the server that there is no longer any socket connected with address" << frame.socketAddress;
+                        QVariantMap params;
+                        params.insert("socketAddress", frame.socketAddress);
+                        m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, serverConnection->transportClient());
+                        continue;
                     }
 
                     qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
