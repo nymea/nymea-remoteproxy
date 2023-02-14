@@ -244,7 +244,7 @@ void JsonRpcServer::processDataPacket(TransportClient *transportClient, const QB
     }
 
     JsonReply *reply;
-    QMetaObject::invokeMethod(handler, method.toLatin1().data(), Q_RETURN_ARG(JsonReply*, reply), Q_ARG(QVariantMap, params), Q_ARG(TransportClient *, transportClient));
+    QMetaObject::invokeMethod(handler, method.toLatin1().data(), Q_RETURN_ARG(JsonReply*, reply), Q_ARG(QVariantMap, params), Q_ARG(TransportClient*, transportClient));
     if (reply->type() == JsonReply::TypeAsync) {
         m_asyncReplies.insert(reply, transportClient);
         reply->setClientId(transportClient->clientId());
@@ -297,24 +297,25 @@ void JsonRpcServer::asyncReplyFinished()
             qCWarning(dcJsonRpc()) << "Return value validation failed. This should never happen. Please check the source code.";
         }
 
-        sendResponse(transportClient, reply->commandId(), reply->data());
-
         if (!reply->success()) {
             // Disconnect this client since the request was not successfully
             transportClient->killConnectionAfterResponse("API call was not successfully.");
         }
 
-
-        // If the server decided to kill the connection after the response, do it now
-        if (transportClient->killConnectionRequested()) {
-            transportClient->killConnection(transportClient->killConnectionReason());
-        }
+        sendResponse(transportClient, reply->commandId(), reply->data());
 
     } else {
         qCWarning(dcJsonRpc()) << "The reply timeouted.";
+        transportClient->killConnectionAfterResponse("API call timeouted.");
         sendErrorResponse(transportClient, reply->commandId(), "Command timed out");
         // Disconnect this client since he requested something that created a timeout
-        transportClient->killConnection("API call timeouted.");
+
+    }
+
+
+    // If the server decided to kill the connection after the response, do it now
+    if (transportClient->killConnectionRequested()) {
+        transportClient->killConnection(transportClient->killConnectionReason());
     }
 }
 
