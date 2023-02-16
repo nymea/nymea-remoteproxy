@@ -61,8 +61,11 @@ int main(int argc, char *argv[])
     socketOption.setDefaultValue("/tmp/nymea-remoteproxy-monitor.sock");
     parser.addOption(socketOption);
 
-    QCommandLineOption noninteractiveOption(QStringList() << "n" << "non-interactive", "Connect to the server, list all data and close the connection. This works only for the tunnelproxy.");
+    QCommandLineOption noninteractiveOption(QStringList() << "n" << "non-interactive", "Connect to the server and list information and connections and exit.");
     parser.addOption(noninteractiveOption);
+
+    QCommandLineOption allOption(QStringList() << "a" << "all", "Show all connections, not only the active tunnels. Currently only available with the non-interactive mode.");
+    parser.addOption(allOption);
 
     QCommandLineOption jsonOption(QStringList() << "j" << "json", "Connect to the server and print the raw json data.");
     parser.addOption(jsonOption);
@@ -73,19 +76,24 @@ int main(int argc, char *argv[])
     QFileInfo fileInfo(parser.value(socketOption));
     if (!fileInfo.exists()) {
         qWarning() << "Could not find socket descriptor" << parser.value(socketOption);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (!fileInfo.isReadable()) {
         qWarning() << "Could not open socket descriptor" << parser.value(socketOption);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (parser.isSet(noninteractiveOption)) {
-        NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption));
+        NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption), parser.isSet(allOption), &application);
         Q_UNUSED(monitor);
     } else {
-        Monitor *monitor = new Monitor(parser.value(socketOption), parser.isSet(jsonOption));
+        if (parser.isSet(allOption)) {
+            qWarning() << "Error: The \"all\" option is only available with the non-interavtice mode.";
+            exit(EXIT_FAILURE);
+        }
+
+        Monitor *monitor = new Monitor(parser.value(socketOption), parser.isSet(jsonOption), &application);
         Q_UNUSED(monitor);
     }
 

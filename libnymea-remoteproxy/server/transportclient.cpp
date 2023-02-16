@@ -1,4 +1,4 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
@@ -158,6 +158,7 @@ void TransportClient::sendData(const QByteArray &data)
     if (!m_interface)
         return;
 
+    addTxDataCount(data.count());
     m_interface->sendData(m_clientId, data);
 }
 

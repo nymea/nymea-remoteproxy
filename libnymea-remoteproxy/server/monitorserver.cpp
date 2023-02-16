@@ -66,9 +66,8 @@ void MonitorServer::onMonitorConnected()
 {
     QLocalSocket *clientConnection = m_server->nextPendingConnection();
     connect(clientConnection, &QLocalSocket::disconnected, this, &MonitorServer::onMonitorDisconnected);
-    connect(clientConnection, &QLocalSocket::readyRead, this, &MonitorServer::onMonitorDisconnected);
+    connect(clientConnection, &QLocalSocket::readyRead, this, &MonitorServer::onMonitorReadyRead);
     m_clients.append(clientConnection);
-
     qCDebug(dcMonitorServer()) << "New monitor connected.";
 }
 
@@ -78,6 +77,57 @@ void MonitorServer::onMonitorDisconnected()
     QLocalSocket *clientConnection = static_cast<QLocalSocket *>(sender());
     m_clients.removeAll(clientConnection);
     clientConnection->deleteLater();
+}
+
+void MonitorServer::onMonitorReadyRead()
+{
+    QLocalSocket *clientConnection = qobject_cast<QLocalSocket*>(sender());
+    QByteArray data = clientConnection->readAll();
+    QJsonParseError error;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
+    if(error.error != QJsonParseError::NoError) {
+        qCWarning(dcMonitorServer()) << "Failed to parse JSON data from monitor:" << error.errorString();
+        clientConnection->close();
+        return;
+    }
+
+    processRequest(clientConnection, jsonDoc.toVariant().toMap());
+}
+
+void MonitorServer::processRequest(QLocalSocket *clientConnection, const QVariantMap &request)
+{
+    /* Refresh method. If no params, it will return the active list of connections
+
+         TODO: filter for uuid's, ip's, names etc...
+
+         {
+            "method": "refresh",
+            "params": {
+                "printAll": bool
+            }
+         }
+
+     */
+
+    // Note: as simple as possible...no error handling, either you know what you do, or you see nothing here.
+    if (request.contains("method")) {
+        if (request.value("method").toString() == "refresh") {
+            bool printAll = false;
+            if (request.contains("params")) {
+                QVariantMap params = request.value("params").toMap();
+                if (params.contains("printAll")) {
+                    printAll = params.value("printAll").toBool();
+                }
+            }
+
+            sendMonitorData(clientConnection, Engine::instance()->buildMonitorData(printAll));
+            return;
+        }
+    }
+
+    // Not a valid request. Close the connection
+    qCWarning(dcMonitorServer()) << "Could not understand the request. Closing connection.";
+    clientConnection->close();
 }
 
 void MonitorServer::startServer()

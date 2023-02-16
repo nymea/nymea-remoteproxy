@@ -204,7 +204,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::disconnectClient(const QU
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
 
-QVariantMap TunnelProxyServer::currentStatistics()
+QVariantMap TunnelProxyServer::currentStatistics(bool printAll)
 {
     QVariantMap statisticsMap;
     statisticsMap.insert("totalClientCount", m_proxyClients.count());
@@ -221,7 +221,7 @@ QVariantMap TunnelProxyServer::currentStatistics()
     foreach (TunnelProxyServerConnection *serverConnection, m_tunnelProxyServerConnections) {
 
         // Show only active clients
-        if (serverConnection->clientConnections().isEmpty())
+        if (!printAll && serverConnection->clientConnections().isEmpty())
             continue;
 
         QVariantMap serverMap;
@@ -365,7 +365,6 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << "\n" << data;
         QByteArray rawData = SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame));
         clientConnection->serverConnection()->transportClient()->sendData(rawData);
-        clientConnection->serverConnection()->transportClient()->addTxDataCount(rawData.count());
         m_troughputCounter += data.count();
 
     } else if (tunnelProxyClient->type() == TunnelProxyClient::TypeServer) {
@@ -401,7 +400,6 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
 
                     qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
                     clientConnection->transportClient()->sendData(frame.data);
-                    clientConnection->transportClient()->addTxDataCount(frame.data.count());
                     m_troughputCounter += frame.data.count();
                 }
             }

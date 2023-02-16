@@ -42,6 +42,16 @@ MonitorClient::MonitorClient(const QString &serverName, bool jsonMode, QObject *
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccurred(QLocalSocket::LocalSocketError)));
 }
 
+bool MonitorClient::printAll() const
+{
+    return m_printAll;
+}
+
+void MonitorClient::setPrintAll(bool printAll)
+{
+    m_printAll = printAll;
+}
+
 void MonitorClient::processBufferData()
 {
     QJsonParseError error;
@@ -98,10 +108,28 @@ void MonitorClient::onErrorOccurred(QLocalSocket::LocalSocketError socketError)
 
 void MonitorClient::connectMonitor()
 {    
-    m_socket->connectToServer(m_serverName, QLocalSocket::ReadOnly);
+    m_socket->connectToServer(m_serverName, QLocalSocket::ReadWrite);
 }
 
 void MonitorClient::disconnectMonitor()
 {
     m_socket->close();
+}
+
+void MonitorClient::refresh()
+{
+    if (m_socket->state() != QLocalSocket::ConnectedState)
+        return;
+
+    QVariantMap request;
+    request.insert("method", "refresh");
+    QVariantMap params;
+    if (m_printAll) {
+        params.insert("printAll", m_printAll);
+    }
+
+    if (!params.isEmpty())
+        request.insert("params", params);
+
+    m_socket->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n");
 }

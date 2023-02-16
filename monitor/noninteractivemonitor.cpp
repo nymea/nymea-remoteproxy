@@ -30,10 +30,12 @@
 
 #include <QDebug>
 
-NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, QObject *parent)
+NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, bool printAll, QObject *parent)
     : QObject{parent}
 {
     m_monitorClient = new MonitorClient(serverName, false, this);
+    m_monitorClient->setPrintAll(printAll);
+
     connect(m_monitorClient, &MonitorClient::connected, this, &NonInteractiveMonitor::onConnected);
 
     m_monitorClient->connectMonitor();
@@ -105,4 +107,5 @@ void NonInteractiveMonitor::onConnected()
         exit(0);
     });
 
+    m_monitorClient->refresh();
 }
