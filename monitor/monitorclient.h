@@ -39,10 +39,17 @@ class MonitorClient : public QObject
 public:
     explicit MonitorClient(const QString &serverName, bool jsonMode, QObject *parent = nullptr);
 
+    // Configuration before connection
+    bool printAll() const;
+    void setPrintAll(bool printAll);
+
+
 private:
-    QString m_serverName;
     QLocalSocket *m_socket = nullptr;
+
+    QString m_serverName;
     bool m_jsonMode = false;
+    bool m_printAll = false;
     QByteArray m_dataBuffer;
 
     void processBufferData();
@@ -62,6 +69,7 @@ public slots:
     void connectMonitor();
     void disconnectMonitor();
 
+    void refresh();
 };
 
 #endif // MONITORCLIENT_H

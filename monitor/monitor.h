@@ -29,6 +29,7 @@
 #define MONITOR_H
 
 #include <QObject>
+#include <QTimer>
 
 #include "monitorclient.h"
 #include "terminalwindow.h"
@@ -43,6 +44,7 @@ private:
     TerminalWindow *m_terminal = nullptr;
     MonitorClient *m_monitorClient = nullptr;
     bool m_jsonMode = false;
+    QTimer m_timer;
 
 private slots:
     void onConnected();

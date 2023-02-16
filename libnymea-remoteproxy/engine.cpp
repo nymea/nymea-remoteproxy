@@ -243,6 +243,19 @@ LogEngine *Engine::logEngine() const
     return m_logEngine;
 }
 
+QVariantMap Engine::buildMonitorData(bool printAll)
+{
+    QVariantMap monitorData;
+    monitorData.insert("serverName", m_configuration->serverName());
+    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
+    monitorData.insert("apiVersion", API_VERSION_STRING);
+    if (m_proxyServer) {
+        monitorData.insert("proxyStatistic", m_proxyServer->currentStatistics());
+    }
+    monitorData.insert("tunnelProxyStatistic", tunnelProxyServer()->currentStatistics(printAll));
+    return monitorData;
+}
+
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
@@ -262,19 +275,6 @@ Engine::~Engine()
     stop();
 }
 
-QVariantMap Engine::createServerStatistic()
-{
-    QVariantMap monitorData;
-    monitorData.insert("serverName", m_configuration->serverName());
-    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
-    monitorData.insert("apiVersion", API_VERSION_STRING);
-    if (m_proxyServer) {
-        monitorData.insert("proxyStatistic", m_proxyServer->currentStatistics());
-    }
-    monitorData.insert("tunnelProxyStatistic", tunnelProxyServer()->currentStatistics());
-    return monitorData;
-}
-
 void Engine::onTimerTick()
 {
     qint64 timestamp = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
@@ -284,21 +284,22 @@ void Engine::onTimerTick()
     m_currentTimeCounter += deltaTime;
     if (m_currentTimeCounter >= 1000) {
         // One second passed, do second tick
-        if (m_proxyServer)
-            m_proxyServer->tick();
-
-        QVariantMap serverStatistics = createServerStatistic();
-        m_monitorServer->updateClients(serverStatistics);
-
-        m_logEngine->logStatistics(serverStatistics.value("proxyStatistic").toMap().value("tunnelCount").toInt(),
-                                   serverStatistics.value("proxyStatistic").toMap().value("clientCount").toInt(),
-                                   serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
-
         m_currentTimeCounter = 0;
+
+        if (m_proxyServer) {
+            m_proxyServer->tick();
+        }
 
         if (m_tunnelProxyServer) {
             m_tunnelProxyServer->tick();
         }
+
+        //        QVariantMap serverStatistics = buildMonitorData();
+        //        m_monitorServer->updateClients(serverStatistics);
+
+        //        m_logEngine->logStatistics(serverStatistics.value("proxyStatistic").toMap().value("tunnelCount").toInt(),
+        //                                   serverStatistics.value("proxyStatistic").toMap().value("clientCount").toInt(),
+        //                                   serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
     }
 }
 

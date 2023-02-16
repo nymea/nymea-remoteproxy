@@ -84,6 +84,8 @@ public:
     MonitorServer *monitorServer() const;
     LogEngine *logEngine() const;
 
+    QVariantMap buildMonitorData(bool printAll = false);
+
 private:
     explicit Engine(QObject *parent = nullptr);
     ~Engine();
@@ -112,8 +114,6 @@ private:
 
     MonitorServer *m_monitorServer = nullptr;
     LogEngine *m_logEngine = nullptr;
-
-    QVariantMap createServerStatistic();
 
 signals:
     void runningChanged(bool running);

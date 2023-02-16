@@ -54,6 +54,9 @@ private:
 private slots:
     void onMonitorConnected();
     void onMonitorDisconnected();
+    void onMonitorReadyRead();
+
+    void processRequest(QLocalSocket *clientConnection, const QVariantMap &request);
 
 public slots:
     void startServer();

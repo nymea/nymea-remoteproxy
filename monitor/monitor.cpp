@@ -36,6 +36,10 @@ Monitor::Monitor(const QString &serverName, bool jsonMode, QObject *parent) :
     connect(m_monitorClient, &MonitorClient::connected, this, &Monitor::onConnected);
     connect(m_monitorClient, &MonitorClient::disconnected, this, &Monitor::onDisconnected);
 
+    m_timer.setInterval(1000);
+    m_timer.setSingleShot(false);
+    connect(&m_timer, &QTimer::timeout, m_monitorClient, &MonitorClient::refresh);
+
     m_monitorClient->connectMonitor();
 }
 
@@ -45,10 +49,15 @@ void Monitor::onConnected()
         m_terminal = new TerminalWindow(this);
         connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
     }
+
+    refresh();
+    m_timer.start();
 }
 
 void Monitor::onDisconnected()
 {
+    m_timer.stop();
+
     if (!m_terminal)
         return;
 
