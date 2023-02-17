@@ -357,7 +357,11 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
             return;
         }
 
-        Q_ASSERT_X(clientConnection->serverConnection(), "TunnelProxyServer", "The client has not been registered to a server connection");
+        if (!clientConnection->serverConnection()) {
+            qCWarning(dcTunnelProxyServer()) << "Valid client wants to send data to the server, but there is no server registered for this client.";
+            Q_ASSERT_X(clientConnection->serverConnection(), "TunnelProxyServer", "The client has not been registered to a server connection");
+            return;
+        }
 
         SlipDataProcessor::Frame frame;
         frame.socketAddress = clientConnection->socketAddress();

@@ -45,10 +45,6 @@ public:
     explicit SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *parent = nullptr);
     ~SslServer() override = default;
 
-private:
-    bool m_sslEnabled = false;
-    QSslConfiguration m_config;
-
 signals:
     void socketConnected(QSslSocket *socket);
     void socketDisconnected(QSslSocket *socket);
@@ -56,6 +52,10 @@ signals:
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
+
+private:
+    bool m_sslEnabled = false;
+    QSslConfiguration m_config;
 
 private slots:
     void onSocketDisconnected();
@@ -79,11 +79,15 @@ public:
 
     bool running() const override;
 
+public slots:
+    bool startServer() override;
+    bool stopServer() override;
+
 private:
     bool m_sslEnabled;
     QSslConfiguration m_sslConfiguration;
 
-    QHash<QUuid, QTcpSocket *> m_clientList;
+    QHash<QUuid, QSslSocket *> m_clientList;
 
     SslServer *m_server = nullptr;
 
@@ -92,9 +96,6 @@ private slots:
     void onSocketConnected(QSslSocket *client);
     void onSocketDisconnected(QSslSocket *client);
 
-public slots:
-    bool startServer() override;
-    bool stopServer() override;
 
 };
 
