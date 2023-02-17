@@ -75,8 +75,9 @@ void NonInteractiveMonitor::onConnected()
                 serverLinePrint.prepend("├┬─");
             }
 
-            serverLinePrint += QString("%1 | %2 RX: %3 TX: %4 | %5")
+            serverLinePrint += QString("%1 | %2 | %3 RX: %4 TX: %5 | %6")
                     .arg(serverConnectionTime)
+                    .arg(serverMap.value("serverUuid").toString())
                     .arg(serverMap.value("address").toString(), - 15)
                     .arg(Utils::humanReadableTraffic(serverMap.value("rxDataCount").toInt()), - 9)
                     .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
@@ -93,8 +94,9 @@ void NonInteractiveMonitor::onConnected()
                     clientLinePrint.prepend("│├─");
                 }
 
-                clientLinePrint += QString("%1 | %2 RX: %3 TX: %4 | %5")
+                clientLinePrint += QString("%1 | %2 | %3 RX: %4 TX: %5 | %6")
                         .arg(QDateTime::fromTime_t(clientMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss"))
+                        .arg(clientMap.value("clientUuid").toString())
                         .arg(clientMap.value("address").toString(), - 15)
                         .arg(Utils::humanReadableTraffic(serverMap.value("rxDataCount").toInt()), - 9)
                         .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
