@@ -217,23 +217,8 @@ void SslServer::onSocketError(QAbstractSocket::SocketError error)
 {
     QSslSocket *sslSocket = static_cast<QSslSocket *>(sender());
     qCWarning(dcTcpSocketServer()) << "Socket error occurred" << error << sslSocket->errorString();
-    switch(error) {
-    case QAbstractSocket::SocketResourceError:
-    case QAbstractSocket::SocketTimeoutError:
-    case QAbstractSocket::DatagramTooLargeError:
-    case QAbstractSocket::NetworkError:
-    case QAbstractSocket::SslHandshakeFailedError:
-    case QAbstractSocket::UnfinishedSocketOperationError:
-    case QAbstractSocket::SslInternalError:
-    case QAbstractSocket::SslInvalidUserDataError:
-    case QAbstractSocket::TemporaryError:
-    case QAbstractSocket::UnknownSocketError:
-        qCWarning(dcTcpSocketServer()) << "Explitily closing the socket due to error.";
-        sslSocket->close();
-        break;
-    default:
-        break;
-    }
+    qCWarning(dcTcpSocketServer()) << "Explicitly closing the socket connection.";
+    sslSocket->close();
 }
 
 }
