@@ -85,8 +85,14 @@ bool TcpSocketServer::running() const
 
 bool TcpSocketServer::startServer()
 {
+    if (m_server) {
+        m_server->close();
+        delete m_server;
+        m_server = nullptr;
+    }
+
     qCDebug(dcTcpSocketServer()) << "Starting TCP server" << m_serverUrl.toString();
-    m_server = new SslServer(m_sslEnabled, m_sslConfiguration);
+    m_server = new SslServer(m_sslEnabled, m_sslConfiguration, this);
     if(!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(m_serverUrl.port()))) {
         qCWarning(dcTcpSocketServer()) << "Tcp server error: can not listen on" << m_serverUrl.toString();
         delete m_server;
@@ -98,11 +104,13 @@ bool TcpSocketServer::startServer()
     connect(m_server, &SslServer::socketDisconnected, this, &TcpSocketServer::onSocketDisconnected);
     connect(m_server, &SslServer::dataAvailable, this, &TcpSocketServer::onDataAvailable);
     qCDebug(dcTcpSocketServer()) << "Server started successfully.";
+    qCDebug(dcTcpSocketServer()) << m_server;
     return true;
 }
 
 bool TcpSocketServer::stopServer()
 {
+    qCDebug(dcTcpSocketServer()) << "Stopping server" << m_serverUrl.toString() << m_server;
     if (!m_server)
         return true;
 
@@ -110,8 +118,6 @@ bool TcpSocketServer::stopServer()
     foreach (const QUuid &clientId, m_clientList.keys()) {
         killClientConnection(clientId, "Stop server");
     }
-
-    qCDebug(dcTcpSocketServer()) << "Stop server" << m_serverUrl.toString();
 
     m_server->close();
     m_server->deleteLater();
@@ -162,7 +168,10 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
 {
     QSslSocket *sslSocket = new QSslSocket(this);
     qCDebug(dcTcpSocketServer()) << "Incomming connection" << sslSocket;
+
     connect(sslSocket, &QSslSocket::disconnected, this, &SslServer::onSocketDisconnected);
+
+    connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
 
     typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
     connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, &SslServer::onSocketError);
@@ -180,13 +189,14 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         }
     });
 
-    connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
 
     if (!sslSocket->setSocketDescriptor(socketDescriptor)) {
         qCWarning(dcTcpSocketServer()) << "Failed to set SSL socket descriptor.";
         delete sslSocket;
         return;
     }
+
+    addPendingConnection(sslSocket);
 
     if (m_sslEnabled) {
         qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
@@ -218,7 +228,7 @@ void SslServer::onSocketError(QAbstractSocket::SocketError error)
     QSslSocket *sslSocket = static_cast<QSslSocket *>(sender());
     qCWarning(dcTcpSocketServer()) << "Socket error occurred" << error << sslSocket->errorString();
     qCWarning(dcTcpSocketServer()) << "Explicitly closing the socket connection.";
-    sslSocket->close();
+    sslSocket->abort();
 }
 
 }

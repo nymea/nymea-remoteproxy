@@ -179,6 +179,10 @@ void RemoteProxyTestsTunnelProxy::apiBasicCalls()
     QFETCH(int, responseId);
     QFETCH(QString, responseStatus);
 
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("*.debug=true");
+
     // Start the server
     startServer();
 

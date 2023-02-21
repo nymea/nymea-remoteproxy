@@ -135,7 +135,8 @@ void Engine::start(ProxyConfiguration *configuration)
     qCDebug(dcEngine()) << "Starting the tunnel proxy manager...";
     m_tunnelProxyServer->startServer();
 
-    // Start the monitor server
+    // Monitor server
+    // -------------------------------------
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
     m_monitorServer->startServer();
 
@@ -266,7 +267,6 @@ Engine::Engine(QObject *parent) :
     m_timer->setInterval(50);
 
     connect(m_timer, &QTimer::timeout, this, &Engine::onTimerTick);
-
     m_logEngine = new LogEngine(this);
 }
 
@@ -356,6 +356,9 @@ void Engine::setRunning(bool running)
 
     if (m_proxyServer)
         m_proxyServer->setRunning(running);
+
+    if (m_tunnelProxyServer)
+        m_tunnelProxyServer->setRunning(running);
 
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
 

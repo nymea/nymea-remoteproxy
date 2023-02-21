@@ -54,6 +54,8 @@ public:
     void registerHandler(JsonHandler *handler);
     void unregisterHandler(JsonHandler *handler);
 
+    uint registeredClientCount() const;
+
 signals:
     void TunnelEstablished(const QVariantMap &params);
 

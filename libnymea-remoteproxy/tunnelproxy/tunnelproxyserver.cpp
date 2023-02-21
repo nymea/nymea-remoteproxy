@@ -67,10 +67,11 @@ void TunnelProxyServer::setRunning(bool running)
 void TunnelProxyServer::registerTransportInterface(TransportInterface *interface)
 {
     qCDebug(dcTunnelProxyServer()) << "Register transport interface" << interface->serverName();
-
+    //interface->setParent(this);
     if (m_transportInterfaces.contains(interface)) {
         qCWarning(dcTunnelProxyServer()) << "Transport interface already registerd.";
         return;
+
     }
 
     connect(interface, &TransportInterface::clientConnected, this, &TunnelProxyServer::onClientConnected);
@@ -109,8 +110,14 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
     // Enable SLIP from now on
     tunnelProxyClient->enableSlipAfterResponse();
 
-    TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, this);
+    TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, tunnelProxyClient);
     m_tunnelProxyServerConnections.insert(serverUuid, serverConnection);
+
+    qCDebug(dcTunnelProxyServer()) << "New server connection registered successfully" << serverConnection;
+
+    // For debugging
+    qCDebug(dcTunnelProxyServer()) << "####" << "Total clients" << m_proxyClients.count() << "JSON RPC clients" << m_jsonRpcServer->registeredClientCount() << "interface connections" << tunnelProxyClient->interface()->connectionsCount()
+                                   << "Servers" << m_tunnelProxyServerConnections.count() << "Clients" << m_tunnelProxyClientConnections.count();
 
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
@@ -153,12 +160,17 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     tunnelProxyClient->setUuid(clientUuid);
     tunnelProxyClient->setName(clientName);
 
-    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, clientUuid, clientName, this);
+    TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, clientUuid, clientName, tunnelProxyClient);
     clientConnection->setServerConnection(serverConnection);
     m_tunnelProxyClientConnections.insert(clientUuid, clientConnection);
 
-    qCDebug(dcTunnelProxyServer()) << "Register client" << clientConnection << "-->" << serverConnection;
     serverConnection->registerClientConnection(clientConnection);
+    qCDebug(dcTunnelProxyServer()) << "New client connection registered successfully" << clientConnection << "-->" << serverConnection;;
+
+    // For debugging
+    qCDebug(dcTunnelProxyServer()) << "#### Total clients:" << m_proxyClients.count() << "JSON RPC clients:" << m_jsonRpcServer->registeredClientCount()
+                                   << "Interface connections:" << tunnelProxyClient->interface()->connectionsCount()
+                                   << "Servers:" << m_tunnelProxyServerConnections.count() << "Clients:" << m_tunnelProxyClientConnections.count();
 
     // Tell the server a new client want's to connect
     QVariantMap params;
@@ -286,6 +298,11 @@ void TunnelProxyServer::onClientConnected(const QUuid &clientId, const QHostAddr
     TunnelProxyClient *tunnelProxyClient = new TunnelProxyClient(interface, clientId, address, this);
     m_proxyClients.insert(clientId, tunnelProxyClient);
     m_jsonRpcServer->registerClient(tunnelProxyClient);
+
+    // For debugging
+    qCDebug(dcTunnelProxyServer()) << "#### Total clients:" << m_proxyClients.count() << "JSON RPC clients:" << m_jsonRpcServer->registeredClientCount()
+                                   << "Interface connections:" << tunnelProxyClient->interface()->connectionsCount()
+                                   << "Servers:" << m_tunnelProxyServerConnections.count() << "Clients:" << m_tunnelProxyClientConnections.count();
 }
 
 void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
@@ -332,6 +349,11 @@ void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)
 
     // Unregister from json rpc server
     m_jsonRpcServer->unregisterClient(tunnelProxyClient);
+
+    // For debugging
+    qCDebug(dcTunnelProxyServer()) << "#### Total clients:" << m_proxyClients.count() << "JSON RPC clients:" << m_jsonRpcServer->registeredClientCount()
+                                   << "Interface connections:" << tunnelProxyClient->interface()->connectionsCount()
+                                   << "Servers:" << m_tunnelProxyServerConnections.count() << "Clients:" << m_tunnelProxyClientConnections.count();
 
     // Delete the proxy client
     tunnelProxyClient->deleteLater();
@@ -395,10 +417,6 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
                     TunnelProxyClientConnection *clientConnection = serverConnection->getClientConnection(frame.socketAddress);
                     if (!clientConnection) {
                         qCWarning(dcTunnelProxyServer()) << "The server connection wants to send data to a client connection which has not been registered to the server.";
-                        qCWarning(dcTunnelProxyServer()) << "Notifying the server that there is no longer any socket connected with address" << frame.socketAddress;
-                        QVariantMap params;
-                        params.insert("socketAddress", frame.socketAddress);
-                        m_jsonRpcServer->sendNotification("TunnelProxy", "ClientDisconnected", params, serverConnection->transportClient());
                         continue;
                     }
 
