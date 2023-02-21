@@ -189,6 +189,11 @@ void JsonRpcServer::unregisterHandler(JsonHandler *handler)
     m_handlers.remove(handler->name());
 }
 
+uint JsonRpcServer::registeredClientCount() const
+{
+    return m_clients.count();
+}
+
 void JsonRpcServer::processDataPacket(TransportClient *transportClient, const QByteArray &data)
 {
     QJsonParseError error;
