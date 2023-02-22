@@ -37,7 +37,6 @@
 
 namespace remoteproxy {
 
-
 class SslServer: public QTcpServer
 {
     Q_OBJECT
@@ -56,11 +55,6 @@ protected:
 private:
     bool m_sslEnabled = false;
     QSslConfiguration m_config;
-
-private slots:
-    void onSocketDisconnected();
-    void onSocketReadyRead();
-    void onSocketError(QAbstractSocket::SocketError);
 
 };
 
