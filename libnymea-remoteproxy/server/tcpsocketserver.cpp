@@ -196,7 +196,7 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         return;
     }
 
-    addPendingConnection(sslSocket);
+    //addPendingConnection(sslSocket);
 
     if (m_sslEnabled) {
         qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
