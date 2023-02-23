@@ -68,10 +68,11 @@ bool UserInformation::isValid()
 
 QDebug operator<<(QDebug debug, const UserInformation &userInformation)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "UserInformation(" << userInformation.email();
     debug.nospace() << ", cognito:" << userInformation.cognitoUsername() << ") ";
     debug.nospace() << ", vendor" << userInformation.vendorId() << ") ";
-    debug.nospace() << ", userpool" << userInformation.userPoolId() << ") ";
+    debug.nospace() << ", userpool" << userInformation.userPoolId() << ")";
     return debug;
 }
 

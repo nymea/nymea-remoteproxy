@@ -60,9 +60,9 @@ void SigV4Utils::signRequest(QNetworkAccessManager::Operation operation, QNetwor
     }
 
     QByteArray canonicalRequest = SigV4Utils::getCanonicalRequest(operation, request, payload);
-    qCDebug(dcAuthenticationProcess()) << "canonical request:" << endl << qUtf8Printable(canonicalRequest);
+    qCDebug(dcAuthenticationProcess()) << "canonical request:" << "\n" << qUtf8Printable(canonicalRequest);
     QByteArray stringToSign = SigV4Utils::getStringToSign(canonicalRequest, dateTime, region.toUtf8(), service.toUtf8());
-    qCDebug(dcAuthenticationProcess()) << "string to sign:" << endl << qUtf8Printable(stringToSign);
+    qCDebug(dcAuthenticationProcess()) << "string to sign:" << "\n" << qUtf8Printable(stringToSign);
     QByteArray signature = SigV4Utils::getSignature(stringToSign, secretAccessKey, dateTime, region, service);
     qCDebug(dcAuthenticationProcess()) << "signature:" << signature;
     QByteArray authorizeHeader = SigV4Utils::getAuthorizationHeader(accessKeyId, dateTime, region, service, request, signature);

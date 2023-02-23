@@ -29,6 +29,7 @@
 #define TCPSOCKETSERVER_H
 
 #include <QUuid>
+#include <QTimer>
 #include <QObject>
 #include <QTcpServer>
 #include <QSslConfiguration>
@@ -36,6 +37,20 @@
 #include "transportinterface.h"
 
 namespace remoteproxy {
+
+class SslClient: public QSslSocket
+{
+    Q_OBJECT
+
+public:
+    explicit SslClient(QObject *parent = nullptr);
+
+    void startWaitingForEncrypted();
+
+private:
+    QTimer m_timer;
+
+};
 
 class SslServer: public QTcpServer
 {
@@ -55,6 +70,8 @@ protected:
 private:
     bool m_sslEnabled = false;
     QSslConfiguration m_config;
+
+    QVector<SslClient *> m_clients;
 
 };
 
