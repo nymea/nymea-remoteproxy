@@ -441,7 +441,6 @@ void RemoteProxyTestsTunnelProxy::registerClientDuplicated()
     addDebugCategory("TunnelProxyServer.debug=true");
     addDebugCategory("JsonRpcTraffic.debug=true");
 
-
     // Create the server and keep it up
     QString serverName = "creative server name";
     QUuid serverUuid = QUuid::createUuid();

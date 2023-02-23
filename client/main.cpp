@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
     QLoggingCategory::installFilter(loggingCategoryFilter);
 
     if (!parser.isSet(tokenOption)) {
-        qCCritical(dcProxyClient()) << "Please specify the token for authentication using -t <token> or --token <token>." << endl << endl;
+        qCCritical(dcProxyClient()) << "Please specify the token for authentication using -t <token> or --token <token>." << "\n" << "\n";
         parser.showHelp(-1);
     }
 

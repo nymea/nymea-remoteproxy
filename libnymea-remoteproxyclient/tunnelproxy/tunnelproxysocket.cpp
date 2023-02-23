@@ -91,12 +91,13 @@ void TunnelProxySocket::setDisconnected()
 
 QDebug operator<<(QDebug debug, TunnelProxySocket *tunnelProxySocket)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "TunnelProxySocket(";
     debug.nospace() << tunnelProxySocket->clientName() << ", ";
     debug.nospace() << tunnelProxySocket->clientUuid().toString() << ", ";
     debug.nospace() << tunnelProxySocket->clientPeerAddress().toString() << ", ";
     debug.nospace() << tunnelProxySocket->socketAddress() << ")";
-    return debug.space();
+    return debug;
 }
 
 }

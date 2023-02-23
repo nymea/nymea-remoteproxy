@@ -145,6 +145,7 @@ QList<QByteArray> ProxyClient::processData(const QByteArray &data)
 
 QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "ProxyClient(";
     if (!proxyClient->name().isEmpty()) {
         debug.nospace() << proxyClient->name() << ", ";
@@ -154,7 +155,7 @@ QDebug operator<<(QDebug debug, ProxyClient *proxyClient)
     debug.nospace() << ", " << proxyClient->userName();
     debug.nospace() << ", " << proxyClient->peerAddress().toString();
     debug.nospace() << ", " << proxyClient->creationTimeString() << ")";
-    return debug.space();
+    return debug;
 }
 
 }

@@ -94,7 +94,7 @@ static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context,
 
     if (s_logFile.isOpen()) {
         QTextStream textStream(&s_logFile);
-        textStream << messageString << endl;
+        textStream << messageString << "\n";
     }
 }
 

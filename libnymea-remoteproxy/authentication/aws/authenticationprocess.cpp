@@ -197,13 +197,13 @@ void AuthenticationProcess::onProcessFinished(int exitCode, QProcess::ExitStatus
 {
     qCDebug(dcAuthenticationProcess()) << "Authentication process finished (" << m_processTimer.elapsed() << "[ms] )";;
     if (exitStatus == QProcess::CrashExit) {
-        qCWarning(dcAuthenticationProcess()) << "Authentication process crashed:" << endl << qUtf8Printable(m_process->readAll());
+        qCWarning(dcAuthenticationProcess()) << "Authentication process crashed:" << "\n" << qUtf8Printable(m_process->readAll());
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
         return;
     }
 
     if (exitCode != 0) {
-        qCWarning(dcAuthenticationProcess()) << "The authentication process finished with error" << exitCode << endl << qUtf8Printable(m_process->readAll());
+        qCWarning(dcAuthenticationProcess()) << "The authentication process finished with error" << exitCode << "\n" << qUtf8Printable(m_process->readAll());
         emit authenticationFinished(Authenticator::AuthenticationErrorProxyError);
         return;
     }

@@ -100,11 +100,12 @@ quint16 TunnelProxyServerConnection::getFreeAddress()
 
 QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "TunnelProxyServerConnection(";
     debug.nospace() << serverConnection->serverName() << ", ";
     debug.nospace() << serverConnection->serverUuid().toString() << ", ";
     debug.nospace() << serverConnection->transportClient() << ")";
-    return debug.space();
+    return debug;
 }
 
 }

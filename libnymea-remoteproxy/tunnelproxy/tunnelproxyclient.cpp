@@ -85,13 +85,14 @@ void TunnelProxyClient::makeClientActive()
 
 QDebug operator<<(QDebug debug, TunnelProxyClient *tunnelProxyClient)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "TunnelProxyClient(";
     debug.nospace() << tunnelProxyClient->name() << ", ";
     debug.nospace() << tunnelProxyClient->interface()->serverName()<< ", ";
     debug.nospace() << tunnelProxyClient->clientId().toString()<< ", ";
     debug.nospace() << tunnelProxyClient->peerAddress().toString() << ", ";
     debug.nospace() << tunnelProxyClient->creationTimeString() << ")";
-    return debug.space();
+    return debug;
 }
 
 }

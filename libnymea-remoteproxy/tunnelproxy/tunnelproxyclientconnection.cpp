@@ -88,12 +88,13 @@ void TunnelProxyClientConnection::setSocketAddress(quint16 socketAddress)
 
 QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "TunnelProxyClientConnection(";
     debug.nospace() << clientConnection->clientName() << ", ";
     debug.nospace() << clientConnection->clientUuid().toString() << ", ";
     debug.nospace() << "server: " << clientConnection->serverUuid().toString() << ", ";
     debug.nospace() << clientConnection->transportClient() << ")";
-    return debug.space();
+    return debug;
 }
 
 }
