@@ -28,8 +28,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <QTextStream>
 #include <QString>
 #include <QDateTime>
+
+inline QTextStream& qStdOut() {
+    static QTextStream ts(stdout);
+    return ts;
+}
 
 class Utils {
 

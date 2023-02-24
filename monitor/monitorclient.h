@@ -43,7 +43,6 @@ public:
     bool printAll() const;
     void setPrintAll(bool printAll);
 
-
 private:
     QLocalSocket *m_socket = nullptr;
 

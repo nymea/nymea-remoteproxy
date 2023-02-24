@@ -29,11 +29,13 @@
 #include "utils.h"
 
 #include <QDebug>
+#include <QTextStream>
 
-NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, bool printAll, QObject *parent)
-    : QObject{parent}
+NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, bool jsonMode, bool printAll, QObject *parent)
+    : QObject{parent},
+      m_jsonMode{jsonMode}
 {
-    m_monitorClient = new MonitorClient(serverName, false, this);
+    m_monitorClient = new MonitorClient(serverName, m_jsonMode, this);
     m_monitorClient->setPrintAll(printAll);
 
     connect(m_monitorClient, &MonitorClient::connected, this, &NonInteractiveMonitor::onConnected);
@@ -47,20 +49,20 @@ void NonInteractiveMonitor::onConnected()
 
         QVariantMap tunnelProxyMap = dataMap.value("tunnelProxyStatistic").toMap();
 
-        qInfo().noquote() << "---------------------------------------------------------------------";
-        qInfo().noquote() << "Server name:" << dataMap.value("serverName", "-").toString();
-        qInfo().noquote() << "Server version:" << dataMap.value("serverVersion", "-").toString();
-        qInfo().noquote() << "API version:" << dataMap.value("apiVersion", "-").toString();
-        qInfo().noquote() << "Total client count:" << tunnelProxyMap.value("totalClientCount", 0).toInt();
-        qInfo().noquote() << "Server connections:" << tunnelProxyMap.value("serverConnectionsCount", 0).toInt();
-        qInfo().noquote() << "Client connections:" << tunnelProxyMap.value("clientConnectionsCount", 0).toInt();
-        qInfo().noquote() << "Data troughput:" << Utils::humanReadableTraffic(tunnelProxyMap.value("troughput", 0).toInt()) + " / s";
-        qInfo().noquote() << "---------------------------------------------------------------------";
+        qStdOut() << "---------------------------------------------------------------------\n";
+        qStdOut() << "Server name:" << dataMap.value("serverName", "-").toString() << "\n";
+        qStdOut() << "Server version:" << dataMap.value("serverVersion", "-").toString() << "\n";
+        qStdOut() << "API version:" << dataMap.value("apiVersion", "-").toString() << "\n";
+        qStdOut() << "Total client count:" << tunnelProxyMap.value("totalClientCount", 0).toInt() << "\n";
+        qStdOut() << "Server connections:" << tunnelProxyMap.value("serverConnectionsCount", 0).toInt() << "\n";
+        qStdOut() << "Client connections:" << tunnelProxyMap.value("clientConnectionsCount", 0).toInt() << "\n";
+        qStdOut() << "Data troughput:" << Utils::humanReadableTraffic(tunnelProxyMap.value("troughput", 0).toInt()) + " / s" << "\n";
+        qStdOut() << "---------------------------------------------------------------------" << "\n";
         QVariantMap transportsMap = tunnelProxyMap.value("transports").toMap();
         foreach(const QString &transportInterface, transportsMap.keys()) {
-            qInfo().noquote().nospace() << "Connections on " << transportInterface << ": " << transportsMap.value(transportInterface).toInt();
+            qStdOut() << "Connections on " << transportInterface << ": " << transportsMap.value(transportInterface).toInt() << "\n";
         }
-        qInfo().noquote() << "---------------------------------------------------------------------";
+        qStdOut() << "---------------------------------------------------------------------" << "\n";
 
         foreach (const QVariant &serverVariant, tunnelProxyMap.value("tunnelConnections").toList()) {
             QVariantMap serverMap = serverVariant.toMap();
@@ -83,7 +85,7 @@ void NonInteractiveMonitor::onConnected()
                     .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
                     .arg(serverMap.value("name").toString());
 
-            qInfo().noquote() << serverLinePrint;
+            qStdOut() << serverLinePrint << "\n";
 
             for (int cc = 0; cc < clientList.count(); cc++) {
                 QVariantMap clientMap = clientList.at(cc).toMap();
@@ -102,7 +104,7 @@ void NonInteractiveMonitor::onConnected()
                         .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
                         .arg(clientMap.value("name").toString(), -30);
 
-                qInfo().noquote() << clientLinePrint;
+                qStdOut() << clientLinePrint << "\n";
             }
         }
 
