@@ -132,6 +132,7 @@ JsonReply *TunnelProxyHandler::DisconnectClient(const QVariantMap &params, Trans
 JsonReply *TunnelProxyHandler::Ping(const QVariantMap &params, TransportClient *transportClient)
 {
     qCDebug(dcJsonRpc()) << name() << "ping received" << params << transportClient;
+
     QVariantMap response;
     response.insert("timestamp", params.value("timestamp"));
     return createReply("Ping", response);

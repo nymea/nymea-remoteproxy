@@ -86,6 +86,9 @@ public:
 
     virtual QList<QByteArray> processData(const QByteArray &data) = 0;
 
+signals:
+    void trafficOccurred();
+
 protected:
     TransportInterface *m_interface = nullptr;
 

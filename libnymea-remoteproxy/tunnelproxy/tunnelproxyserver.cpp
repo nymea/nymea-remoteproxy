@@ -115,7 +115,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
 
     // This client has been registered successfully.
     // Make sure it does not get disconnected any more because of inactivity.
-    tunnelProxyClient->makeClientActive();
+    tunnelProxyClient->activateClient();
 
     tunnelProxyClient->setType(TunnelProxyClient::TypeServer);
     tunnelProxyClient->setUuid(serverUuid);
@@ -176,7 +176,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
 
     // This client has been registered successfully.
     // Make sure it does not get disconnected any more because due to inactivity.
-    tunnelProxyClient->makeClientActive();
+    tunnelProxyClient->activateClient();
 
     // Not registered yet, we have a connected server for the requested server uuid
     tunnelProxyClient->setType(TunnelProxyClient::TypeClient);

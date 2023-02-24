@@ -1,4 +1,4 @@
-    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 *  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
@@ -130,6 +130,9 @@ quint64 TransportClient::rxDataCount() const
 void TransportClient::addRxDataCount(int dataCount)
 {
     m_rxDataCount += dataCount;
+    if (dataCount > 0) {
+        emit trafficOccurred();
+    }
 }
 
 quint64 TransportClient::txDataCount() const
@@ -140,6 +143,9 @@ quint64 TransportClient::txDataCount() const
 void TransportClient::addTxDataCount(int dataCount)
 {
     m_txDataCount += dataCount;
+    if (dataCount > 0) {
+        emit trafficOccurred();
+    }
 }
 
 int TransportClient::bufferSize() const
