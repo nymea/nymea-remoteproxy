@@ -47,7 +47,7 @@ public:
     QUuid clientId() const;
     QHostAddress peerAddress() const;
 
-    uint creationTime() const;
+    quint64 creationTime() const;
     QString creationTimeString() const;
 
     // Schedule a disconnect after the response
@@ -94,7 +94,7 @@ protected:
 
     QUuid m_clientId;
     QHostAddress m_peerAddress;
-    uint m_creationTimeStamp = 0;
+    quint64 m_creationTimeStamp = 0;
 
     // Eveyone has to register him self everywhere with a name and a uuid
     QString m_name;
