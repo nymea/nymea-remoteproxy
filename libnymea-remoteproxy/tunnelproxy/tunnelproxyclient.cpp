@@ -11,13 +11,16 @@ TunnelProxyClient::TunnelProxyClient(TransportInterface *interface, const QUuid 
 {
     // Note: a client is not inactive any more once registered successfully as client or server.
     // This makes sure we have not any inactive sockets connected to the proxy blocking resources.
-    // The tunnelproxy server will call makeClientActive once registered successfuly to stop this timer.
-    m_inactiveTimer.setInterval(Engine::instance()->configuration()->inactiveTimeout());
-    connect(&m_inactiveTimer, &QTimer::timeout, this, [this](){
-        m_interface->killClientConnection(m_clientId, "Tunnelproxy timeout occurred. The socket was inactive.");
+    // The tunnelproxy server will call activateClient once registered successfully to stop this timer.
+    m_inactiveTimer = new QTimer(this);
+    m_inactiveTimer->setInterval(Engine::instance()->configuration()->inactiveTimeout());
+    m_inactiveTimer->setSingleShot(true);
+
+    connect(m_inactiveTimer, &QTimer::timeout, this, [this](){
+        m_interface->killClientConnection(m_clientId, "Tunnelproxy client timeout occurred. The socket was inactive.");
     });
-    m_inactiveTimer.setSingleShot(true);
-    m_inactiveTimer.start();
+
+    m_inactiveTimer->start();
 }
 
 TunnelProxyClient::Type TunnelProxyClient::type() const
@@ -78,9 +81,27 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
     return packets;
 }
 
-void TunnelProxyClient::makeClientActive()
+void TunnelProxyClient::activateClient()
 {
-    m_inactiveTimer.stop();
+    // This connection has been registered as TypeServer or TypeClient
+    m_inactiveTimer->stop();
+
+    // We use the inactive timer from now on only for server connections
+    // to see if the connection is still alive. Server connection ping the
+    // tunnelproxy every 30 seconds if no other data has been exchanged to
+    // keep the connection up. If there is no data for more than one minute,
+    // we consider the connection as dead and terminate the connection.
+
+    if (m_type != TypeServer)
+        return;
+
+    connect(this, &TransportClient::trafficOccurred, this, [this](){
+        m_inactiveTimer->start();
+    });
+
+    m_inactiveTimer->setInterval(60000);
+    m_inactiveTimer->setSingleShot(true);
+    m_inactiveTimer->start();
 }
 
 QDebug operator<<(QDebug debug, TunnelProxyClient *tunnelProxyClient)
