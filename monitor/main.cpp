@@ -84,8 +84,8 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if (parser.isSet(noninteractiveOption)) {
-        NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption), parser.isSet(allOption), &application);
+    if (parser.isSet(noninteractiveOption) || parser.isSet(jsonOption)) {
+        NonInteractiveMonitor *monitor = new NonInteractiveMonitor(parser.value(socketOption), parser.isSet(jsonOption), parser.isSet(allOption), &application);
         Q_UNUSED(monitor);
     } else {
         if (parser.isSet(allOption)) {

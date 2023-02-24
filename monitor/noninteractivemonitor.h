@@ -35,10 +35,11 @@ class NonInteractiveMonitor : public QObject
 {
     Q_OBJECT
 public:
-    explicit NonInteractiveMonitor(const QString &serverName, bool printAll = false, QObject *parent = nullptr);
+    explicit NonInteractiveMonitor(const QString &serverName, bool jsonMode, bool printAll = false, QObject *parent = nullptr);
 
 private:
     MonitorClient *m_monitorClient = nullptr;
+    bool m_jsonMode = false;
 
 private slots:
     void onConnected();

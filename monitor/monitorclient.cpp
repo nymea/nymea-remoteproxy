@@ -26,6 +26,7 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "monitorclient.h"
+#include "utils.h"
 
 #include <QJsonDocument>
 
@@ -62,8 +63,10 @@ void MonitorClient::processBufferData()
     }
 
     if (m_jsonMode) {
-        qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
-        return;
+        qStdOut() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented)) << "\n";
+        QTextStream out(stdout);
+        out.flush();
+        exit(EXIT_FAILURE);
     }
 
     QVariantMap dataMap = jsonDoc.toVariant().toMap();
