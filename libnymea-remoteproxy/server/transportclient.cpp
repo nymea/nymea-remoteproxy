@@ -131,7 +131,7 @@ void TransportClient::addRxDataCount(int dataCount)
 {
     m_rxDataCount += dataCount;
     if (dataCount > 0) {
-        emit trafficOccurred();
+        emit rxDataCountChanged();
     }
 }
 
@@ -144,7 +144,7 @@ void TransportClient::addTxDataCount(int dataCount)
 {
     m_txDataCount += dataCount;
     if (dataCount > 0) {
-        emit trafficOccurred();
+        emit txDataCountChanged();
     }
 }
 
