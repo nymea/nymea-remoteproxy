@@ -92,15 +92,17 @@ void TunnelProxyClient::activateClient()
     // keep the connection up. If there is no data for more than one minute,
     // we consider the connection as dead and terminate the connection.
 
+    Q_ASSERT_X(m_type != TypeNone, "TunnelProxyClient", "Activate client called but the client type is not specified yet. Make sure you activate either a client or a server.");
     if (m_type != TypeServer)
         return;
 
-    connect(this, &TransportClient::trafficOccurred, this, [this](){
+    // We must receive data, transmitt does not mean the socket is not dead
+    connect(this, &TransportClient::rxDataCountChanged, this, [this](){
         m_inactiveTimer->start();
     });
 
     m_inactiveTimer->setInterval(60000);
-    m_inactiveTimer->setSingleShot(true);
+    m_inactiveTimer->setSingleShot(false);
     m_inactiveTimer->start();
 }
 

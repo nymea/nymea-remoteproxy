@@ -40,7 +40,7 @@ TcpSocketServer::TcpSocketServer(bool sslEnabled, const QSslConfiguration &sslCo
 
 TcpSocketServer::~TcpSocketServer()
 {
-    stopServer();
+    TcpSocketServer::stopServer();
 }
 
 void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
@@ -130,7 +130,6 @@ bool TcpSocketServer::stopServer()
 
 void TcpSocketServer::onDataAvailable(QSslSocket *client, const QByteArray &data)
 {
-    //qCDebug(dcTcpSocketServerTraffic()) << "Emitting data available internal.";
     QUuid clientId = m_clientList.key(client);
     if (clientId.isNull()) {
         qCWarning(dcTcpSocketServer()) << "Socket sent data but the uuid is null." << client << client->peerAddress().toString() << "Ignoring data...";
@@ -154,6 +153,7 @@ void TcpSocketServer::onSocketDisconnected(QSslSocket *client)
         qCWarning(dcTcpSocketServer()) << "Socket disconnected but the uuid is null." << client << client->peerAddress().toString() << clientId.toString();
         return;
     }
+
     qCDebug(dcTcpSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
     m_clientList.take(clientId);
     // Note: the SslServer is deleting the socket object
@@ -191,21 +191,29 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
 
     connect(sslSocket, &SslClient::disconnected, this, [this, sslSocket](){
         qCDebug(dcTcpSocketServer()) << "Client socket disconnected:" << sslSocket << sslSocket->peerAddress().toString();;
-        if (sslSocket->isEncrypted()) {
+
+        if (m_sslEnabled) {
+            // Only tell the upper layer the client has disconnecred if it was encrypted
+            if (sslSocket->isEncrypted()) {
+                emit socketDisconnected(sslSocket);
+            }
+        } else {
             emit socketDisconnected(sslSocket);
         }
 
         m_clients.removeAll(sslSocket);
-        qCDebug(dcTcpSocketServer()) << "SSL server client count" << m_clients.count();
         sslSocket->deleteLater();
     });
 
     connect(sslSocket, &QSslSocket::readyRead, this, [this, sslSocket](){
-        if (sslSocket->isEncrypted()) {
-            QByteArray data = sslSocket->readAll();
-            qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
-            emit dataAvailable(sslSocket, data);
-        }
+
+        // Only forward data from an encrypted socket if ssl is enabled
+        if (m_sslEnabled && !sslSocket->isEncrypted())
+            return;
+
+        QByteArray data = sslSocket->readAll();
+        qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
+        emit dataAvailable(sslSocket, data);
     });
 
     connect(sslSocket, &SslClient::encrypted, this, [this, sslSocket](){
@@ -235,7 +243,6 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
     }
 
     m_clients.append(sslSocket);
-    qCDebug(dcTcpSocketServer()) << "SSL server client count" << m_clients.count();
     addPendingConnection(sslSocket);
 }
 
