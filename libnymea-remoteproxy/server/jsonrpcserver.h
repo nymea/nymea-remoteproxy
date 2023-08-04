@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -31,11 +31,10 @@
 #include <QObject>
 #include <QVariant>
 
-#include "proxy/proxyclient.h"
+#include "transportclient.h"
 #include "jsonrpc/jsonreply.h"
 #include "transportinterface.h"
 #include "jsonrpc/jsonhandler.h"
-#include "jsonrpc/authenticationhandler.h"
 
 namespace remoteproxy {
 

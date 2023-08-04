@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -40,8 +40,6 @@ class TerminalWindow : public QObject
 public:
 
     enum View {
-        ViewClients,
-        ViewTunnels,
         ViewTunnelProxy
     };
     Q_ENUM(View)

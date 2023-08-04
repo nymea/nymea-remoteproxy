@@ -31,7 +31,6 @@
 #include "basetest.h"
 
 using namespace remoteproxy;
-using namespace remoteproxyclient;
 
 class RemoteProxyTestsTunnelProxy : public BaseTest
 {
@@ -47,6 +46,16 @@ private slots:
     // Raw api calls
     void getIntrospect();
     void getHello();
+
+    void monitorServer();
+
+    void configuration_data();
+    void configuration();
+
+    void serverPortBlocked();
+
+    void websocketBinaryData();
+    void websocketPing();
 
     void apiBasicCalls_data();
     void apiBasicCalls();

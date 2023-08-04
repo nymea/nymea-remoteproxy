@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -48,8 +48,6 @@
 #include "loggingcategories.h"
 #include "proxyconfiguration.h"
 #include "remoteproxyserverapplication.h"
-#include "authentication/aws/awsauthenticator.h"
-#include "authentication/dummy/dummyauthenticator.h"
 
 #include "../version.h"
 
@@ -114,8 +112,7 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea-cloud users and "
-                                             "registered nymea deamons to establish a tunnel connection.\n\n"
+    parser.setApplicationDescription(QString("\nThe nymea remote proxy server. This server allowes nymea clients to establish a  tunnel connection to nymea deamons.\n\n"
                                              "Version: %1\n"
                                              "API version: %2\n\n"
                                              "Copyright %3 %4 nymea GmbH <developer@nymea.io>\n")
@@ -127,13 +124,6 @@ int main(int argc, char *argv[])
     QCommandLineOption logfileOption(QStringList() << "l" << "logging", "Write log file to the given logfile.",
                                      "logfile", "/var/log/nymea-remoteproxy.log");
     parser.addOption(logfileOption);
-
-    QCommandLineOption developmentOption(QStringList() << "d" << "development", "Enable the development mode. This enabled the server "
-                                                                                "assumes there are static AWS credentials provided to aws-cli.");
-    parser.addOption(developmentOption);
-
-    QCommandLineOption mockAuthenticatorOption(QStringList() << "m" << "mock-authenticator", "Start the server using a mock authenticator which returns always true.");
-    parser.addOption(mockAuthenticatorOption);
 
     QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is " + configFile, "configuration");
     configOption.setDefaultValue(configFile);
@@ -152,7 +142,7 @@ int main(int argc, char *argv[])
     qCDebug(dcApplication()) << "Loading configuration file from" << configFile;
     if (!configuration->loadConfiguration(parser.value(configOption))) {
         qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     if (parser.isSet(logfileOption)) {
@@ -167,31 +157,19 @@ int main(int argc, char *argv[])
         QDir dir(fi.absolutePath());
         if (!dir.exists() && !dir.mkpath(dir.absolutePath())) {
             qCWarning(dcApplication()) << "Error opening log file" << configuration->logFileName();
-            exit(-1);
+            exit(EXIT_FAILURE);
         }
         s_logFile.setFileName(configuration->logFileName());
         if (!s_logFile.open(QFile::WriteOnly | QFile::Append)) {
             qWarning() << "Error opening log file" << configuration->logFileName();
-            exit(-1);
+            exit(EXIT_FAILURE);
         }
-    }
-
-    // Verify webserver configuration
-    if (configuration->webSocketServerProxyHost().isNull()) {
-        qCCritical(dcApplication()) << "Invalid web socket host address passed.";
-        exit(-1);
-    }
-
-    // Verify tcp server configuration
-    if (configuration->tcpServerHost().isNull()) {
-        qCCritical(dcApplication()) << "Invalid TCP server host address passed.";
-        exit(-1);
     }
 
     // Verify SSL configuration
     if (configuration->sslEnabled() && configuration->sslConfiguration().isNull()) {
         qCCritical(dcApplication()) << "SSL is enabled but no SSL configuration specified.";
-        exit(-1);
+        exit(EXIT_FAILURE);
     } else {
         qCDebug(dcApplication()) << "Using SSL version:" << QSslSocket::sslLibraryVersionString();
     }
@@ -199,28 +177,12 @@ int main(int argc, char *argv[])
     qCDebug(dcApplication()) << "==========================================================";
     qCDebug(dcApplication()) << "Starting" << application.applicationName() << application.applicationVersion();
     qCDebug(dcApplication()) << "==========================================================";
-    if (parser.isSet(developmentOption)) {
-        qCWarning(dcApplication()) << "##########################################################";
-        qCWarning(dcApplication()) << "#                   DEVELOPMENT MODE                     #";
-        qCWarning(dcApplication()) << "##########################################################";
-    }
 
     if (s_loggingEnabled)
         qCDebug(dcApplication()) << "Logging enabled. Writing logs to" << s_logFile.fileName();
 
-    Authenticator *authenticator = nullptr;
-    if (parser.isSet(mockAuthenticatorOption)) {
-        authenticator = qobject_cast<Authenticator *>(new DummyAuthenticator(nullptr));
-    } else {
-        if (configuration->proxyEnabled()) {
-            // Create default authenticator
-            authenticator = qobject_cast<Authenticator *>(new AwsAuthenticator(configuration->awsCredentialsUrl(), nullptr));
-        }
-    }
 
     // Configure and start the engines
-    Engine::instance()->setAuthenticator(authenticator);
-    Engine::instance()->setDeveloperModeEnabled(parser.isSet(developmentOption));
     Engine::instance()->start(configuration);
 
     return application.exec();

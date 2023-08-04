@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -37,7 +37,7 @@ TerminalWindow::TerminalWindow(QObject *parent) :
     QObject(parent)
 {
     // Init view tabs
-    m_tabs << ViewClients << ViewTunnels << ViewTunnelProxy;
+    m_tabs << ViewTunnelProxy;
 
     // Create main window
     m_mainWindow = initscr();
@@ -160,34 +160,6 @@ void TerminalWindow::paintHeader()
     QString windowName;
     QString headerString;
     switch (m_view) {
-    case ViewClients:
-        windowName = "-- Clients --";
-        headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
-                .arg(m_dataMap.value("serverName", "-").toString())
-                .arg(m_dataMap.value("serverVersion", "-").toString())
-                .arg(m_dataMap.value("apiVersion", "-").toString())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
-                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
-                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
-                .arg(windowName);
-        break;
-    case ViewTunnels:
-        windowName = "-- Tunnels --";
-        headerString = QString(" Server: %1 (%2) | API: %3 | Clients: %4, %5 | Tunnels: %6, %7 | %8 | %9 | %10")
-                .arg(m_dataMap.value("serverName", "-").toString())
-                .arg(m_dataMap.value("serverVersion", "-").toString())
-                .arg(m_dataMap.value("apiVersion", "-").toString())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("clientCount", 0).toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalClientCount").toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("tunnelCount", 0).toInt())
-                .arg(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTunnelCount").toInt())
-                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("troughput", 0).toInt()) + " / s", - 13)
-                .arg(Utils::humanReadableTraffic(m_dataMap.value("proxyStatistic").toMap().value("total").toMap().value("totalTraffic").toInt()), - 10)
-                .arg(windowName);
-        break;
     case ViewTunnelProxy:
         windowName = "-- TunnelProxy --";
         headerString = QString(" Server: %1 (%2) | API: %3 | Total: %4 | Servers: %5 | Clients: %6 | %7 | %8")
@@ -366,12 +338,6 @@ void TerminalWindow::eventLoop()
 
     // Refresh content window
     switch (m_view) {
-    case ViewClients:
-        paintContentClients();
-        break;
-    case ViewTunnels:
-        paintContentTunnels();
-        break;
     case ViewTunnelProxy:
         paintContentTunnelProxy();
         break;

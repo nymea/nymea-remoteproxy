@@ -317,11 +317,6 @@ void TunnelProxyServer::onClientConnected(const QUuid &clientId, const QHostAddr
     TunnelProxyClient *tunnelProxyClient = new TunnelProxyClient(interface, clientId, address, this);
     m_proxyClients.insert(clientId, tunnelProxyClient);
     m_jsonRpcServer->registerClient(tunnelProxyClient);
-
-//    // For debugging
-//    qCDebug(dcTunnelProxyServer()) << "#### Total clients:" << m_proxyClients.count() << "JSON RPC clients:" << m_jsonRpcServer->registeredClientCount()
-//                                   << "Interface connections:" << tunnelProxyClient->interface()->connectionsCount()
-//                                   << "Servers:" << m_tunnelProxyServerConnections.count() << "Clients:" << m_tunnelProxyClientConnections.count();
 }
 
 void TunnelProxyServer::onClientDisconnected(const QUuid &clientId)

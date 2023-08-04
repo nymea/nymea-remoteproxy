@@ -10,8 +10,8 @@ installheaders.files = remoteproxyconnection.h
 installheaders.path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxyclient/
 
 installtunnelheaders.files = tunnelproxy/tunnelproxyremoteconnection.h \
-    tunnelproxy/tunnelproxysocket.h \
-    tunnelproxy/tunnelproxysocketserver.h
+                             tunnelproxy/tunnelproxysocket.h \
+                             tunnelproxy/tunnelproxysocketserver.h
 installtunnelheaders.path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxyclient/tunnelproxy
 
 

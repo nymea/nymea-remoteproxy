@@ -3,7 +3,7 @@ include(nymea-remoteproxy.pri)
 # Define versions
 SERVER_NAME=nymea-remoteproxy
 API_VERSION_MAJOR=0
-API_VERSION_MINOR=5
+API_VERSION_MINOR=6
 COPYRIGHT_YEAR=2023
 
 # Parse and export SERVER_VERSION
@@ -12,18 +12,13 @@ SERVER_VERSION=$$system('dpkg-parsechangelog | sed -n -e "s/^Version: //p"')
 QMAKE_SUBSTITUTES += version.h.in
 
 TEMPLATE=subdirs
-SUBDIRS += server client tunnelclient libnymea-remoteproxy libnymea-remoteproxyclient
+SUBDIRS += server tunnelclient monitor libnymea-remoteproxy libnymea-remoteproxyclient
 
 !disabletests {
     SUBDIRS += tests
 }
 
-!disablemonitor {
-    SUBDIRS += monitor
-}
-
 server.depends = libnymea-remoteproxy
-client.depends = libnymea-remoteproxyclient
 tunnelclient.depends = libnymea-remoteproxyclient
 tests.depends = libnymea-remoteproxy libnymea-remoteproxyclient
 
@@ -46,6 +41,3 @@ ccache {
     message("Building with ccache support")
 }
 
-disablemonitor {
-    message("Building without the monitor")
-}

@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -65,27 +65,8 @@ public:
     int jsonRpcTimeout() const;
     void setJsonRpcTimeout(int timeout);
 
-    int authenticationTimeout() const;
-    void setAuthenticationTimeout(int timeout);
-
     int inactiveTimeout() const;
     void setInactiveTimeout(int timeout);
-
-    int aloneTimeout() const;
-    void setAloneTimeout(int timeout);
-
-    bool proxyEnabled() const;
-    void setProxyEnabled(bool proxyEnabled);
-
-    // AWS
-    QString awsRegion() const;
-    void setAwsRegion(const QString &region);
-
-    QString awsAuthorizerLambdaFunctionName() const;
-    void setAwsAuthorizerLambdaFunctionName( const QString &functionName);
-
-    QUrl awsCredentialsUrl() const;
-    void setAwsCredentialsUrl(const QUrl &url);
 
     // Ssl
     bool sslEnabled() const;
@@ -102,21 +83,7 @@ public:
 
     QSslConfiguration sslConfiguration() const;
 
-    // WebSocketServer
-    QHostAddress webSocketServerProxyHost() const;
-    void setWebSocketServerHost(const QHostAddress &address);
-
-    quint16 webSocketServerProxyPort() const;
-    void setWebSocketServerPort(quint16 port);
-
-    // TcpServer
-    QHostAddress tcpServerHost() const;
-    void setTcpServerHost(const QHostAddress &address);
-
-    quint16 tcpServerPort() const;
-    void setTcpServerPort(quint16 port);
-
-    // UnixSocketServer
+    // UnixSocketServer (tunnel)
     QString unixSocketFileName() const;
     void setUnixSocketFileName(const QString &unixSocketFileName);
 
@@ -144,16 +111,7 @@ private:
     QString m_monitorSocketFileName;
 
     int m_jsonRpcTimeout = 10000;
-    int m_authenticationTimeout = 8000;
     int m_inactiveTimeout = 8000;
-    int m_aloneTimeout = 8000;
-
-    bool m_proxyEnabled = true;
-
-    // AWS
-    QString m_awsRegion;
-    QString m_awsAuthorizerLambdaFunctionName;
-    QUrl m_awsCredentialsUrl;
 
     // Ssl
     bool m_sslEnabled = true;
@@ -162,15 +120,7 @@ private:
     QString m_sslCertificateChainFileName;
     QSslConfiguration m_sslConfiguration;
 
-    // WebSocketServer (proxy)
-    QHostAddress m_webSocketServerProxyHost = QHostAddress::LocalHost;
-    quint16 m_webSocketServerProxyPort = 1212;
-
-    // TcpServer (proxy)
-    QHostAddress m_tcpServerHost = QHostAddress::LocalHost;
-    quint16 m_tcpServerPort = 1213;
-
-    // UnixSocketServer (proxy)
+    // UnixSocketServer (tunnel)
     QString m_unixSocketFileName = "/run/nymea-remoteproxy.socket";
 
     // WebSocketServer (tunnel)
@@ -180,7 +130,6 @@ private:
     // TcpServer (tunnel)
     QHostAddress m_tcpServerTunnelProxyHost = QHostAddress::LocalHost;
     quint16 m_tcpServerTunnelProxyPort = 2213;
-
 
 };
 
