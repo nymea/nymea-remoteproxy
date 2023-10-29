@@ -1,6 +1,6 @@
 Source: nymea-remoteproxy
 Section: utils
-Priority: options
+Priority: optional
 Maintainer: nymea GmbH <developer@nymea.io>
 Standards-Version: 3.9.3
 Homepage: https://nymea.io
