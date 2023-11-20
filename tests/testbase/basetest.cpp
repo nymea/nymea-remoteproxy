@@ -241,7 +241,7 @@ QVariant BaseTest::invokeTcpSocketTunnelProxyApiCall(const QString &method, cons
     }
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
-    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + '\n');
+    socket->write(jsonDoc.toJson(QJsonDocument::Compact) + "\n");
     dataSpy.wait();
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
@@ -292,7 +292,7 @@ QVariant BaseTest::injectTcpSocketTunnelProxyData(const QByteArray &data)
     }
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
-    socket->write(data + '\n');
+    socket->write(data + "\n");
     dataSpy.wait();
     if (dataSpy.count() != 1) {
         qWarning() << "No data received";
@@ -345,7 +345,7 @@ QPair<QVariant, QSslSocket *> BaseTest::invokeTcpSocketTunnelProxyApiCallPersist
     request.insert("method", method);
     request.insert("params", params);
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
-    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + '\n';
+    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + "\n";
 
     QSignalSpy dataSpy(socket, &QSslSocket::readyRead);
 
@@ -439,7 +439,7 @@ QPair<QVariant, QWebSocket *> BaseTest::invokeWebSocketTunnelProxyApiCallPersist
     request.insert("method", method);
     request.insert("params", params);
     QJsonDocument jsonDoc = QJsonDocument::fromVariant(request);
-    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + '\n';
+    QByteArray payload = jsonDoc.toJson(QJsonDocument::Compact)  + "\n";
 
 
     if (socket->state() != QAbstractSocket::ConnectedState) {

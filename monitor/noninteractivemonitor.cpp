@@ -69,7 +69,7 @@ void NonInteractiveMonitor::onConnected()
             QVariantList clientList = serverMap.value("clientConnections").toList();
 
             // Server line
-            QString serverConnectionTime = QDateTime::fromTime_t(serverMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss");
+            QString serverConnectionTime = QDateTime::fromMSecsSinceEpoch(serverMap.value("timestamp").toLongLong() * 1000).toString("dd.MM.yyyy hh:mm:ss");
             QString serverLinePrint;
             if (clientList.isEmpty()) {
                 serverLinePrint.prepend("├──");
@@ -97,7 +97,7 @@ void NonInteractiveMonitor::onConnected()
                 }
 
                 clientLinePrint += QString("%1 | %2 | %3 RX: %4 TX: %5 | %6")
-                        .arg(QDateTime::fromTime_t(clientMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss"))
+                        .arg(QDateTime::fromMSecsSinceEpoch(clientMap.value("timestamp").toLongLong() * 1000).toString("dd.MM.yyyy hh:mm:ss"))
                         .arg(clientMap.value("clientUuid").toString())
                         .arg(clientMap.value("address").toString(), - 15)
                         .arg(Utils::humanReadableTraffic(serverMap.value("rxDataCount").toInt()), - 9)

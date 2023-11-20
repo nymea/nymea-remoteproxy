@@ -45,6 +45,15 @@ public:
 
     QString name() const override;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Server
+    Q_INVOKABLE remoteproxy::JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *DisconnectClient(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *Ping(const QVariantMap &params, TransportClient *transportClient);
+
+    // Client
+    Q_INVOKABLE remoteproxy::JsonReply *RegisterClient(const QVariantMap &params, TransportClient *transportClient);
+#else
     // Server
     Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
     Q_INVOKABLE JsonReply *DisconnectClient(const QVariantMap &params, TransportClient *transportClient);
@@ -52,7 +61,7 @@ public:
 
     // Client
     Q_INVOKABLE JsonReply *RegisterClient(const QVariantMap &params, TransportClient *transportClient);
-
+#endif
 signals:
     void ClientConnected(const QVariantMap &params, TransportClient *transportClient);
     void ClientDisconnected(const QVariantMap &params, TransportClient *transportClient);

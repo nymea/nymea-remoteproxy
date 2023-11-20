@@ -195,7 +195,7 @@ void TerminalWindow::paintContentClients()
         QVariantMap clientMap = clientVariant.toMap();
 
         uint timeStamp = clientMap.value("timestamp").toUInt();
-        QString clientConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
+        QString clientConnectionTime = QDateTime::fromMSecsSinceEpoch(timeStamp * 1000).toString("dd.MM.yyyy hh:mm:ss");
 
         int rxDataCountBytes = clientMap.value("rxDataCount").toInt();
         int txDataCountBytes = clientMap.value("txDataCount").toInt();
@@ -226,7 +226,7 @@ void TerminalWindow::paintContentTunnels()
 
         // Tunnel time
         uint timeStamp = tunnelMap.value("timestamp").toUInt();
-        QString tunnelConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
+        QString tunnelConnectionTime = QDateTime::fromMSecsSinceEpoch(timeStamp * 1000).toString("dd.MM.yyyy hh:mm:ss");
 
         QString tunnelPrint = QString("%1 | %2 | %3 | %4 | %5 (%6) <---> %7 (%8)")
                 .arg(tunnelConnectionTime)
@@ -252,7 +252,7 @@ void TerminalWindow::paintContentTunnelProxy()
     foreach (const QVariant &serverVariant, tunnelProxyMap.value("tunnelConnections").toList()) {
         QVariantMap serverMap = serverVariant.toMap();
         uint timeStamp = serverMap.value("timestamp").toUInt();
-        QString serverConnectionTime = QDateTime::fromTime_t(timeStamp).toString("dd.MM.yyyy hh:mm:ss");
+        QString serverConnectionTime = QDateTime::fromMSecsSinceEpoch(timeStamp * 1000).toString("dd.MM.yyyy hh:mm:ss");
         int rxDataCountBytes = serverMap.value("rxDataCount").toInt();
         int txDataCountBytes = serverMap.value("txDataCount").toInt();
         QString serverLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
@@ -287,7 +287,7 @@ void TerminalWindow::paintContentTunnelProxy()
             mvwaddch(m_contentWindow, i, 5, ACS_HLINE);
 
             QString clientLinePrint = QString("%1 | %2 | RX: %3 | TX: %4 | %5")
-                    .arg(QDateTime::fromTime_t(clientMap.value("timestamp").toUInt()).toString("dd.MM.yyyy hh:mm:ss"))
+                    .arg(QDateTime::fromMSecsSinceEpoch(clientMap.value("timestamp").toULongLong() * 1000).toString("dd.MM.yyyy hh:mm:ss"))
                     .arg(clientMap.value("address").toString(), - 16)
                     .arg(Utils::humanReadableTraffic(clientMap.value("rxDataCount").toInt()), - 10)
                     .arg(Utils::humanReadableTraffic(clientMap.value("txDataCount").toInt()), - 10)

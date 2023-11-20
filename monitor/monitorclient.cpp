@@ -87,7 +87,7 @@ void MonitorClient::onDisconnected()
 
 void MonitorClient::onReadyRead()
 {
-    // Note: the server sends the data compact with '\n' at the end
+    // Note: the server sends the data compact with "\n" at the end
     QByteArray data = m_socket->readAll();
 
     int index = data.indexOf("}\n");

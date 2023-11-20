@@ -28,7 +28,7 @@
 #include "jsonhandler.h"
 #include <QMetaMethod>
 #include <QDebug>
-#include <QRegExp>
+#include <QRegularExpression>
 
 #include "jsonreply.h"
 #include "jsontypes.h"
@@ -67,7 +67,7 @@ QVariantMap JsonHandler::introspect(const QMetaMethod::MethodType &type)
             if (!m_descriptions.contains(method.name()) || !m_params.contains(method.name())) {
                 continue;
             }
-            if (QString(method.name()).contains(QRegExp("^[A-Z]"))) {
+            if (QString(method.name()).contains(QRegularExpression("^[A-Z]"))) {
                 QVariantMap methodData;
                 methodData.insert("description", m_descriptions.value(method.name()));
                 methodData.insert("params", m_params.value(method.name()));

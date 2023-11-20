@@ -45,7 +45,7 @@ TcpSocketServer::~TcpSocketServer()
 
 void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
 {
-    QTcpSocket *client = m_clientList.value(clientId);
+    QSslSocket *client = m_clientList.value(clientId);
     if (!client) {
         qCWarning(dcTcpSocketServer()) << "Client" << clientId << "unknown to this transport";
         return;
@@ -59,7 +59,7 @@ void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
 
 void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString &killReason)
 {
-    QTcpSocket *client = m_clientList.value(clientId);
+    QSslSocket *client = m_clientList.value(clientId);
     if (!client) {
         qCWarning(dcTcpSocketServer()) << "Could not kill connection with id" << clientId.toString() << "with reason" << killReason << "because there is no socket with this id.";
         return;
@@ -193,10 +193,17 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         qCDebug(dcTcpSocketServer()) << "Client socket disconnected:" << sslSocket << sslSocket->peerAddress().toString();;
 
         if (m_sslEnabled) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            // FIXME: the SSL socket behavior seems to have changed in Qt6,
+            // we need to emit this signal in any case, otherwise the upper layer assumes the
+            // socket object still exists, even if we only hand over to upper layers on encypted.
+            emit socketDisconnected(sslSocket);
+#else
             // Only tell the upper layer the client has disconnecred if it was encrypted
             if (sslSocket->isEncrypted()) {
                 emit socketDisconnected(sslSocket);
             }
+#endif
         } else {
             emit socketDisconnected(sslSocket);
         }
@@ -221,6 +228,19 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         emit socketConnected(sslSocket);
     });
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(sslSocket, &QSslSocket::errorOccurred, this, [sslSocket](QAbstractSocket::SocketError error){
+        qCWarning(dcTcpSocketServer()) << "Socket error occurred on" << sslSocket << error << sslSocket->errorString() << "Explicitly closing the client connection.";
+        sslSocket->close();
+    });
+
+    connect(sslSocket, &QSslSocket::sslErrors, this, [sslSocket](const QList<QSslError> &errors) {
+        qCWarning(dcTcpSocketServer()) << "SSL error occurred in the client connection" << sslSocket;
+        foreach (const QSslError &error, errors) {
+            qCWarning(dcTcpSocketServer()) << "--> SSL error:" << error.error() << error.errorString();
+        }
+    });
+#else
     typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
     connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, [sslSocket](QAbstractSocket::SocketError error){
         qCWarning(dcTcpSocketServer()) << "Socket error occurred on" << sslSocket << error << sslSocket->errorString() << "Explicitly closing the client connection.";
@@ -234,6 +254,8 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
             qCWarning(dcTcpSocketServer()) << "--> SSL error:" << error.error() << error.errorString();
         }
     });
+
+#endif
 
     if (m_sslEnabled) {
         qCDebug(dcTcpSocketServer()) << "Starting SSL encryption for" << sslSocket;

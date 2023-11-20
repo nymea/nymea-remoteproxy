@@ -11,7 +11,7 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
 {
     m_remoteConnection = new TunnelProxyRemoteConnection(m_uuid, m_name);
     m_timer.setSingleShot(true);
-    connect(&m_timer, &QTimer::timeout, this, [=](){
+    connect(&m_timer, &QTimer::timeout, this, [this](){
         if (m_remoteConnection->remoteConnected()) {
             m_remoteConnection->sendData(generateRandomString(100).toUtf8());
             m_timer.start(1000);
@@ -45,7 +45,7 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
         qWarning() << "Socket error occurred" << error;
     });
 
-    connect(m_remoteConnection, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+    connect(m_remoteConnection, &TunnelProxyRemoteConnection::sslErrors, this, [this](const QList<QSslError> &errors){
         if (m_insecure) {
             m_remoteConnection->ignoreSslErrors(errors);
         } else {
@@ -67,7 +67,7 @@ QString ClientConnection::generateRandomString(uint length) const
     const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
     QString randomString;
     for(uint i = 0; i < length; i++) {
-        randomString.append(possibleCharacters.at(qrand() % possibleCharacters.length()));
+        randomString.append(possibleCharacters.at(std::rand() % possibleCharacters.length()));
     }
     return randomString;
 }

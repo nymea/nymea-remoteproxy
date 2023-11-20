@@ -331,7 +331,7 @@ QDebug operator<<(QDebug debug, ProxyConfiguration *configuration)
     debug.nospace() << "      Locality name:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::LocalityName) << "\n";
     debug.nospace() << "      State/Province:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::StateOrProvinceName) << "\n";
     debug.nospace() << "      Email address:" << configuration->sslConfiguration().localCertificate().issuerInfo(QSslCertificate::EmailAddress) << "\n";
-    debug.nospace() << "UnixSocketServer Proxy" << endl;
+    debug.nospace() << "UnixSocketServer Proxy" << "\n";
     debug.nospace() << "  - Filename:" << configuration->unixSocketFileName() << "\n";
     debug.nospace() << "WebSocketServer TunnelProxy" << "\n";
     debug.nospace() << "  - Host:" << configuration->webSocketServerTunnelProxyHost().toString() << "\n";

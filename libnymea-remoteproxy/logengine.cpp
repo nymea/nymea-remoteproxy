@@ -29,6 +29,7 @@
 #include "loggingcategories.h"
 
 #include <QDateTime>
+#include <QtGlobal>
 
 namespace remoteproxy {
 
@@ -101,7 +102,7 @@ void LogEngine::rotateLogs()
 
 QString LogEngine::createTimestamp()
 {
-    return QString::number(QDateTime::currentDateTimeUtc().toTime_t());
+    return QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch());
 }
 
 void LogEngine::enable()

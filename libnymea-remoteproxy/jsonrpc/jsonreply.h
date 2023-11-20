@@ -39,6 +39,7 @@ namespace remoteproxy {
 class JsonReply: public QObject
 {
     Q_OBJECT
+
 public:
     enum Type {
         TypeSync,

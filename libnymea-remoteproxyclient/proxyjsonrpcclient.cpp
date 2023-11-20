@@ -105,7 +105,7 @@ JsonReply *JsonRpcClient::callPing(uint timestamp)
 
 void JsonRpcClient::sendRequest(const QVariantMap &request, bool slipEnabled)
 {
-    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n';
+    QByteArray data = QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n";
 
     if (slipEnabled) {
         SlipDataProcessor::Frame frame;

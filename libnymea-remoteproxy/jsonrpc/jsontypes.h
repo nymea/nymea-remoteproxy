@@ -70,7 +70,6 @@ namespace remoteproxy {
 class JsonTypes
 {
     Q_GADGET
-    Q_ENUMS(BasicType)
 
 public:
     enum BasicType {

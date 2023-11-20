@@ -38,7 +38,7 @@ TransportClient::TransportClient(TransportInterface *interface, const QUuid &cli
     m_clientId(clientId),
     m_peerAddress(address)
 {
-    m_creationTimeStamp = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000;
+    m_creationTimeStamp = QDateTime::currentDateTime().toSecsSinceEpoch();
 }
 
 QUuid TransportClient::clientId() const

@@ -42,6 +42,9 @@ namespace remoteproxy {
 JsonRpcServer::JsonRpcServer(QObject *parent) :
     JsonHandler(parent)
 {
+
+    //qRegisterMetaType<JsonReply*>();
+
     // Methods
     QVariantMap params; QVariantMap returns;
 
@@ -66,9 +69,9 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
     // Notifications
     params.clear(); returns.clear();
     setDescription("TunnelEstablished", "Emitted whenever the tunnel has been established successfully. "
-                   "This is the last message from the remote proxy server! Any following data will be from "
-                   "the other tunnel client until the connection will be closed. The parameter contain some information "
-                   "about the other tunnel client.");
+                                        "This is the last message from the remote proxy server! Any following data will be from "
+                                        "the other tunnel client until the connection will be closed. The parameter contain some information "
+                                        "about the other tunnel client.");
     params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
     setParams("TunnelEstablished", params);
@@ -114,14 +117,20 @@ JsonReply *JsonRpcServer::Introspect(const QVariantMap &params, TransportClient 
 
     QVariantMap methods;
     foreach (JsonHandler *handler, m_handlers) {
-        methods.unite(handler->introspect(QMetaMethod::Method));
+        QVariantMap handlerMethods = handler->introspect(QMetaMethod::Method);
+        foreach (const QString &method, handlerMethods.keys()) {
+            methods.insert(method, handlerMethods.value(method));
+        }
     }
 
     data.insert("methods", methods);
 
     QVariantMap signalsMap;
     foreach (JsonHandler *handler, m_handlers) {
-        signalsMap.unite(handler->introspect(QMetaMethod::Signal));
+        QVariantMap handlerSignals = handler->introspect(QMetaMethod::Signal);
+        foreach (const QString &signalName, handlerSignals.keys()) {
+            signalsMap.insert(signalName, handlerSignals.value(signalName));
+        }
     }
 
     data.insert("notifications", signalsMap);
@@ -141,10 +150,10 @@ void JsonRpcServer::sendResponse(TransportClient *client, int commandId, const Q
     if (client->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data + '\n';
+        frame.data = data + "\n";
         client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
-        client->sendData(data + '\n');
+        client->sendData(data + "\n");
     }
 }
 
@@ -160,10 +169,10 @@ void JsonRpcServer::sendErrorResponse(TransportClient *client, int commandId, co
     if (client->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data + '\n';
+        frame.data = data + "\n";
         client->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
-        client->sendData(data + '\n');
+        client->sendData(data + "\n");
     }
 }
 
@@ -172,9 +181,9 @@ QString JsonRpcServer::formatAssertion(const QString &targetNamespace, const QSt
     QJsonDocument doc = QJsonDocument::fromVariant(handler->introspect(QMetaMethod::Method).value(targetNamespace + "." + method));
     QJsonDocument doc2 = QJsonDocument::fromVariant(data);
     return QString("\nMethod: %1\nTemplate: %2\nValue: %3")
-            .arg(targetNamespace + "." + method)
-            .arg(QString(doc.toJson(QJsonDocument::Indented)))
-            .arg(QString(doc2.toJson(QJsonDocument::Indented)));
+        .arg(targetNamespace + "." + method)
+        .arg(QString(doc.toJson(QJsonDocument::Indented)))
+        .arg(QString(doc2.toJson(QJsonDocument::Indented)));
 }
 
 void JsonRpcServer::registerHandler(JsonHandler *handler)
@@ -248,14 +257,38 @@ void JsonRpcServer::processDataPacket(TransportClient *transportClient, const QB
         return;
     }
 
-    JsonReply *reply;
-    QMetaObject::invokeMethod(handler, method.toLatin1().data(), Q_RETURN_ARG(JsonReply*, reply), Q_ARG(QVariantMap, params), Q_ARG(TransportClient*, transportClient));
+
+    JsonReply *reply = nullptr;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool invokedSuccessfully = QMetaObject::invokeMethod(handler, method.toLatin1().constData(),
+                                                         Qt::DirectConnection,
+                                                         qReturnArg(reply),
+                                                         params, transportClient);
+
+    if (!invokedSuccessfully) {
+        qCWarning(dcJsonRpc()) << "Failed to invoke method" << handler << method;
+    }
+#else
+    QMetaObject::invokeMethod(handler, method.toLatin1().constData(),
+                              Qt::DirectConnection,
+                              Q_RETURN_ARG(JsonReply *, reply),
+                              Q_ARG(QVariantMap, params),
+                              Q_ARG(TransportClient *, transportClient));
+#endif
+
+
+    if (!reply) {
+        qCWarning(dcJsonRpc()) << "Internal error. No reply, could not invoke method.";
+        return;
+
+    }
+
     if (reply->type() == JsonReply::TypeAsync) {
         m_asyncReplies.insert(reply, transportClient);
         reply->setClientId(transportClient->clientId());
         reply->setCommandId(commandId);
 
-        connect(reply, &JsonReply::finished, this, &JsonRpcServer::asyncReplyFinished);
+        connect(reply, &remoteproxy::JsonReply::finished, this, &JsonRpcServer::asyncReplyFinished);
         reply->startWait();
     } else {
         Q_ASSERT_X((targetNamespace == "RemoteProxy" && method == "Introspect") || handler->validateReturns(method, reply->data()).first
@@ -295,7 +328,7 @@ void JsonRpcServer::asyncReplyFinished()
     if (!reply->timedOut()) {
         Q_ASSERT_X(reply->handler()->validateReturns(reply->method(), reply->data()).first
                    ,"validating return value", formatAssertion(reply->handler()->name(),
-                                                               reply->method(), reply->handler(), reply->data()).toLatin1().data());
+                                   reply->method(), reply->handler(), reply->data()).toLatin1().data());
 
         QPair<bool, QString> returnValidation = reply->handler()->validateReturns(reply->method(), reply->data());
         if (!returnValidation.first) {
@@ -385,12 +418,12 @@ void JsonRpcServer::sendNotification(const QString &nameSpace, const QString &me
     if (transportClient->slipEnabled()) {
         SlipDataProcessor::Frame frame;
         frame.socketAddress = 0x0000;
-        frame.data = data + '\n';
+        frame.data = data + "\n";
         qCDebug(dcJsonRpcTraffic()) << "Sending notification frame:" <<frame.socketAddress << qUtf8Printable(frame.data);
         transportClient->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
     } else {
         qCDebug(dcJsonRpcTraffic()) << "Sending notification:" << data;
-        transportClient->sendData(data + '\n');
+        transportClient->sendData(data + "\n");
     }
 }
 

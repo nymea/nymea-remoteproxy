@@ -171,10 +171,8 @@ void RemoteProxyTestsTunnelProxy::getHello()
 
 void RemoteProxyTestsTunnelProxy::monitorServer()
 {
-
     // Start the server
     startServer();
-
 
     // ** Create the server **
     QString serverName = "nymea server";
@@ -188,7 +186,9 @@ void RemoteProxyTestsTunnelProxy::monitorServer()
     tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
 
     QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
-    serverRunningSpy.wait();
+    if (serverRunningSpy.isEmpty())
+        serverRunningSpy.wait();
+
     QVERIFY(serverRunningSpy.count() == 1);
     QList<QVariant> arguments = serverRunningSpy.takeFirst();
     QVERIFY(arguments.at(0).toBool() == true);
