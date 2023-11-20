@@ -39,6 +39,7 @@ namespace remoteproxy {
 class JsonReply: public QObject
 {
     Q_OBJECT
+
 public:
     enum Type {
         TypeSync,
@@ -96,5 +97,7 @@ private:
 };
 
 }
+
+Q_DECLARE_METATYPE(remoteproxy::JsonReply)
 
 #endif // JSONRPCREPLY_H

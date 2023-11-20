@@ -396,7 +396,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
         SlipDataProcessor::Frame frame;
         frame.socketAddress = clientConnection->socketAddress();
         frame.data = data;
-        qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << "\n" << data;
+        qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data to server socket address" << clientConnection->socketAddress() << "to" << clientConnection->serverConnection() << Qt::endl << data;
         QByteArray rawData = SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame));
         clientConnection->serverConnection()->transportClient()->sendData(rawData);
         m_troughputCounter += data.count();
@@ -428,7 +428,7 @@ void TunnelProxyServer::onClientDataAvailable(const QUuid &clientId, const QByte
                         continue;
                     }
 
-                    qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  "\n" << frame.data;
+                    qCDebug(dcTunnelProxyServerTraffic()) << "--> Tunnel data from server socket" << frame.socketAddress << "to" << clientConnection <<  Qt::endl << frame.data;
                     clientConnection->transportClient()->sendData(frame.data);
                     m_troughputCounter += frame.data.count();
                 }

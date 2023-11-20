@@ -63,7 +63,7 @@ void BaseTest::resetDebugCategories()
 
 void BaseTest::addDebugCategory(const QString &debugCategory)
 {
-    m_currentDebugCategories += debugCategory + "\n";
+    m_currentDebugCategories += debugCategory + '\n';
     //qDebug() << m_currentDebugCategories;
     QLoggingCategory::setFilterRules(m_currentDebugCategories);
 }

@@ -29,6 +29,7 @@
 #include <QStringList>
 #include <QJsonDocument>
 #include <QDebug>
+#include <QRegularExpression>
 
 #include "loggingcategories.h"
 
@@ -72,7 +73,7 @@ QPair<bool, QString> JsonTypes::validateMap(const QVariantMap &templateMap, cons
     // Make sure all values defined in the template are around
     foreach (const QString &key, templateMap.keys()) {
         QString strippedKey = key;
-        strippedKey.remove(QRegExp("^o:"));
+        strippedKey.remove(QRegularExpression("^o:"));
         if (!key.startsWith("o:") && !map.contains(strippedKey)) {
             qCWarning(dcJsonRpc()) << "*** missing key" << key;
             qCWarning(dcJsonRpc()) << "Expected:      " << templateMap;
@@ -274,7 +275,7 @@ QString JsonTypes::basicTypeToString(const QVariant::Type &type)
 
 QPair<bool, QString> JsonTypes::report(bool status, const QString &message)
 {
-    return qMakePair<bool, QString>(status, message);
+    return QPair<bool, QString>(status, message);
 }
 
 QVariantList JsonTypes::enumToStrings(const QMetaObject &metaObject, const QString &enumName)

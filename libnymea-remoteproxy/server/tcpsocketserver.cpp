@@ -221,6 +221,19 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
         emit socketConnected(sslSocket);
     });
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(sslSocket, &QSslSocket::errorOccurred, this, [sslSocket](QAbstractSocket::SocketError error){
+        qCWarning(dcTcpSocketServer()) << "Socket error occurred on" << sslSocket << error << sslSocket->errorString() << "Explicitly closing the client connection.";
+        sslSocket->close();
+    });
+
+    connect(sslSocket, &QSslSocket::sslErrors, this, [sslSocket](const QList<QSslError> &errors) {
+        qCWarning(dcTcpSocketServer()) << "SSL error occurred in the client connection" << sslSocket;
+        foreach (const QSslError &error, errors) {
+            qCWarning(dcTcpSocketServer()) << "--> SSL error:" << error.error() << error.errorString();
+        }
+    });
+#else
     typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
     connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, [sslSocket](QAbstractSocket::SocketError error){
         qCWarning(dcTcpSocketServer()) << "Socket error occurred on" << sslSocket << error << sslSocket->errorString() << "Explicitly closing the client connection.";
@@ -234,6 +247,8 @@ void SslServer::incomingConnection(qintptr socketDescriptor)
             qCWarning(dcTcpSocketServer()) << "--> SSL error:" << error.error() << error.errorString();
         }
     });
+
+#endif
 
     if (m_sslEnabled) {
         qCDebug(dcTcpSocketServer()) << "Starting SSL encryption for" << sslSocket;

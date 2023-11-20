@@ -311,7 +311,7 @@ void RemoteProxyTestsTunnelProxy::monitorServer()
     params.insert("printAll", true);
     request.insert("params", params);
 
-    monitor->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n");
+    monitor->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n');
 
     if (dataSpy.count() < 1) dataSpy.wait();
     QVERIFY(dataSpy.count() == 1);

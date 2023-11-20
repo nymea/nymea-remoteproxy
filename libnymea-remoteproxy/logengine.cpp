@@ -57,7 +57,7 @@ void LogEngine::logStatistics(int tunnelCount, int connectionCount, int troughpu
     logString << QString::number(troughput);
 
     QTextStream textStream(&m_statisticsFile);
-    textStream << logString.join(" ") << "\n";
+    textStream << logString.join(" ") << Qt::endl;
 
     // Check if we have to rotate the logfile
     if (m_currentDay != QDateTime::currentDateTimeUtc().date().day()) {
@@ -101,7 +101,7 @@ void LogEngine::rotateLogs()
 
 QString LogEngine::createTimestamp()
 {
-    return QString::number(QDateTime::currentDateTimeUtc().toTime_t());
+    return QString::number(QDateTime::currentDateTimeUtc().toSecsSinceEpoch());
 }
 
 void LogEngine::enable()

@@ -41,11 +41,17 @@ TcpSocketConnection::TcpSocketConnection(QObject *parent) :
     QObject::connect(m_tcpSocket, &QSslSocket::readyRead, this, &TcpSocketConnection::onReadyRead);
     QObject::connect(m_tcpSocket, &QSslSocket::stateChanged, this, &TcpSocketConnection::onStateChanged);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(m_tcpSocket, &QSslSocket::errorOccurred, this, &TcpSocketConnection::onError);
+    connect(m_tcpSocket, &QSslSocket::sslErrors, this, &TcpSocketConnection::sslErrors);
+#else
     typedef void (QSslSocket:: *errorSignal)(QAbstractSocket::SocketError);
     QObject::connect(m_tcpSocket, static_cast<errorSignal>(&QSslSocket::error), this, &TcpSocketConnection::onError);
 
     typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
     QObject::connect(m_tcpSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, &TcpSocketConnection::sslErrors);
+#endif
+
 }
 
 TcpSocketConnection::~TcpSocketConnection()

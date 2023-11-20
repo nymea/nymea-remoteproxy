@@ -63,7 +63,7 @@ void MonitorClient::processBufferData()
     }
 
     if (m_jsonMode) {
-        qStdOut() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented)) << "\n";
+        qStdOut() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented)) << Qt::endl;
         QTextStream out(stdout);
         out.flush();
         exit(EXIT_FAILURE);
@@ -134,5 +134,5 @@ void MonitorClient::refresh()
     if (!params.isEmpty())
         request.insert("params", params);
 
-    m_socket->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n");
+    m_socket->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + '\n');
 }

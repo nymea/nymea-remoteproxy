@@ -134,14 +134,14 @@ void UnixSocketServer::onClientConnected()
     qCDebug(dcUnixSocketServer()) << "New client connected" << clientId.toString();
     m_clientList.insert(clientId, client);
 
-    connect(client, &QLocalSocket::disconnected, this, [=](){
+    connect(client, &QLocalSocket::disconnected, this, [this, client](){
         QUuid clientId = m_clientList.key(client);
         qCDebug(dcUnixSocketServer()) << "Client disconnected:" << clientId.toString();
         if (m_clientList.take(clientId)) {
             emit clientDisconnected(clientId);
         }
     });
-    connect(client, &QLocalSocket::readyRead, this, [=](){
+    connect(client, &QLocalSocket::readyRead, this, [this, client, clientId](){
         QByteArray data = client->readAll();
         qCDebug(dcUnixSocketServerTraffic()) << "Incomming data from" << clientId.toString() << data;
         emit dataAvailable(clientId, data);

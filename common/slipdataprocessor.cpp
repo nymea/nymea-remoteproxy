@@ -68,7 +68,11 @@ QByteArray SlipDataProcessor::deserializeData(const QByteArray &data)
 QByteArray SlipDataProcessor::serializeData(const QByteArray &data)
 {
     QByteArray serializedData;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QDataStream stream(&serializedData, QDataStream::WriteOnly);
+#else
     QDataStream stream(&serializedData, QIODevice::WriteOnly);
+#endif
 //    stream << static_cast<quint8>(ProtocolByteEnd);
 
     for (int i = 0; i < data.length(); i++) {
@@ -110,7 +114,11 @@ SlipDataProcessor::Frame SlipDataProcessor::parseFrame(const QByteArray &data)
 QByteArray SlipDataProcessor::buildFrame(const Frame &frame)
 {
     QByteArray data;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QDataStream stream(&data, QDataStream::WriteOnly);
+#else
     QDataStream stream(&data, QIODevice::WriteOnly);
+#endif
     stream << frame.socketAddress;
     for (int i = 0; i < frame.data.size(); i++) {
         stream << static_cast<quint8>(frame.data.at(i));

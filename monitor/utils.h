@@ -43,7 +43,7 @@ public:
     Utils() = default;
 
     inline static QString getDurationString(uint timestamp) {
-        uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
+        uint duration = QDateTime::currentDateTimeUtc().toSecsSinceEpoch() - timestamp;
         int seconds = static_cast<int>(duration % 60);
         duration /= 60;
         int minutes = static_cast<int>(duration % 60);

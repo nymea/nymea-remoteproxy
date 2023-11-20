@@ -11,7 +11,7 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
 
     m_socketServer = new TunnelProxySocketServer(m_uuid, m_name, this);
 
-    connect(m_socketServer, &TunnelProxySocketServer::clientConnected, this, [=](TunnelProxySocket *tunnelProxySocket){
+    connect(m_socketServer, &TunnelProxySocketServer::clientConnected, this, [this](TunnelProxySocket *tunnelProxySocket){
         qDebug() << "[+] Client connected" << tunnelProxySocket;
         if (m_echo) {
             connect(tunnelProxySocket, &TunnelProxySocket::dataReceived, m_socketServer, [tunnelProxySocket](const QByteArray &data){
@@ -20,18 +20,18 @@ ServerConnection::ServerConnection(const QUrl &serverUrl, const QString &name, c
         }
     });
 
-    connect(m_socketServer, &TunnelProxySocketServer::clientDisconnected, this, [=](TunnelProxySocket *tunnelProxySocket){
+    connect(m_socketServer, &TunnelProxySocketServer::clientDisconnected, this, [](TunnelProxySocket *tunnelProxySocket){
         qDebug() << "[-] Client disconnected" << tunnelProxySocket;
     });
 
-    connect(m_socketServer, &TunnelProxySocketServer::runningChanged, this, [=](bool running){
+    connect(m_socketServer, &TunnelProxySocketServer::runningChanged, this, [this](bool running){
         if (running) {
             qDebug() << "Connected with" << m_socketServer->remoteProxyServer() << m_socketServer->remoteProxyServerName() << m_socketServer->remoteProxyServerVersion() << m_socketServer->remoteProxyApiVersion();
         }
         qDebug() << "--> The tunnel proxy server is" << (running ? "running and listening for incoming connections" : "not running any more");
     });
 
-    connect(m_socketServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+    connect(m_socketServer, &TunnelProxySocketServer::sslErrors, this, [this](const QList<QSslError> &errors){
         if (m_insecure) {
             m_socketServer->ignoreSslErrors(errors);
         } else {
