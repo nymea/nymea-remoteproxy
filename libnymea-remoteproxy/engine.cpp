@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -69,44 +69,13 @@ void Engine::start(ProxyConfiguration *configuration)
     m_configuration = configuration;
     qCDebug(dcEngine()) << "Using configuration" << m_configuration;
 
-    // Make sure an authenticator was registered
-    Q_ASSERT_X(m_authenticator != nullptr, "Engine", "There is no authenticator registerd.");
-
-    // Proxy
-    // -------------------------------------
-    m_proxyServer = new ProxyServer(this);
-    m_webSocketServerProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
-    m_tcpSocketServerProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
-    m_unixSocketServerProxy = new UnixSocketServer(m_configuration->unixSocketFileName(), this);
-
-    // Configure websocket server
-    QUrl websocketServerUrl;
-    websocketServerUrl.setScheme(m_configuration->sslEnabled() ? "wss" : "ws");
-    websocketServerUrl.setHost(m_configuration->webSocketServerProxyHost().toString());
-    websocketServerUrl.setPort(m_configuration->webSocketServerProxyPort());
-    m_webSocketServerProxy->setServerUrl(websocketServerUrl);
-
-    // Configure tcp socket server
-    QUrl tcpSocketServerProxyUrl;
-    tcpSocketServerProxyUrl.setScheme(m_configuration->sslEnabled() ? "ssl" : "tcp");
-    tcpSocketServerProxyUrl.setHost(m_configuration->tcpServerHost().toString());
-    tcpSocketServerProxyUrl.setPort(m_configuration->tcpServerPort());
-    m_tcpSocketServerProxy->setServerUrl(tcpSocketServerProxyUrl);
-
-    // Register the transport interfaces in the proxy server
-    m_proxyServer->registerTransportInterface(m_webSocketServerProxy);
-    m_proxyServer->registerTransportInterface(m_tcpSocketServerProxy);
-    m_proxyServer->registerTransportInterface(m_unixSocketServerProxy);
-
-    // Start the server
-    qCDebug(dcEngine()) << "Starting the proxy servers...";
-    m_proxyServer->startServer();
 
     // Tunnel proxy
     // -------------------------------------
     m_tunnelProxyServer = new TunnelProxyServer(this);
     m_webSocketServerTunnelProxy = new WebSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
     m_tcpSocketServerTunnelProxy = new TcpSocketServer(m_configuration->sslEnabled(), m_configuration->sslConfiguration(), this);
+    m_unixSocketServerTunnelProxy = new UnixSocketServer(m_configuration->unixSocketFileName(), this);
 
     // Configure websocket server
     QUrl websocketServerTunnelProxyUrl;
@@ -125,12 +94,14 @@ void Engine::start(ProxyConfiguration *configuration)
     // Register the transport interfaces in the proxy server
     m_tunnelProxyServer->registerTransportInterface(m_webSocketServerTunnelProxy);
     m_tunnelProxyServer->registerTransportInterface(m_tcpSocketServerTunnelProxy);
+    m_tunnelProxyServer->registerTransportInterface(m_unixSocketServerTunnelProxy);
 
     // Start the server
     qCDebug(dcEngine()) << "Starting the tunnel proxy manager...";
     m_tunnelProxyServer->startServer();
 
-    // Start the monitor server
+    // Monitor server
+    // -------------------------------------
     m_monitorServer = new MonitorServer(configuration->monitorSocketFileName(), this);
     m_monitorServer->startServer();
 
@@ -155,32 +126,9 @@ bool Engine::running() const
     return m_running;
 }
 
-bool Engine::developerMode() const
-{
-    return m_developerMode;
-}
-
 QString Engine::serverName() const
 {
     return m_configuration->serverName();
-}
-
-void Engine::setAuthenticator(Authenticator *authenticator)
-{
-    if (m_authenticator == authenticator)
-        return;
-
-    if (m_authenticator) {
-        qCDebug(dcEngine()) << "There is already an authenticator registered. Unregister default authenticator";
-        m_authenticator = nullptr;
-    }
-
-    m_authenticator = authenticator;
-}
-
-void Engine::setDeveloperModeEnabled(bool enabled)
-{
-    m_developerMode = enabled;
 }
 
 ProxyConfiguration *Engine::configuration() const
@@ -188,34 +136,14 @@ ProxyConfiguration *Engine::configuration() const
     return m_configuration;
 }
 
-Authenticator *Engine::authenticator() const
-{
-    return m_authenticator;
-}
-
-ProxyServer *Engine::proxyServer() const
-{
-    return m_proxyServer;
-}
-
 TunnelProxyServer *Engine::tunnelProxyServer() const
 {
     return m_tunnelProxyServer;
 }
 
-TcpSocketServer *Engine::tcpSocketServerProxy() const
+UnixSocketServer *Engine::unixSocketServerTunnelProxy() const
 {
-    return m_tcpSocketServerProxy;
-}
-
-WebSocketServer *Engine::webSocketServerProxy() const
-{
-    return m_webSocketServerProxy;
-}
-
-UnixSocketServer *Engine::unixSocketServerProxy() const
-{
-    return m_unixSocketServerProxy;
+    return m_unixSocketServerTunnelProxy;
 }
 
 TcpSocketServer *Engine::tcpSocketServerTunnelProxy() const
@@ -238,6 +166,16 @@ LogEngine *Engine::logEngine() const
     return m_logEngine;
 }
 
+QVariantMap Engine::buildMonitorData(bool printAll)
+{
+    QVariantMap monitorData;
+    monitorData.insert("serverName", m_configuration->serverName());
+    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
+    monitorData.insert("apiVersion", API_VERSION_STRING);
+    monitorData.insert("tunnelProxyStatistic", tunnelProxyServer()->currentStatistics(printAll));
+    return monitorData;
+}
+
 Engine::Engine(QObject *parent) :
     QObject(parent)
 {
@@ -248,24 +186,12 @@ Engine::Engine(QObject *parent) :
     m_timer->setInterval(50);
 
     connect(m_timer, &QTimer::timeout, this, &Engine::onTimerTick);
-
     m_logEngine = new LogEngine(this);
 }
 
 Engine::~Engine()
 {
     stop();
-}
-
-QVariantMap Engine::createServerStatistic()
-{
-    QVariantMap monitorData;
-    monitorData.insert("serverName", m_configuration->serverName());
-    monitorData.insert("serverVersion", SERVER_VERSION_STRING);
-    monitorData.insert("apiVersion", API_VERSION_STRING);
-    monitorData.insert("proxyStatistic", proxyServer()->currentStatistics());
-    monitorData.insert("tunnelProxyStatistic", tunnelProxyServer()->currentStatistics());
-    return monitorData;
 }
 
 void Engine::onTimerTick()
@@ -277,15 +203,10 @@ void Engine::onTimerTick()
     m_currentTimeCounter += deltaTime;
     if (m_currentTimeCounter >= 1000) {
         // One second passed, do second tick
-        m_proxyServer->tick();
-
-        QVariantMap serverStatistics = createServerStatistic();
-        m_monitorServer->updateClients(serverStatistics);
-        m_logEngine->logStatistics(serverStatistics.value("proxyStatistic").toMap().value("tunnelCount").toInt(),
-                                   serverStatistics.value("proxyStatistic").toMap().value("clientCount").toInt(),
-                                   serverStatistics.value("proxyStatistic").toMap().value("troughput").toInt());
-
         m_currentTimeCounter = 0;
+        if (m_tunnelProxyServer) {
+            m_tunnelProxyServer->tick();
+        }
     }
 }
 
@@ -297,26 +218,10 @@ void Engine::clean()
         m_monitorServer = nullptr;
     }
 
-    if (m_proxyServer) {
-        m_proxyServer->stopServer();
-        delete m_proxyServer;
-        m_proxyServer = nullptr;
-    }
-
     if (m_tunnelProxyServer) {
         m_tunnelProxyServer->stopServer();
         delete m_tunnelProxyServer;
         m_tunnelProxyServer = nullptr;
-    }
-
-    if (m_tcpSocketServerProxy) {
-        delete m_tcpSocketServerProxy;
-        m_tcpSocketServerProxy = nullptr;
-    }
-
-    if (m_webSocketServerProxy) {
-        delete m_webSocketServerProxy;
-        m_webSocketServerProxy = nullptr;
     }
 
     if (m_tcpSocketServerTunnelProxy) {
@@ -327,6 +232,11 @@ void Engine::clean()
     if (m_webSocketServerTunnelProxy) {
         delete m_webSocketServerTunnelProxy;
         m_webSocketServerTunnelProxy = nullptr;
+    }
+
+    if (m_unixSocketServerTunnelProxy) {
+        delete m_unixSocketServerTunnelProxy;
+        m_unixSocketServerTunnelProxy = nullptr;
     }
 
     if (m_configuration) {
@@ -340,8 +250,8 @@ void Engine::setRunning(bool running)
     if (m_running == running)
         return;
 
-    if (m_proxyServer)
-        m_proxyServer->setRunning(running);
+    if (m_tunnelProxyServer)
+        m_tunnelProxyServer->setRunning(running);
 
     qCDebug(dcEngine()) << "Engine is" << (running ? "now running." : "not running any more.");
 

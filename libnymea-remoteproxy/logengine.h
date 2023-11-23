@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -31,8 +31,6 @@
 #include <QFile>
 #include <QObject>
 
-#include "proxy/tunnelconnection.h"
-
 namespace remoteproxy {
 
 class LogEngine : public QObject
@@ -42,7 +40,6 @@ public:
     explicit LogEngine(QObject *parent = nullptr);
     ~LogEngine();
 
-    void logTunnel(const TunnelConnection &tunnel);
     void logStatistics(int tunnelCount, int connectionCount, int troughput);
 
 private:

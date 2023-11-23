@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -45,6 +45,8 @@ public:
 
     virtual void sendData(const QUuid &clientId, const QByteArray &data) = 0;
     virtual void killClientConnection(const QUuid &clientId, const QString &killReason) = 0;
+
+    virtual uint connectionsCount() const = 0;
 
     QUrl serverUrl() const;
     void setServerUrl(const QUrl &serverUrl);

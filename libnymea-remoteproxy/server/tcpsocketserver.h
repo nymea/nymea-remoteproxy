@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -29,6 +29,7 @@
 #define TCPSOCKETSERVER_H
 
 #include <QUuid>
+#include <QTimer>
 #include <QObject>
 #include <QTcpServer>
 #include <QSslConfiguration>
@@ -37,6 +38,19 @@
 
 namespace remoteproxy {
 
+class SslClient: public QSslSocket
+{
+    Q_OBJECT
+
+public:
+    explicit SslClient(QObject *parent = nullptr);
+
+    void startWaitingForEncrypted();
+
+private:
+    QTimer m_timer;
+
+};
 
 class SslServer: public QTcpServer
 {
@@ -45,22 +59,19 @@ public:
     explicit SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *parent = nullptr);
     ~SslServer() override = default;
 
-private:
-    bool m_sslEnabled = false;
-    QSslConfiguration m_config;
-
 signals:
-    void clientConnected(QSslSocket *socket);
-    void clientDisconnected(QSslSocket *socket);
+    void socketConnected(QSslSocket *socket);
+    void socketDisconnected(QSslSocket *socket);
     void dataAvailable(QSslSocket *socket, const QByteArray &data);
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
 
-private slots:
-    void onClientDisconnected();
-    void onSocketReadyRead();
-    void onSocketError(QAbstractSocket::SocketError);
+private:
+    bool m_sslEnabled = false;
+    QSslConfiguration m_config;
+
+    QVector<SslClient *> m_clients;
 
 };
 
@@ -75,24 +86,27 @@ public:
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void killClientConnection(const QUuid &clientId, const QString &killReason) override;
 
+    uint connectionsCount() const override;
+
     bool running() const override;
+
+public slots:
+    bool startServer() override;
+    bool stopServer() override;
 
 private:
     bool m_sslEnabled;
     QSslConfiguration m_sslConfiguration;
 
-    QHash<QUuid, QTcpSocket *> m_clientList;
+    QHash<QUuid, QSslSocket *> m_clientList;
 
     SslServer *m_server = nullptr;
 
 private slots:
     void onDataAvailable(QSslSocket *client, const QByteArray &data);
-    void onClientConnected(QSslSocket *client);
-    void onClientDisconnected(QSslSocket *client);
+    void onSocketConnected(QSslSocket *client);
+    void onSocketDisconnected(QSslSocket *client);
 
-public slots:
-    bool startServer() override;
-    bool stopServer() override;
 
 };
 

@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2022, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -55,8 +55,6 @@ public:
 
     TunnelProxyClientConnection *getClientConnection(quint16 socketAddress);
 
-signals:
-
 private:
     TransportClient *m_transportClient = nullptr;
     QUuid m_serverUuid;
@@ -67,6 +65,8 @@ private:
 
     QHash<QUuid, TunnelProxyClientConnection *> m_clientConnections;
     QHash<quint16, TunnelProxyClientConnection *> m_clientConnectionsAddresses;
+
+    quint64 m_lastPingTimestamp = 0;
 
     quint16 getFreeAddress();
 

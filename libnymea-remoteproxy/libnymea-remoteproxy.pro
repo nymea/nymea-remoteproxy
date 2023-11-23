@@ -9,22 +9,10 @@ HEADERS += \
     logengine.h \
     loggingcategories.h \
     proxyconfiguration.h \
-    authentication/authenticator.h \
-    authentication/authenticationreply.h \
-    authentication/aws/awsauthenticator.h \
-    authentication/aws/userinformation.h \
-    authentication/aws/authenticationprocess.h \
-    authentication/aws/sigv4utils.h \
-    authentication/aws/awscredentialprovider.h \
-    authentication/dummy/dummyauthenticator.h \
     jsonrpc/jsonhandler.h \
     jsonrpc/jsonreply.h \
     jsonrpc/jsontypes.h \
-    jsonrpc/authenticationhandler.h \
     jsonrpc/tunnelproxyhandler.h \
-    proxy/proxyclient.h \
-    proxy/proxyserver.h \
-    proxy/tunnelconnection.h \
     server/tcpsocketserver.h \
     server/transportinterface.h \
     server/unixsocketserver.h \
@@ -42,22 +30,10 @@ SOURCES += \
     logengine.cpp \
     loggingcategories.cpp \
     proxyconfiguration.cpp \
-    authentication/authenticator.cpp \
-    authentication/authenticationreply.cpp \
-    authentication/aws/awsauthenticator.cpp \
-    authentication/aws/userinformation.cpp \
-    authentication/aws/authenticationprocess.cpp \
-    authentication/aws/sigv4utils.cpp \
-    authentication/aws/awscredentialprovider.cpp \
-    authentication/dummy/dummyauthenticator.cpp \
     jsonrpc/jsonhandler.cpp \
     jsonrpc/jsonreply.cpp \
     jsonrpc/jsontypes.cpp \
-    jsonrpc/authenticationhandler.cpp \
     jsonrpc/tunnelproxyhandler.cpp \
-    proxy/proxyclient.cpp \
-    proxy/proxyserver.cpp \
-    proxy/tunnelconnection.cpp \
     server/tcpsocketserver.cpp \
     server/transportinterface.cpp \
     server/transportclient.cpp \

@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -52,6 +52,8 @@ public:
 
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void killClientConnection(const QUuid &clientId, const QString &killReason) override;
+
+    uint connectionsCount() const override;
 
 private:
     QWebSocketServer *m_server = nullptr;

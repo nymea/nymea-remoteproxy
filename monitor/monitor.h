@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -29,6 +29,7 @@
 #define MONITOR_H
 
 #include <QObject>
+#include <QTimer>
 
 #include "monitorclient.h"
 #include "terminalwindow.h"
@@ -37,11 +38,13 @@ class Monitor : public QObject
 {
     Q_OBJECT
 public:
-    explicit Monitor(const QString &serverName, QObject *parent = nullptr);
+    explicit Monitor(const QString &serverName, bool jsonMode, QObject *parent = nullptr);
 
 private:
     TerminalWindow *m_terminal = nullptr;
     MonitorClient *m_monitorClient = nullptr;
+    bool m_jsonMode = false;
+    QTimer m_timer;
 
 private slots:
     void onConnected();

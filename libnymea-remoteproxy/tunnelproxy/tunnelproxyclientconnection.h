@@ -41,11 +41,12 @@ class TunnelProxyClientConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit TunnelProxyClientConnection(TransportClient *transportClient, TunnelProxyServerConnection *serverConnection, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, QObject *parent = nullptr);
+    explicit TunnelProxyClientConnection(TransportClient *transportClient, const QUuid &clientUuid, const QString &clientName, QObject *parent = nullptr);
 
     TransportClient *transportClient() const;
 
     TunnelProxyServerConnection *serverConnection() const;
+    void setServerConnection(TunnelProxyServerConnection *serverConnection);
 
     QUuid clientUuid() const;
     QString clientName() const;

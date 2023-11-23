@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -34,8 +34,6 @@
 #include <QVariantMap>
 #include <QMetaMethod>
 
-#include "authentication/authenticator.h"
-
 namespace remoteproxy {
 
 class JsonReply;
@@ -66,8 +64,6 @@ protected:
     void setDescription(const QString &methodName, const QString &description);
     void setParams(const QString &methodName, const QVariantMap &params);
     void setReturns(const QString &methodName, const QVariantMap &returns);
-
-    QVariantMap errorToReply(Authenticator::AuthenticationError error) const;
 
     JsonReply *createReply(const QString &method, const QVariantMap &data) const;
     JsonReply *createAsyncReply(const QString &method) const;

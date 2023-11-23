@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -79,6 +79,11 @@ void WebSocketServer::killClientConnection(const QUuid &clientId, const QString 
     qCWarning(dcWebSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
     client->flush();
     client->close(QWebSocketProtocol::CloseCodeBadOperation, killReason);
+}
+
+uint WebSocketServer::connectionsCount() const
+{
+    return m_clientList.count();
 }
 
 void WebSocketServer::onClientConnected()

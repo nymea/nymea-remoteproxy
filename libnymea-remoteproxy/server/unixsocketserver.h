@@ -47,6 +47,8 @@ public:
     void sendData(const QUuid &clientId, const QByteArray &data) override;
     void killClientConnection(const QUuid &clientId, const QString &killReason) override;
 
+    uint connectionsCount() const override;
+
     bool running() const override;
 
 public slots:

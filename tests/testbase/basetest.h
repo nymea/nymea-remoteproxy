@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -38,14 +38,9 @@
 #include <QSslConfiguration>
 
 #include "jsonrpc/jsontypes.h"
-#include "mockauthenticator.h"
 #include "proxyconfiguration.h"
-#include "remoteproxyconnection.h"
-#include "authentication/aws/awsauthenticator.h"
-#include "authentication/dummy/dummyauthenticator.h"
 
 using namespace remoteproxy;
-using namespace remoteproxyclient;
 
 class BaseTest : public QObject
 {
@@ -56,25 +51,16 @@ public:
 protected:
     ProxyConfiguration *m_configuration = nullptr;
 
-    QUrl m_serverUrlProxyWebSocket = QUrl("wss://127.0.0.1:1212");
-    QUrl m_serverUrlProxyTcp = QUrl("ssl://127.0.0.1:1213");
-
     QUrl m_serverUrlTunnelProxyWebSocket = QUrl("wss://127.0.0.1:2212");
     QUrl m_serverUrlTunnelProxyTcp = QUrl("ssl://127.0.0.1:2213");
 
     QSslConfiguration m_sslConfiguration;
-
-    Authenticator *m_authenticator = nullptr;
-    MockAuthenticator *m_mockAuthenticator = nullptr;
-    DummyAuthenticator *m_dummyAuthenticator  = nullptr;
-    AwsAuthenticator *m_awsAuthenticator  = nullptr;
 
     QString m_testToken;
 
     int m_commandCounter = 0;
 
     void loadConfiguration(const QString &fileName);
-    void setAuthenticator(Authenticator *authenticator);
 
     void resetDebugCategories();
     void addDebugCategory(const QString &debugCategory);
@@ -84,12 +70,6 @@ protected:
     void startEngine();
     void startServer();
     void stopServer();
-
-    QVariant invokeWebSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
-    QVariant injectWebSocketProxyData(const QByteArray &data);
-
-    QVariant invokeTcpSocketProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
-    QVariant injectTcpSocketProxyData(const QByteArray &data);
 
     QVariant invokeWebSocketTunnelProxyApiCall(const QString &method, const QVariantMap params = QVariantMap());
     QVariant injectWebSocketTunnelProxyData(const QByteArray &data);
@@ -118,12 +98,6 @@ public slots:
         socket->ignoreSslErrors();
     }
 
-    inline void ignoreConnectionSslError(const QList<QSslError> &errors) {
-        RemoteProxyConnection *connection = static_cast<RemoteProxyConnection *>(sender());
-        connection->ignoreSslErrors(errors);
-        connection->ignoreSslErrors();
-    }
-
     inline void verifyError(const QVariant &response, const QString &fieldName, const QString &error) {
         QJsonDocument jsonDoc = QJsonDocument::fromVariant(response);
         QVERIFY2(response.toMap().value("status").toString() == QString("success"),
@@ -137,10 +111,6 @@ public slots:
                  .arg(response.toMap().value("params").toMap().value(fieldName).toString())
                  .arg(jsonDoc.toJson().data())
                  .toLatin1().data());
-    }
-
-    inline void verifyAuthenticationError(const QVariant &response, Authenticator::AuthenticationError error = Authenticator::AuthenticationErrorNoError) {
-        verifyError(response, "authenticationError", JsonTypes::authenticationErrorToString(error));
     }
 
     inline void verifyTunnelProxyError(const QVariant &response, TunnelProxyServer::TunnelProxyError error = TunnelProxyServer::TunnelProxyErrorNoError) {

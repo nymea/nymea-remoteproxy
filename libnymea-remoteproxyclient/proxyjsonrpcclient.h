@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-* Copyright 2013 - 2020, nymea GmbH
+* Copyright 2013 - 2023, nymea GmbH
 * Contact: contact@nymea.io
 *
 * This file is part of nymea.
@@ -49,9 +49,6 @@ public:
 
     // General
     JsonReply *callHello();
-
-    // Proxy
-    JsonReply *callAuthenticate(const QUuid &clientUuid, const QString &clientName, const QString &token, const QString &nonce);
 
     // Tunnel proxy
     JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);

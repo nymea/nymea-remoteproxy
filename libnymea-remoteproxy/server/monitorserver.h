@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -54,6 +54,9 @@ private:
 private slots:
     void onMonitorConnected();
     void onMonitorDisconnected();
+    void onMonitorReadyRead();
+
+    void processRequest(QLocalSocket *clientConnection, const QVariantMap &request);
 
 public slots:
     void startServer();

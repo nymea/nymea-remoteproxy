@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -34,7 +34,6 @@
 #include <QStringList>
 
 #include "tunnelproxy/tunnelproxyserver.h"
-#include "authentication/authenticator.h"
 
 namespace remoteproxy {
 
@@ -90,7 +89,6 @@ public:
 
     // Declare types
     DECLARE_TYPE(basicType, "BasicType", JsonTypes, BasicType)
-    DECLARE_TYPE(authenticationError, "AuthenticationError", Authenticator, AuthenticationError)
     DECLARE_TYPE(tunnelProxyError, "TunnelProxyError", TunnelProxyServer, TunnelProxyError)
 
     // Declare objects

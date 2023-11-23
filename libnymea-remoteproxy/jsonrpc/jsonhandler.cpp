@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -135,12 +135,6 @@ void JsonHandler::setReturns(const QString &methodName, const QVariantMap &retur
     qCWarning(dcJsonRpc()) << "Cannot set returns. No such method:" << methodName;
 }
 
-QVariantMap JsonHandler::errorToReply(Authenticator::AuthenticationError error) const
-{
-    QVariantMap returns;
-    returns.insert("authenticationError", JsonTypes::authenticationErrorToString(error));
-    return returns;
-}
 
 JsonReply *JsonHandler::createReply(const QString &method, const QVariantMap &data) const
 {

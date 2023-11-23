@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -44,25 +44,6 @@ LogEngine::~LogEngine()
     disable();
 }
 
-void LogEngine::logTunnel(const TunnelConnection &tunnel)
-{
-    if (!m_tunnelsFile.isOpen())
-        return;
-
-    // <timestamp> <tunnel creation timestamp> <user name> <first client address> <second client addrees> <total tunnel traffic>
-
-    QStringList logString;
-    logString << createTimestamp();
-    logString << QString::number(tunnel.creationTime());
-    logString << tunnel.clientOne()->userName();
-    logString << tunnel.clientOne()->peerAddress().toString();
-    logString << tunnel.clientTwo()->peerAddress().toString();
-    logString << QString::number(tunnel.clientOne()->rxDataCount() + tunnel.clientOne()->txDataCount());
-
-    QTextStream textStream(&m_tunnelsFile);
-    textStream << logString.join(" ") << endl;
-}
-
 void LogEngine::logStatistics(int tunnelCount, int connectionCount, int troughput)
 {
     if (!m_statisticsFile.isOpen())
@@ -76,7 +57,7 @@ void LogEngine::logStatistics(int tunnelCount, int connectionCount, int troughpu
     logString << QString::number(troughput);
 
     QTextStream textStream(&m_statisticsFile);
-    textStream << logString.join(" ") << endl;
+    textStream << logString.join(" ") << "\n";
 
     // Check if we have to rotate the logfile
     if (m_currentDay != QDateTime::currentDateTimeUtc().date().day()) {

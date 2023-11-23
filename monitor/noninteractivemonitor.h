@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,36 +25,25 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef USERINFORMATION_H
-#define USERINFORMATION_H
+#ifndef NONINTERACTIVEMONITOR_H
+#define NONINTERACTIVEMONITOR_H
 
-#include <QDebug>
-#include <QString>
+#include <QObject>
+#include "monitorclient.h"
 
-namespace remoteproxy {
-
-
-class UserInformation
+class NonInteractiveMonitor : public QObject
 {
+    Q_OBJECT
 public:
-    UserInformation(const QString &email = QString(), const QString &cognitoUsername  = QString(), const QString &vendorId = QString(), const QString &userPoolId = QString());
-
-    QString email() const;
-    QString cognitoUsername() const;
-    QString vendorId() const;
-    QString userPoolId() const;
-
-    bool isValid();
+    explicit NonInteractiveMonitor(const QString &serverName, bool jsonMode, bool printAll = false, QObject *parent = nullptr);
 
 private:
-    QString m_email;
-    QString m_cognitoUsername;
-    QString m_vendorId;
-    QString m_userPoolId;
+    MonitorClient *m_monitorClient = nullptr;
+    bool m_jsonMode = false;
+
+private slots:
+    void onConnected();
+
 };
 
-QDebug operator<<(QDebug debug, const UserInformation &userInformation);
-
-}
-
-#endif // USERINFORMATION_H
+#endif // NONINTERACTIVEMONITOR_H

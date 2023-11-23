@@ -38,7 +38,7 @@ TransportClient::TransportClient(TransportInterface *interface, const QUuid &cli
     m_clientId(clientId),
     m_peerAddress(address)
 {
-    m_creationTimeStamp = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() / 1000;
+    m_creationTimeStamp = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000;
 }
 
 QUuid TransportClient::clientId() const
@@ -51,7 +51,7 @@ QHostAddress TransportClient::peerAddress() const
     return m_peerAddress;
 }
 
-uint TransportClient::creationTime() const
+quint64 TransportClient::creationTime() const
 {
     return m_creationTimeStamp;
 }
@@ -130,6 +130,9 @@ quint64 TransportClient::rxDataCount() const
 void TransportClient::addRxDataCount(int dataCount)
 {
     m_rxDataCount += dataCount;
+    if (dataCount > 0) {
+        emit rxDataCountChanged();
+    }
 }
 
 quint64 TransportClient::txDataCount() const
@@ -140,6 +143,9 @@ quint64 TransportClient::txDataCount() const
 void TransportClient::addTxDataCount(int dataCount)
 {
     m_txDataCount += dataCount;
+    if (dataCount > 0) {
+        emit txDataCountChanged();
+    }
 }
 
 int TransportClient::bufferSize() const
@@ -158,6 +164,7 @@ void TransportClient::sendData(const QByteArray &data)
     if (!m_interface)
         return;
 
+    addTxDataCount(data.count());
     m_interface->sendData(m_clientId, data);
 }
 

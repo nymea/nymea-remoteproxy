@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -39,7 +39,6 @@ QString JsonTypes::s_lastError;
 
 // Types
 QVariantList JsonTypes::s_basicType;
-QVariantList JsonTypes::s_authenticationError;
 QVariantList JsonTypes::s_tunnelProxyError;
 
 // Objects
@@ -51,7 +50,6 @@ QVariantMap JsonTypes::allTypes()
 
     // Enums
     allTypes.insert("BasicType", basicType());
-    allTypes.insert("AuthenticationError", authenticationError());
     allTypes.insert("TunnelProxyError", tunnelProxyError());
 
     return allTypes;
@@ -61,7 +59,6 @@ void JsonTypes::init()
 {
     // Declare types
     s_basicType = enumToStrings(JsonTypes::staticMetaObject, "BasicType");
-    s_authenticationError = enumToStrings(Authenticator::staticMetaObject, "AuthenticationError");
     s_tunnelProxyError = enumToStrings(TunnelProxyServer::staticMetaObject, "TunnelProxyError");
 
     s_initialized = true;
@@ -116,12 +113,6 @@ QPair<bool, QString> JsonTypes::validateVariant(const QVariant &templateVariant,
                 QPair<bool, QString> result = validateBasicType(variant);
                 if (!result.first) {
                     qCWarning(dcJsonRpc()) << QString("Value %1 not allowed in %2").arg(variant.toString()).arg(basicTypeRef());
-                    return result;
-                }
-            } else if (refName == authenticationErrorRef()) {
-                QPair<bool, QString> result = validateEnum(s_authenticationError, variant);
-                if (!result.first) {
-                    qCWarning(dcJsonRpc()) << QString("Value %1 not allowed in %2").arg(variant.toString()).arg(authenticationErrorRef());
                     return result;
                 }
             } else if (refName == tunnelProxyErrorRef()) {

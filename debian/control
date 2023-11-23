@@ -20,7 +20,6 @@ Section: net
 Multi-Arch: same
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         awscli,
          libnymea-remoteproxy (= ${binary:Version}),
 Suggests: nymea-remoteproxy-monitor (= ${binary:Version})
 Description: The nymea remote proxy server
@@ -47,16 +46,6 @@ Depends: ${shlibs:Depends},
          pkg-config
 Description: The nymea remote proxy server lib - development files
   The nymea remote proxy server lib - development files
-
-
-Package: nymea-remoteproxy-client
-Architecture: any
-Section: utils
-Multi-Arch: same
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-Description: The nymea remote proxy client for testing
-  The nymea remote proxy client for testing
 
 
 Package: nymea-remoteproxy-tunnelclient

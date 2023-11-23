@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -40,8 +40,6 @@ class TerminalWindow : public QObject
 public:
 
     enum View {
-        ViewClients,
-        ViewTunnels,
         ViewTunnelProxy
     };
     Q_ENUM(View)
@@ -58,7 +56,7 @@ private:
     int m_terminalSizeX = 0;
     int m_terminalSizeY = 0;
 
-    View m_view = ViewClients;
+    View m_view = ViewTunnelProxy;
     int m_tunnelProxyScollIndex = 0;
 
 
@@ -68,9 +66,6 @@ private:
     QVariantMap m_dataMap;
     QHash<QString, QVariantMap> m_clientHash;
 
-    QString getDurationString(uint timestamp);
-
-    QString humanReadableTraffic(int bytes);
 
     // content paint methods
     void resizeWindow();

@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -26,12 +26,14 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "monitorclient.h"
+#include "utils.h"
 
 #include <QJsonDocument>
 
-MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
+MonitorClient::MonitorClient(const QString &serverName, bool jsonMode, QObject *parent) :
     QObject(parent),
-    m_serverName(serverName)
+    m_serverName(serverName),
+    m_jsonMode(jsonMode)
 {
     m_socket = new QLocalSocket(this);
 
@@ -39,6 +41,36 @@ MonitorClient::MonitorClient(const QString &serverName, QObject *parent) :
     connect(m_socket, &QLocalSocket::disconnected, this, &MonitorClient::onDisconnected);
     connect(m_socket, &QLocalSocket::readyRead, this, &MonitorClient::onReadyRead);
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccurred(QLocalSocket::LocalSocketError)));
+}
+
+bool MonitorClient::printAll() const
+{
+    return m_printAll;
+}
+
+void MonitorClient::setPrintAll(bool printAll)
+{
+    m_printAll = printAll;
+}
+
+void MonitorClient::processBufferData()
+{
+    QJsonParseError error;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(m_dataBuffer, &error);
+    if(error.error != QJsonParseError::NoError) {
+        qWarning() << "Failed to parse JSON data:" << error.errorString();
+        return;
+    }
+
+    if (m_jsonMode) {
+        qStdOut() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented)) << "\n";
+        QTextStream out(stdout);
+        out.flush();
+        exit(EXIT_FAILURE);
+    }
+
+    QVariantMap dataMap = jsonDoc.toVariant().toMap();
+    emit dataReady(dataMap);
 }
 
 void MonitorClient::onConnected()
@@ -55,20 +87,20 @@ void MonitorClient::onDisconnected()
 
 void MonitorClient::onReadyRead()
 {
+    // Note: the server sends the data compact with '\n' at the end
     QByteArray data = m_socket->readAll();
 
-    QJsonParseError error;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &error);
-
-    if(error.error != QJsonParseError::NoError) {
-        qWarning() << "Failed to parse JSON data" << data << ":" << error.errorString();
+    int index = data.indexOf("}\n");
+    if (index < 0) {
+        // Append the entire data and continue
+        m_dataBuffer.append(data);
         return;
+    } else {
+        m_dataBuffer.append(data.left(index + 1));
+        processBufferData();
+        m_dataBuffer.clear();
+        m_dataBuffer.append(data.right(data.length() - index - 2));
     }
-
-    //qDebug() << qUtf8Printable(jsonDoc.toJson(QJsonDocument::Indented));
-
-    QVariantMap dataMap = jsonDoc.toVariant().toMap();
-    emit dataReady(dataMap);
 }
 
 void MonitorClient::onErrorOccurred(QLocalSocket::LocalSocketError socketError)
@@ -79,10 +111,28 @@ void MonitorClient::onErrorOccurred(QLocalSocket::LocalSocketError socketError)
 
 void MonitorClient::connectMonitor()
 {    
-    m_socket->connectToServer(m_serverName, QLocalSocket::ReadOnly);
+    m_socket->connectToServer(m_serverName, QLocalSocket::ReadWrite);
 }
 
 void MonitorClient::disconnectMonitor()
 {
     m_socket->close();
+}
+
+void MonitorClient::refresh()
+{
+    if (m_socket->state() != QLocalSocket::ConnectedState)
+        return;
+
+    QVariantMap request;
+    request.insert("method", "refresh");
+    QVariantMap params;
+    if (m_printAll) {
+        params.insert("printAll", m_printAll);
+    }
+
+    if (!params.isEmpty())
+        request.insert("params", params);
+
+    m_socket->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n");
 }

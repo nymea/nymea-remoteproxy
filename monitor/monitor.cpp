@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -26,24 +26,38 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "monitor.h"
+#include <QJsonDocument>
 
-Monitor::Monitor(const QString &serverName, QObject *parent) : QObject(parent)
+Monitor::Monitor(const QString &serverName, bool jsonMode, QObject *parent) :
+    QObject(parent),
+    m_jsonMode(jsonMode)
 {
-    m_monitorClient = new MonitorClient(serverName, this);
+    m_monitorClient = new MonitorClient(serverName, jsonMode, this);
     connect(m_monitorClient, &MonitorClient::connected, this, &Monitor::onConnected);
     connect(m_monitorClient, &MonitorClient::disconnected, this, &Monitor::onDisconnected);
+
+    m_timer.setInterval(1000);
+    m_timer.setSingleShot(false);
+    connect(&m_timer, &QTimer::timeout, m_monitorClient, &MonitorClient::refresh);
 
     m_monitorClient->connectMonitor();
 }
 
 void Monitor::onConnected()
 {
-    m_terminal = new TerminalWindow(this);
-    connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
+    if (!m_jsonMode) {
+        m_terminal = new TerminalWindow(this);
+        connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
+    }
+
+    refresh();
+    m_timer.start();
 }
 
 void Monitor::onDisconnected()
 {
+    m_timer.stop();
+
     if (!m_terminal)
         return;
 

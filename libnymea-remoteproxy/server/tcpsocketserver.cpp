@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -40,13 +40,12 @@ TcpSocketServer::TcpSocketServer(bool sslEnabled, const QSslConfiguration &sslCo
 
 TcpSocketServer::~TcpSocketServer()
 {
-    stopServer();
+    TcpSocketServer::stopServer();
 }
 
 void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
 {
-    QTcpSocket *client = nullptr;
-    client = m_clientList.value(clientId);
+    QTcpSocket *client = m_clientList.value(clientId);
     if (!client) {
         qCWarning(dcTcpSocketServer()) << "Client" << clientId << "unknown to this transport";
         return;
@@ -61,13 +60,19 @@ void TcpSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
 void TcpSocketServer::killClientConnection(const QUuid &clientId, const QString &killReason)
 {
     QTcpSocket *client = m_clientList.value(clientId);
-    if (!client)
+    if (!client) {
+        qCWarning(dcTcpSocketServer()) << "Could not kill connection with id" << clientId.toString() << "with reason" << killReason << "because there is no socket with this id.";
         return;
-
-    if (client->state() == QAbstractSocket::ConnectedState) {
-        qCWarning(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
-        client->close();
     }
+
+    qCDebug(dcTcpSocketServer()) << "Killing client connection" << clientId.toString() << "Reason:" << killReason;
+    client->flush();
+    client->close();
+}
+
+uint TcpSocketServer::connectionsCount() const
+{
+    return m_clientList.count();
 }
 
 bool TcpSocketServer::running() const
@@ -78,35 +83,17 @@ bool TcpSocketServer::running() const
     return m_server->isListening();
 }
 
-void TcpSocketServer::onDataAvailable(QSslSocket *client, const QByteArray &data)
-{
-    //qCDebug(dcTcpSocketServerTraffic()) << "Emitting data available internal.";
-    QUuid clientId = m_clientList.key(qobject_cast<QTcpSocket *>(client));
-    emit dataAvailable(clientId, data);
-}
-
-void TcpSocketServer::onClientConnected(QSslSocket *client)
-{
-    QUuid clientId = QUuid::createUuid();
-    qCDebug(dcTcpSocketServer()) << "New client connected:" << client << client->peerAddress().toString() << clientId.toString();
-    m_clientList.insert(clientId, client);
-    emit clientConnected(clientId, client->peerAddress());
-}
-
-void TcpSocketServer::onClientDisconnected(QSslSocket *client)
-{
-    QUuid clientId = m_clientList.key(client);
-    qCDebug(dcTcpSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
-    if (m_clientList.take(clientId)) {
-        // Note: the SslServer is deleting the socket object
-        emit clientDisconnected(clientId);
-    }
-}
-
 bool TcpSocketServer::startServer()
 {
+    if (m_server) {
+        m_server->close();
+        delete m_server;
+        m_server = nullptr;
+    }
+
     qCDebug(dcTcpSocketServer()) << "Starting TCP server" << m_serverUrl.toString();
-    m_server = new SslServer(m_sslEnabled, m_sslConfiguration);
+    m_server = new SslServer(m_sslEnabled, m_sslConfiguration, this);
+    m_server->setMaxPendingConnections(100);
     if(!m_server->listen(QHostAddress(m_serverUrl.host()), static_cast<quint16>(m_serverUrl.port()))) {
         qCWarning(dcTcpSocketServer()) << "Tcp server error: can not listen on" << m_serverUrl.toString();
         delete m_server;
@@ -114,28 +101,63 @@ bool TcpSocketServer::startServer()
         return false;
     }
 
-    connect(m_server, &SslServer::clientConnected, this, &TcpSocketServer::onClientConnected);
-    connect(m_server, &SslServer::clientDisconnected, this, &TcpSocketServer::onClientDisconnected);
+    connect(m_server, &SslServer::socketConnected, this, &TcpSocketServer::onSocketConnected);
+    connect(m_server, &SslServer::socketDisconnected, this, &TcpSocketServer::onSocketDisconnected);
     connect(m_server, &SslServer::dataAvailable, this, &TcpSocketServer::onDataAvailable);
+
     qCDebug(dcTcpSocketServer()) << "Server started successfully.";
+    qCDebug(dcTcpSocketServer()) << m_server;
     return true;
 }
 
 bool TcpSocketServer::stopServer()
 {
+    qCDebug(dcTcpSocketServer()) << "Stopping server" << m_serverUrl.toString() << m_server;
+    if (!m_server)
+        return true;
+
     // Clean up client connections
     foreach (const QUuid &clientId, m_clientList.keys()) {
         killClientConnection(clientId, "Stop server");
     }
 
-    if (!m_server)
-        return true;
-
-    qCDebug(dcTcpSocketServer()) << "Stop server" << m_serverUrl.toString();
     m_server->close();
-    delete m_server;
+    m_server->deleteLater();
     m_server = nullptr;
     return true;
+}
+
+
+void TcpSocketServer::onDataAvailable(QSslSocket *client, const QByteArray &data)
+{
+    QUuid clientId = m_clientList.key(client);
+    if (clientId.isNull()) {
+        qCWarning(dcTcpSocketServer()) << "Socket sent data but the uuid is null." << client << client->peerAddress().toString() << "Ignoring data...";
+        return;
+    }
+    emit dataAvailable(clientId, data);
+}
+
+void TcpSocketServer::onSocketConnected(QSslSocket *client)
+{
+    QUuid clientId = QUuid::createUuid();
+    qCDebug(dcTcpSocketServer()) << "New client connected:" << client << client->peerAddress().toString() << clientId.toString();
+    m_clientList.insert(clientId, client);
+    emit clientConnected(clientId, client->peerAddress());
+}
+
+void TcpSocketServer::onSocketDisconnected(QSslSocket *client)
+{
+    QUuid clientId = m_clientList.key(client);
+    if (clientId.isNull()) {
+        qCWarning(dcTcpSocketServer()) << "Socket disconnected but the uuid is null." << client << client->peerAddress().toString() << clientId.toString();
+        return;
+    }
+
+    qCDebug(dcTcpSocketServer()) << "Client disconnected:" << client << client->peerAddress().toString() << clientId.toString();
+    m_clientList.take(clientId);
+    // Note: the SslServer is deleting the socket object
+    emit clientDisconnected(clientId);
 }
 
 SslServer::SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *parent) :
@@ -143,66 +165,104 @@ SslServer::SslServer(bool sslEnabled, const QSslConfiguration &config, QObject *
     m_sslEnabled(sslEnabled),
     m_config(config)
 {
+    connect(this, &QTcpServer::acceptError, this, [this](QAbstractSocket::SocketError socketError){
+        qCWarning(dcTcpSocketServer()) << "Accept error occurred" << socketError << errorString();
+    });
 
+    connect(this, &QTcpServer::newConnection, this, [this](){
+        while (hasPendingConnections()) {
+            SslClient *sslSocket = qobject_cast<SslClient *>(nextPendingConnection());
+            if (!m_sslEnabled) {
+                emit socketConnected(sslSocket);
+            }
+        }
+    });
 }
 
 void SslServer::incomingConnection(qintptr socketDescriptor)
 {
-    QSslSocket *sslSocket = new QSslSocket(this);
-    qCDebug(dcTcpSocketServer()) << "Incomming connection" << sslSocket;
-    connect(sslSocket, &QSslSocket::readyRead, this, &SslServer::onSocketReadyRead);
-    connect(sslSocket, &QSslSocket::disconnected, this, &SslServer::onClientDisconnected);
-
-    typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
-    connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, &SslServer::onSocketError);
-    connect(sslSocket, &QSslSocket::encrypted, this, [this, sslSocket](){
-        qCDebug(dcTcpSocketServer()) << "SSL encryption established for" << sslSocket;
-        emit clientConnected(sslSocket);
-    });
-
-    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
-    connect(sslSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, [](const QList<QSslError> &errors) {
-        qCWarning(dcTcpSocketServer()) << "SSL Errors happened in the client connections:";
-        foreach (const QSslError &error, errors) {
-            qCWarning(dcTcpSocketServer()) << "SSL Error:" << error.error() << error.errorString();
-        }
-    });
-
+    SslClient *sslSocket = new SslClient(this);
+    qCDebug(dcTcpSocketServer()) << "New incomming connection. Creating" << sslSocket;
     if (!sslSocket->setSocketDescriptor(socketDescriptor)) {
-        qCWarning(dcTcpSocketServer()) << "Failed to set SSL socket descriptor.";
+        qCWarning(dcTcpSocketServer()) << "Failed to set SSL socket descriptor" << sslSocket << "Discard connection...";
         delete sslSocket;
         return;
     }
 
+    connect(sslSocket, &SslClient::disconnected, this, [this, sslSocket](){
+        qCDebug(dcTcpSocketServer()) << "Client socket disconnected:" << sslSocket << sslSocket->peerAddress().toString();;
+
+        if (m_sslEnabled) {
+            // Only tell the upper layer the client has disconnecred if it was encrypted
+            if (sslSocket->isEncrypted()) {
+                emit socketDisconnected(sslSocket);
+            }
+        } else {
+            emit socketDisconnected(sslSocket);
+        }
+
+        m_clients.removeAll(sslSocket);
+        sslSocket->deleteLater();
+    });
+
+    connect(sslSocket, &QSslSocket::readyRead, this, [this, sslSocket](){
+
+        // Only forward data from an encrypted socket if ssl is enabled
+        if (m_sslEnabled && !sslSocket->isEncrypted())
+            return;
+
+        QByteArray data = sslSocket->readAll();
+        qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
+        emit dataAvailable(sslSocket, data);
+    });
+
+    connect(sslSocket, &SslClient::encrypted, this, [this, sslSocket](){
+        qCDebug(dcTcpSocketServer()) << "SSL encryption established for" << sslSocket;
+        emit socketConnected(sslSocket);
+    });
+
+    typedef void (QAbstractSocket:: *errorSignal)(QAbstractSocket::SocketError);
+    connect(sslSocket, static_cast<errorSignal>(&QAbstractSocket::error), this, [sslSocket](QAbstractSocket::SocketError error){
+        qCWarning(dcTcpSocketServer()) << "Socket error occurred on" << sslSocket << error << sslSocket->errorString() << "Explicitly closing the client connection.";
+        sslSocket->close();
+    });
+
+    typedef void (QSslSocket:: *sslErrorsSignal)(const QList<QSslError> &);
+    connect(sslSocket, static_cast<sslErrorsSignal>(&QSslSocket::sslErrors), this, [sslSocket](const QList<QSslError> &errors) {
+        qCWarning(dcTcpSocketServer()) << "SSL error occurred in the client connection" << sslSocket;
+        foreach (const QSslError &error, errors) {
+            qCWarning(dcTcpSocketServer()) << "--> SSL error:" << error.error() << error.errorString();
+        }
+    });
+
     if (m_sslEnabled) {
-        qCDebug(dcTcpSocketServer()) << "Start SSL encryption for" << sslSocket;
+        qCDebug(dcTcpSocketServer()) << "Starting SSL encryption for" << sslSocket;
         sslSocket->setSslConfiguration(m_config);
-        //addPendingConnection(sslSocket);
         sslSocket->startServerEncryption();
-    } else {
-        emit clientConnected(sslSocket);
+        sslSocket->startWaitingForEncrypted();
     }
+
+    m_clients.append(sslSocket);
+    addPendingConnection(sslSocket);
 }
 
-void SslServer::onClientDisconnected()
+SslClient::SslClient(QObject *parent) :
+    QSslSocket(parent)
 {
-    QSslSocket *sslSocket = qobject_cast<QSslSocket *>(sender());
-    qCDebug(dcTcpSocketServer()) << "Client socket disconnected:" << sslSocket << sslSocket->peerAddress().toString();;
-    emit clientDisconnected(sslSocket);
-    sslSocket->deleteLater();
+    m_timer.setSingleShot(true);
+    m_timer.setInterval(5000);
+    connect(&m_timer, &QTimer::timeout, this, [this](){
+        qCWarning(dcTcpSocketServer()) << "SSL socket timeout occurred. The client has not encrypted the connection within" << (m_timer.interval() / 1000) << "seconds. Terminate connection";
+        close();
+    });
+
+    connect(this, &SslClient::encrypted, &m_timer, &QTimer::stop);
 }
 
-void SslServer::onSocketReadyRead()
+void SslClient::startWaitingForEncrypted()
 {
-    QSslSocket *sslSocket = qobject_cast<QSslSocket *>(sender());
-    QByteArray data = sslSocket->readAll();
-    qCDebug(dcTcpSocketServerTraffic()) << "Data from socket" << sslSocket->peerAddress().toString() << data;
-    emit dataAvailable(sslSocket, data);
-}
-
-void SslServer::onSocketError(QAbstractSocket::SocketError error)
-{
-    qCWarning(dcTcpSocketServer()) << "Socket error occurred" << error;
+    m_timer.start();
 }
 
 }
+

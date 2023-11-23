@@ -27,9 +27,9 @@
 
 #include "remoteproxyteststunnelproxy.h"
 
+
 #include "engine.h"
 #include "loggingcategories.h"
-#include "remoteproxyconnection.h"
 #include "../common/slipdataprocessor.h"
 #include "../../version.h"
 
@@ -43,6 +43,8 @@
 #include <QJsonDocument>
 #include <QWebSocketServer>
 
+using namespace remoteproxyclient;
+
 RemoteProxyTestsTunnelProxy::RemoteProxyTestsTunnelProxy(QObject *parent) :
     BaseTest(parent)
 {
@@ -51,6 +53,13 @@ RemoteProxyTestsTunnelProxy::RemoteProxyTestsTunnelProxy(QObject *parent) :
 
 void RemoteProxyTestsTunnelProxy::startStopServer()
 {
+    resetDebugCategories();
+    addDebugCategory("Engine.debug=true");
+    addDebugCategory("JsonRpc.debug=true");
+    addDebugCategory("TcpSocketServer.debug=true");
+    addDebugCategory("WebSocketServer.debug=true");
+    addDebugCategory("TunnelProxyServer.debug=true");
+
     startServer();
     stopServer();
 }
@@ -74,6 +83,10 @@ void RemoteProxyTestsTunnelProxy::apiBasicCallsTcp_data()
 
 void RemoteProxyTestsTunnelProxy::apiBasicCallsTcp()
 {
+    resetDebugCategories();
+    addDebugCategory("Engine.debug=true");
+    addDebugCategory("TcpSocketServer.debug=true");
+
     QFETCH(QByteArray, data);
     QFETCH(int, responseId);
     QFETCH(QString, responseStatus);
@@ -81,7 +94,7 @@ void RemoteProxyTestsTunnelProxy::apiBasicCallsTcp()
     // Start the server
     startServer();
 
-    QVariant response = injectTcpSocketProxyData(data);
+    QVariant response = injectTcpSocketTunnelProxyData(data);
     QVERIFY(!response.isNull());
 
     qDebug() << qUtf8Printable(QJsonDocument::fromVariant(response).toJson(QJsonDocument::Indented));
@@ -156,6 +169,317 @@ void RemoteProxyTestsTunnelProxy::getHello()
     stopServer();
 }
 
+void RemoteProxyTestsTunnelProxy::monitorServer()
+{
+
+    // Start the server
+    startServer();
+
+
+    // ** Create the server **
+    QString serverName = "nymea server";
+    QUuid serverUuid = QUuid::createUuid();
+
+    TunnelProxySocketServer *tunnelProxyServer = new TunnelProxySocketServer(serverUuid, serverName, this);
+    connect(tunnelProxyServer, &TunnelProxySocketServer::sslErrors, this, [=](const QList<QSslError> &errors){
+        tunnelProxyServer->ignoreSslErrors(errors);
+    });
+
+    tunnelProxyServer->startServer(m_serverUrlTunnelProxyTcp);
+
+    QSignalSpy serverRunningSpy(tunnelProxyServer, &TunnelProxySocketServer::runningChanged);
+    serverRunningSpy.wait();
+    QVERIFY(serverRunningSpy.count() == 1);
+    QList<QVariant> arguments = serverRunningSpy.takeFirst();
+    QVERIFY(arguments.at(0).toBool() == true);
+    QVERIFY(tunnelProxyServer->running());
+    QCOMPARE(tunnelProxyServer->serverUrl(), m_serverUrlTunnelProxyTcp);
+    QCOMPARE(tunnelProxyServer->remoteProxyServer(), QString(SERVER_NAME_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyServerName(), Engine::instance()->configuration()->serverName());
+    QCOMPARE(tunnelProxyServer->remoteProxyServerVersion(), QString(SERVER_VERSION_STRING));
+    QCOMPARE(tunnelProxyServer->remoteProxyApiVersion(), QString(API_VERSION_STRING));
+
+
+    // ** Remote connection 1 **
+
+    QString clientOneName = "Client one";
+    QUuid clientOneUuid = QUuid::createUuid();
+    TunnelProxyRemoteConnection *remoteConnectionOne = new TunnelProxyRemoteConnection(clientOneUuid, clientOneName, this);
+    connect(remoteConnectionOne, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        remoteConnectionOne->ignoreSslErrors(errors);
+    });
+
+    remoteConnectionOne->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    // ** Tunnel proxy server socket 1 **
+    QSignalSpy remoteConnectedOneSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(remoteConnectedOneSpy.wait());
+    QVERIFY(remoteConnectedOneSpy.count() == 1);
+    arguments = remoteConnectedOneSpy.takeFirst();
+
+    TunnelProxySocket *tunnelProxySocketOne = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocketOne->clientName() == clientOneName);
+    QVERIFY(tunnelProxySocketOne->clientUuid() == clientOneUuid);
+    QVERIFY(!tunnelProxySocketOne->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocketOne->socketAddress() != 0x0000 && tunnelProxySocketOne->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocketOne->connected());
+
+    qDebug() << "Have socket one" << tunnelProxySocketOne;
+
+    // ** Send data in both directions
+    QByteArray testData("#sdföiabi23u4b34b598gvndafjibnföQIUH34982HRIPURBFÖWLKDÜOQw9h934utbf ljBiH9FBLAJF  RF AF,A§uu)(\"§)§(u$)($=$(((($((!");
+
+    // Socket -> Remote connection
+    QSignalSpy remoteConnectionOneDataSpy(remoteConnectionOne, &TunnelProxyRemoteConnection::dataReady);
+    tunnelProxySocketOne->writeData(testData);
+    QVERIFY(remoteConnectionOneDataSpy.wait());
+    QVERIFY(remoteConnectionOneDataSpy.count() == 1);
+    arguments = remoteConnectionOneDataSpy.takeFirst();
+    QByteArray receivedTestData = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData == testData);
+
+
+    // Remote connection -> Socket
+    QByteArray testData2("The biggest decision in life is about changing your life through changing your mind. – Albert Schweitzer");
+    QSignalSpy tunnelProxySocketOneDataSpy(tunnelProxySocketOne, &TunnelProxySocket::dataReceived);
+    remoteConnectionOne->sendData(testData2);
+    QVERIFY(tunnelProxySocketOneDataSpy.wait());
+    QVERIFY(tunnelProxySocketOneDataSpy.count() == 1);
+    arguments = tunnelProxySocketOneDataSpy.takeFirst();
+    QByteArray receivedTestData2 = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData2 == testData2);
+
+
+    // ** Remote connection 2 **
+
+    QString clientTwoName = "Client two";
+    QUuid clientTwoUuid = QUuid::createUuid();
+    TunnelProxyRemoteConnection *remoteConnectionTwo = new TunnelProxyRemoteConnection(clientTwoUuid, clientTwoName, this);
+    connect(remoteConnectionTwo, &TunnelProxyRemoteConnection::sslErrors, this, [=](const QList<QSslError> &errors){
+        remoteConnectionTwo->ignoreSslErrors(errors);
+    });
+
+    remoteConnectionTwo->connectServer(m_serverUrlTunnelProxyTcp, serverUuid);
+
+    // ** Tunnel proxy server socket 2 **
+    QSignalSpy remoteConnectedTwoSpy(tunnelProxyServer, &TunnelProxySocketServer::clientConnected);
+    QVERIFY(remoteConnectedTwoSpy.wait());
+    QVERIFY(remoteConnectedTwoSpy.count() == 1);
+    arguments = remoteConnectedTwoSpy.takeFirst();
+
+    TunnelProxySocket *tunnelProxySocketTwo = arguments.at(0).value<TunnelProxySocket *>();
+    QVERIFY(tunnelProxySocketTwo->clientName() == clientTwoName);
+    QVERIFY(tunnelProxySocketTwo->clientUuid() == clientTwoUuid);
+    QVERIFY(!tunnelProxySocketTwo->clientPeerAddress().isNull());
+    QVERIFY(tunnelProxySocketTwo->socketAddress() != 0x0000 && tunnelProxySocketTwo->socketAddress() != 0xFFFF);
+    QVERIFY(tunnelProxySocketTwo->connected());
+
+    qDebug() << "Have socket two" << tunnelProxySocketTwo;
+
+    // ** Send data in both directions
+
+    // Socket -> Remote connection
+    QSignalSpy remoteConnectionTwoDataSpy(remoteConnectionTwo, &TunnelProxyRemoteConnection::dataReady);
+    tunnelProxySocketTwo->writeData(testData);
+    QVERIFY(remoteConnectionTwoDataSpy.wait());
+    QVERIFY(remoteConnectionTwoDataSpy.count() == 1);
+    arguments = remoteConnectionTwoDataSpy.takeFirst();
+    receivedTestData = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData == testData);
+
+    // Remote connection -> Socket
+    QSignalSpy tunnelProxySocketTwoDataSpy(tunnelProxySocketTwo, &TunnelProxySocket::dataReceived);
+    remoteConnectionTwo->sendData(testData2);
+    QVERIFY(tunnelProxySocketTwoDataSpy.wait());
+    QVERIFY(tunnelProxySocketTwoDataSpy.count() == 1);
+    arguments = tunnelProxySocketTwoDataSpy.takeFirst();
+    receivedTestData2 = arguments.at(0).toByteArray();
+    QVERIFY(receivedTestData2 == testData2);
+
+    // Get monitor data
+    QLocalSocket *monitor = new QLocalSocket(this);
+    QSignalSpy connectedSpy(monitor, &QLocalSocket::connected);
+    monitor->connectToServer(m_configuration->monitorSocketFileName());
+    if (connectedSpy.count() < 1) connectedSpy.wait();
+    QVERIFY(connectedSpy.count() == 1);
+
+    QSignalSpy dataSpy(monitor, &QLocalSocket::readyRead);
+
+    QVariantMap request;
+    request.insert("method", "refresh");
+    QVariantMap params;
+    params.insert("printAll", true);
+    request.insert("params", params);
+
+    monitor->write(QJsonDocument::fromVariant(request).toJson(QJsonDocument::Compact) + "\n");
+
+    if (dataSpy.count() < 1) dataSpy.wait();
+    QVERIFY(dataSpy.count() == 1);
+    QByteArray data = monitor->readAll();
+    qDebug() << data;
+
+    // TODO: verify monitor data
+
+    QSignalSpy disconnectedSpy(monitor, &QLocalSocket::connected);
+    monitor->disconnectFromServer();
+    if (disconnectedSpy.count() < 1) disconnectedSpy.wait();
+
+    Engine::instance()->tunnelProxyServer()->stopServer();
+
+    QTest::qWait(100);
+
+    QVERIFY(!tunnelProxyServer->running());
+    QVERIFY(!remoteConnectionOne->remoteConnected());
+    QVERIFY(!remoteConnectionTwo->remoteConnected());
+
+    // Clean up
+    tunnelProxyServer->deleteLater();
+    remoteConnectionOne->deleteLater();
+    remoteConnectionTwo->deleteLater();
+
+    resetDebugCategories();
+
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::configuration_data()
+{
+    QTest::addColumn<QString>("fileName");
+    QTest::addColumn<bool>("success");
+
+    QTest::newRow("valid configuration") << ":/test-configuration.conf" << true;
+    QTest::newRow("valid configuration chain") << ":/test-configuration-chain.conf" << true;
+    QTest::newRow("faulty filename") << ":/not-exisitng-test-configuration.conf" << false;
+    QTest::newRow("faulty certificate") << ":/test-configuration-faulty-certificate.conf" << false;
+    QTest::newRow("faulty key") << ":/test-configuration-faulty-key.conf" << false;
+    QTest::newRow("faulty chain") << ":/test-configuration-faulty-chain.conf" << false;
+}
+
+void RemoteProxyTestsTunnelProxy::configuration()
+{
+    QFETCH(QString, fileName);
+    QFETCH(bool, success);
+
+    ProxyConfiguration configuration;
+   QCOMPARE(configuration.loadConfiguration(fileName), success);
+}
+
+void RemoteProxyTestsTunnelProxy::serverPortBlocked()
+{
+    cleanUpEngine();
+
+    m_configuration = new ProxyConfiguration(this);
+    loadConfiguration(":/test-configuration.conf");
+
+    // Create a dummy server which blocks the port
+    QWebSocketServer dummyServer("dummy-server", QWebSocketServer::NonSecureMode);
+    QVERIFY(dummyServer.listen(QHostAddress::LocalHost, m_configuration->webSocketServerTunnelProxyPort()));
+
+    // Start proxy webserver
+    QSignalSpy runningSpy(Engine::instance(), &Engine::runningChanged);
+    Engine::instance()->start(m_configuration);
+    runningSpy.wait();
+    QVERIFY(runningSpy.count() == 1);
+
+    // Make sure the server is not running
+    QVERIFY(Engine::instance()->running());
+
+    // Make sure the websocket server is not running
+    QVERIFY(!Engine::instance()->webSocketServerTunnelProxy()->running());
+
+    QSignalSpy closedSpy(&dummyServer, &QWebSocketServer::closed);
+    dummyServer.close();
+    closedSpy.wait();
+    QVERIFY(closedSpy.count() == 1);
+
+    // Try again
+    startServer();
+
+    // Clean up
+    stopServer();
+
+    // Do the same with the tcp server
+    cleanUpEngine();
+
+    m_configuration = new ProxyConfiguration(this);
+    loadConfiguration(":/test-configuration.conf");
+
+    // Create a dummy server which blocks the port
+    QTcpServer *tcpDummyServer = new QTcpServer(this);
+    QVERIFY(tcpDummyServer->listen(QHostAddress::LocalHost, m_configuration->tcpServerTunnelProxyPort()));
+
+    // Start proxy webserver
+    QSignalSpy runningSpy2(Engine::instance(), &Engine::runningChanged);
+    Engine::instance()->start(m_configuration);
+    runningSpy2.wait();
+    QVERIFY(runningSpy2.count() == 1);
+
+    // Make sure the engine is running
+    QVERIFY(Engine::instance()->running());
+
+    // Make sure the TCP server is not running
+    QVERIFY(!Engine::instance()->tcpSocketServerTunnelProxy()->running());
+
+    tcpDummyServer->close();
+    delete tcpDummyServer;
+
+    // Try again
+    startServer();
+
+    // Make sure the TCP server is not running
+    QVERIFY(Engine::instance()->webSocketServerTunnelProxy()->running());
+    QVERIFY(Engine::instance()->tcpSocketServerTunnelProxy()->running());
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::websocketBinaryData()
+{
+    // Start the server
+    startServer();
+
+    QWebSocket *client = new QWebSocket("bad-client", QWebSocketProtocol::Version13);
+    connect(client, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+    QSignalSpy spyConnection(client, SIGNAL(connected()));
+    client->open(Engine::instance()->webSocketServerTunnelProxy()->serverUrl());
+    spyConnection.wait();
+
+    // Send binary data and make sure the server disconnects this socket
+    QSignalSpy spyDisconnected(client, SIGNAL(disconnected()));
+    client->sendBinaryMessage("trying to upload stuff...stuff...more stuff... other stuff");
+    spyConnection.wait(1000);
+    QVERIFY(spyConnection.count() == 1);
+
+    // Clean up
+    stopServer();
+}
+
+void RemoteProxyTestsTunnelProxy::websocketPing()
+{
+    // Start the server
+    startServer();
+
+    QWebSocket *client = new QWebSocket("bad-client", QWebSocketProtocol::Version13);
+    connect(client, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
+    QSignalSpy spyConnection(client, SIGNAL(connected()));
+    client->open(Engine::instance()->webSocketServerTunnelProxy()->serverUrl());
+    spyConnection.wait();
+    QVERIFY(spyConnection.count() == 1);
+
+    QByteArray pingMessage = QByteArray("ping!");
+    QSignalSpy pongSpy(client, &QWebSocket::pong);
+    client->ping(pingMessage);
+    pongSpy.wait();
+    QVERIFY(pongSpy.count() == 1);
+    qDebug() << pongSpy.at(0).at(0) << pongSpy.at(0).at(1);
+
+    QVERIFY(pongSpy.at(0).at(1).toByteArray() == pingMessage);
+
+    // Clean up
+    stopServer();
+}
+
 void RemoteProxyTestsTunnelProxy::apiBasicCalls_data()
 {
     QTest::addColumn<QByteArray>("data");
@@ -178,6 +502,10 @@ void RemoteProxyTestsTunnelProxy::apiBasicCalls()
     QFETCH(QByteArray, data);
     QFETCH(int, responseId);
     QFETCH(QString, responseStatus);
+
+    resetDebugCategories();
+    addDebugCategory("TunnelProxyServer.debug=true");
+    addDebugCategory("*.debug=true");
 
     // Start the server
     startServer();
@@ -436,7 +764,6 @@ void RemoteProxyTestsTunnelProxy::registerClientDuplicated()
     resetDebugCategories();
     addDebugCategory("TunnelProxyServer.debug=true");
     addDebugCategory("JsonRpcTraffic.debug=true");
-
 
     // Create the server and keep it up
     QString serverName = "creative server name";

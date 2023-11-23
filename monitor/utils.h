@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2022, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -25,35 +25,47 @@
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "dummyauthenticator.h"
-#include "loggingcategories.h"
+#ifndef UTILS_H
+#define UTILS_H
 
-#include <QTimer>
+#include <QTextStream>
+#include <QString>
+#include <QDateTime>
 
-namespace remoteproxy {
-
-DummyAuthenticator::DummyAuthenticator(QObject *parent) :
-    Authenticator(parent)
-{
-
+inline QTextStream& qStdOut() {
+    static QTextStream ts(stdout);
+    return ts;
 }
 
-QString DummyAuthenticator::name() const
-{
-    return "Dummy authenticator";
-}
+class Utils {
 
-AuthenticationReply *DummyAuthenticator::authenticate(ProxyClient *proxyClient)
-{
-    qCDebug(dcAuthentication()) << name() << "validate" << proxyClient;
-    qCWarning(dcAuthentication()) << "Attention: This authenticator will always succeed! This is a security risk and was explicitly enabled!";
-    AuthenticationReply *reply = createAuthenticationReply(proxyClient, proxyClient);
+public:
+    Utils() = default;
 
-    proxyClient->setUserName("dummy@example.com");
+    inline static QString getDurationString(uint timestamp) {
+        uint duration = QDateTime::currentDateTimeUtc().toTime_t() - timestamp;
+        int seconds = static_cast<int>(duration % 60);
+        duration /= 60;
+        int minutes = static_cast<int>(duration % 60);
+        duration /= 60;
+        int hours = static_cast<int>(duration % 24);
+        return QString::asprintf("%02d:%02d:%02d", hours, minutes, seconds);
+    }
 
-    setReplyError(reply, AuthenticationErrorNoError);
-    setReplyFinished(reply);
-    return reply;
-}
+    inline static QString humanReadableTraffic(int bytes) {
+        double dataCount = bytes;
+        QStringList list;
+        list << "KB" << "MB" << "GB" << "TB";
 
-}
+        QStringListIterator i(list);
+        QString unit("B");
+
+        while(dataCount >= 1024.0 && i.hasNext()) {
+            unit = i.next();
+            dataCount /= 1024.0;
+        }
+        return QString().setNum(dataCount,'f',2) + " " + unit;
+    }
+};
+
+#endif // UTILS_H

@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
-*  Copyright 2013 - 2020, nymea GmbH
+*  Copyright 2013 - 2023, nymea GmbH
 *  Contact: contact@nymea.io
 *
 *  This file is part of nymea.
@@ -36,14 +36,12 @@
 #include <QSslConfiguration>
 
 #include "logengine.h"
-#include "proxy/proxyserver.h"
 #include "proxyconfiguration.h"
 #include "server/monitorserver.h"
 #include "server/jsonrpcserver.h"
 #include "server/tcpsocketserver.h"
 #include "server/websocketserver.h"
 #include "server/unixsocketserver.h"
-#include "authentication/authenticator.h"
 #include "tunnelproxy/tunnelproxyserver.h"
 
 namespace remoteproxy {
@@ -61,28 +59,21 @@ public:
     void stop();
 
     bool running() const;
-    bool developerMode() const;
 
     QString serverName() const;
 
-    void setAuthenticator(Authenticator *authenticator);
-    void setDeveloperModeEnabled(bool enabled);
-
     ProxyConfiguration *configuration() const;
-    Authenticator *authenticator() const;
 
-    ProxyServer *proxyServer() const;
     TunnelProxyServer *tunnelProxyServer() const;
 
-    TcpSocketServer *tcpSocketServerProxy() const;
-    WebSocketServer *webSocketServerProxy() const;
-    UnixSocketServer *unixSocketServerProxy() const;
-
+    UnixSocketServer *unixSocketServerTunnelProxy() const;
     TcpSocketServer *tcpSocketServerTunnelProxy() const;
     WebSocketServer *webSocketServerTunnelProxy() const;
 
     MonitorServer *monitorServer() const;
     LogEngine *logEngine() const;
+
+    QVariantMap buildMonitorData(bool printAll = false);
 
 private:
     explicit Engine(QObject *parent = nullptr);
@@ -95,25 +86,16 @@ private:
     qint64 m_runTime = 0;
 
     bool m_running = false;
-    bool m_developerMode = false;
 
     ProxyConfiguration *m_configuration = nullptr;
-    Authenticator *m_authenticator = nullptr;
-
-    ProxyServer *m_proxyServer = nullptr;
     TunnelProxyServer *m_tunnelProxyServer = nullptr;
 
-    TcpSocketServer *m_tcpSocketServerProxy = nullptr;
-    WebSocketServer *m_webSocketServerProxy = nullptr;
-    UnixSocketServer *m_unixSocketServerProxy = nullptr;
-
+    UnixSocketServer *m_unixSocketServerTunnelProxy = nullptr;
     TcpSocketServer *m_tcpSocketServerTunnelProxy = nullptr;
     WebSocketServer *m_webSocketServerTunnelProxy = nullptr;
 
     MonitorServer *m_monitorServer = nullptr;
     LogEngine *m_logEngine = nullptr;
-
-    QVariantMap createServerStatistic();
 
 signals:
     void runningChanged(bool running);

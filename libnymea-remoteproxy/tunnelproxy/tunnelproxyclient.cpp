@@ -1,6 +1,7 @@
 #include "tunnelproxyclient.h"
 #include "loggingcategories.h"
 #include "server/transportinterface.h"
+#include "../engine.h"
 #include "../common/slipdataprocessor.h"
 
 namespace remoteproxy {
@@ -8,7 +9,18 @@ namespace remoteproxy {
 TunnelProxyClient::TunnelProxyClient(TransportInterface *interface, const QUuid &clientId, const QHostAddress &address, QObject *parent) :
     TransportClient(interface, clientId, address, parent)
 {
+    // Note: a client is not inactive any more once registered successfully as client or server.
+    // This makes sure we have not any inactive sockets connected to the proxy blocking resources.
+    // The tunnelproxy server will call activateClient once registered successfully to stop this timer.
+    m_inactiveTimer = new QTimer(this);
+    m_inactiveTimer->setInterval(Engine::instance()->configuration()->inactiveTimeout());
+    m_inactiveTimer->setSingleShot(true);
 
+    connect(m_inactiveTimer, &QTimer::timeout, this, [this](){
+        m_interface->killClientConnection(m_clientId, "Tunnelproxy client timeout occurred. The socket was inactive.");
+    });
+
+    m_inactiveTimer->start();
 }
 
 TunnelProxyClient::Type TunnelProxyClient::type() const
@@ -69,15 +81,41 @@ QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
     return packets;
 }
 
+void TunnelProxyClient::activateClient()
+{
+    // This connection has been registered as TypeServer or TypeClient
+    m_inactiveTimer->stop();
+
+    // We use the inactive timer from now on only for server connections
+    // to see if the connection is still alive. Server connection ping the
+    // tunnelproxy every 30 seconds if no other data has been exchanged to
+    // keep the connection up. If there is no data for more than one minute,
+    // we consider the connection as dead and terminate the connection.
+
+    Q_ASSERT_X(m_type != TypeNone, "TunnelProxyClient", "Activate client called but the client type is not specified yet. Make sure you activate either a client or a server.");
+    if (m_type != TypeServer)
+        return;
+
+    // We must receive data, transmitt does not mean the socket is not dead
+    connect(this, &TransportClient::rxDataCountChanged, this, [this](){
+        m_inactiveTimer->start();
+    });
+
+    m_inactiveTimer->setInterval(60000);
+    m_inactiveTimer->setSingleShot(false);
+    m_inactiveTimer->start();
+}
+
 QDebug operator<<(QDebug debug, TunnelProxyClient *tunnelProxyClient)
 {
+    QDebugStateSaver saver(debug);
     debug.nospace() << "TunnelProxyClient(";
     debug.nospace() << tunnelProxyClient->name() << ", ";
     debug.nospace() << tunnelProxyClient->interface()->serverName()<< ", ";
     debug.nospace() << tunnelProxyClient->clientId().toString()<< ", ";
     debug.nospace() << tunnelProxyClient->peerAddress().toString() << ", ";
     debug.nospace() << tunnelProxyClient->creationTimeString() << ")";
-    return debug.space();
+    return debug;
 }
 
 }
