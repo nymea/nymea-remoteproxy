@@ -1,3 +1,13 @@
+nymea-remoteproxy (1.9.0) jammy; urgency=medium
+
+  [ Simon Stürz ]
+  * Remove deprecated proxy and update tunnel proxy server
+
+  [ Michael Zanetti ]
+  * Fix dpkg package priority
+
+ -- jenkins <developer@nymea.io>  Thu, 23 Nov 2023 09:52:23 +0100
+
 nymea-remoteproxy (1.8.4) jammy; urgency=medium
 
 
