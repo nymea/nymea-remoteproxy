@@ -2,7 +2,7 @@ Source: nymea-remoteproxy
 Section: utils
 Priority: optional
 Maintainer: nymea GmbH <developer@nymea.io>
-Standards-Version: 3.9.3
+Standards-Version: 4.6.0
 Homepage: https://nymea.io
 Vcs-Git: https://github.com/nymea/nymea-remoteproxy.git
 Build-depends: debhelper (>= 9.0.0),

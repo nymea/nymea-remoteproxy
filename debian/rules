@@ -15,6 +15,10 @@ $(PREPROCESS_FILES:.in=): %: %.in
 override_dh_install: $(PREPROCESS_FILES:.in=)
 	dh_install
 
+# Note that this is the default with compat level 12.
+override_dh_missing:
+	dh_missing --list-missing
+
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf $(PREPROCESS_FILES:.in=)
@@ -22,5 +26,8 @@ override_dh_auto_clean:
 override_dh_auto_test:
 	dh_auto_test -- -k TESTARGS="-maxwarnings 0"
 
+override_dh_installsystemd:
+	dh_installsystemd --restart-after-upgrade
+
 %:
-	dh $@ --buildsystem=qmake --with systemd --parallel
+	dh $@ --buildsystem=qmake --parallel
