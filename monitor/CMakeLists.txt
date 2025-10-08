@@ -16,9 +16,9 @@ target_include_directories(nymea-remoteproxy-monitor
 
 target_link_libraries(nymea-remoteproxy-monitor
     PRIVATE
-        Qt6::Core
-        Qt6::Network
-        Qt6::WebSockets
+        Qt5::Core
+        Qt5::Network
+        Qt5::WebSockets
         ${CURSES_LIBRARIES}
 )
 

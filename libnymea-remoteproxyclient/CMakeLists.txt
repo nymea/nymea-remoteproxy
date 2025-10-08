@@ -43,9 +43,9 @@ target_include_directories(nymea-remoteproxyclient
 
 target_link_libraries(nymea-remoteproxyclient
     PUBLIC
-        Qt6::Core
-        Qt6::Network
-        Qt6::WebSockets
+        Qt5::Core
+        Qt5::Network
+        Qt5::WebSockets
 )
 
 install(TARGETS nymea-remoteproxyclient

@@ -44,7 +44,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Network WebSockets)
+find_package(Qt5 REQUIRED COMPONENTS Core Network WebSockets)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,19 +67,47 @@ configure_file(
     @ONLY
 )
 
-configure_file(
-    ${CMAKE_SOURCE_DIR}/cmake/nymea-remoteproxy.pc.in
-    ${CMAKE_BINARY_DIR}/nymea-remoteproxy.pc
-    @ONLY
-)
-configure_file(
-    ${CMAKE_SOURCE_DIR}/cmake/nymea-remoteproxyclient.pc.in
-    ${CMAKE_BINARY_DIR}/nymea-remoteproxyclient.pc
-    @ONLY
-)
+function(nymea_configure_pkgconfig output_basename pkg_name include_subdir library_name description)
+    set(_pkgconfig_template [=[
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@/@INCLUDE_SUBDIR@
 
-install(FILES ${CMAKE_BINARY_DIR}/nymea-remoteproxy.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-install(FILES ${CMAKE_BINARY_DIR}/nymea-remoteproxyclient.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+Name: @PACKAGE_NAME@
+Description: @PACKAGE_DESCRIPTION@
+Version: @NYMEA_SERVER_VERSION@
+Libs: -L${libdir} -l@LIBRARY_NAME@
+Cflags: -I${includedir}
+]=])
+
+    set(PACKAGE_NAME "${pkg_name}")
+    set(PACKAGE_DESCRIPTION "${description}")
+    set(INCLUDE_SUBDIR "${include_subdir}")
+    set(LIBRARY_NAME "${library_name}")
+
+    string(CONFIGURE "${_pkgconfig_template}" _pkgconfig_content @ONLY)
+
+    set(_output "${CMAKE_BINARY_DIR}/${output_basename}.pc")
+    file(WRITE "${_output}" "${_pkgconfig_content}")
+
+    install(FILES "${_output}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endfunction()
+
+nymea_configure_pkgconfig(
+    nymea-remoteproxy
+    "libnymea-remoteproxy"
+    "nymea-remoteproxy"
+    "nymea-remoteproxy"
+    "nymea remoteproxy development library"
+)
+nymea_configure_pkgconfig(
+    nymea-remoteproxyclient
+    "libnymea-remoteproxyclient"
+    "nymea-remoteproxyclient"
+    "nymea-remoteproxyclient"
+    "nymea remoteproxy client development library"
+)
 
 add_subdirectory(libnymea-remoteproxy)
 add_subdirectory(libnymea-remoteproxyclient)

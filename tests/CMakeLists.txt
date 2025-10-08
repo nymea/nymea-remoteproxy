@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(Qt5 REQUIRED COMPONENTS Test)
 
 set(TEST_BASE_SOURCES
     testbase/basetest.cpp
@@ -25,10 +25,10 @@ target_include_directories(remoteproxy-testbase
 
 target_link_libraries(remoteproxy-testbase
     PUBLIC
-        Qt6::Test
-        Qt6::Core
-        Qt6::Network
-        Qt6::WebSockets
+        Qt5::Test
+        Qt5::Core
+        Qt5::Network
+        Qt5::WebSockets
         nymea-remoteproxy-lib
         nymea-remoteproxyclient
 )
