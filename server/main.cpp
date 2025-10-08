@@ -49,7 +49,7 @@
 #include "proxyconfiguration.h"
 #include "remoteproxyserverapplication.h"
 
-#include "../version.h"
+#include "version.h"
 
 using namespace remoteproxy;
 
