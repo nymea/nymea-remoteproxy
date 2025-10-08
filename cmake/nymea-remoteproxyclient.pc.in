@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@/nymea-remoteproxyclient
+
+Name: libnymea-remoteproxyclient
+Description: nymea remoteproxy client development library
+Version: @NYMEA_SERVER_VERSION@
+Libs: -L${libdir} -lnymea-remoteproxyclient
+Cflags: -I${includedir}

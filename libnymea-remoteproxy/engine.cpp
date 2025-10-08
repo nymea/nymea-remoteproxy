@@ -27,7 +27,7 @@
 
 #include "engine.h"
 #include "loggingcategories.h"
-#include "../version.h"
+#include "version.h"
 
 namespace remoteproxy {
 
