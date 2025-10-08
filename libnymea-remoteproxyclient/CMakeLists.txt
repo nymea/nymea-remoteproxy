@@ -28,9 +28,11 @@ add_library(nymea-remoteproxyclient SHARED
 
 set_target_properties(nymea-remoteproxyclient PROPERTIES
     VERSION ${NYMEA_LIBRARY_VERSION}
-    SOVERSION ${NYMEA_LIBRARY_VERSION}
+    SOVERSION ${NYMEA_LIBRARY_VERSION_MAJOR}
     EXPORT_NAME nymea-remoteproxyclient
 )
+
+nymea_add_library_version_links(nymea-remoteproxyclient)
 
 target_include_directories(nymea-remoteproxyclient
     PUBLIC

@@ -42,6 +42,45 @@ set(COPYRIGHT_YEAR 2023)
 # VERSION.
 set(NYMEA_LIBRARY_VERSION "1.0.0")
 
+string(REPLACE "." ";" _nymea_library_version_parts "${NYMEA_LIBRARY_VERSION}")
+list(LENGTH _nymea_library_version_parts _nymea_library_version_count)
+while(_nymea_library_version_count LESS 3)
+    list(APPEND _nymea_library_version_parts 0)
+    list(LENGTH _nymea_library_version_parts _nymea_library_version_count)
+endwhile()
+
+list(GET _nymea_library_version_parts 0 NYMEA_LIBRARY_VERSION_MAJOR)
+list(GET _nymea_library_version_parts 1 NYMEA_LIBRARY_VERSION_MINOR)
+list(GET _nymea_library_version_parts 2 NYMEA_LIBRARY_VERSION_PATCH)
+
+function(nymea_add_library_version_links target)
+    if(NOT UNIX OR APPLE)
+        return()
+    endif()
+
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            $<TARGET_FILE:${target}>
+            $<TARGET_LINKER_FILE_DIR:${target}>/$<TARGET_LINKER_FILE_NAME:${target}>.${NYMEA_LIBRARY_VERSION_MAJOR}.${NYMEA_LIBRARY_VERSION_MINOR}
+        COMMENT "Creating ABI minor symlink for ${target}"
+        VERBATIM)
+
+    get_target_property(_nymea_output_name ${target} OUTPUT_NAME)
+    if(NOT _nymea_output_name)
+        set(_nymea_output_name ${target})
+    endif()
+
+    set(_nymea_actual "${CMAKE_SHARED_LIBRARY_PREFIX}${_nymea_output_name}${CMAKE_SHARED_LIBRARY_SUFFIX}.${NYMEA_LIBRARY_VERSION}")
+    set(_nymea_minor  "${CMAKE_SHARED_LIBRARY_PREFIX}${_nymea_output_name}${CMAKE_SHARED_LIBRARY_SUFFIX}.${NYMEA_LIBRARY_VERSION_MAJOR}.${NYMEA_LIBRARY_VERSION_MINOR}")
+
+    install(CODE "
+        execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E create_symlink \"${_nymea_actual}\" \"${_nymea_minor}\"
+            WORKING_DIRECTORY \"${CMAKE_INSTALL_FULL_LIBDIR}\"
+        )
+    ")
+endfunction()
+
 option(NYMEA_ENABLE_TESTS "Build nymea-remoteproxy tests" ON)
 option(NYMEA_ENABLE_COVERAGE "Enable coverage instrumentation" OFF)
 
