@@ -37,6 +37,11 @@ set(API_VERSION_MAJOR 0)
 set(API_VERSION_MINOR 6)
 set(COPYRIGHT_YEAR 2023)
 
+# Keep the install-time SONAME in sync across all libraries and avoid
+# accidentally inheriting the project (package) version as the library
+# VERSION.
+set(NYMEA_LIBRARY_VERSION "1.0.0")
+
 option(NYMEA_ENABLE_TESTS "Build nymea-remoteproxy tests" ON)
 option(NYMEA_ENABLE_COVERAGE "Enable coverage instrumentation" OFF)
 
