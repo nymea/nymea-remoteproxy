@@ -35,7 +35,7 @@ include(GNUInstallDirs)
 set(SERVER_NAME "nymea-remoteproxy")
 set(API_VERSION_MAJOR 0)
 set(API_VERSION_MINOR 6)
-set(COPYRIGHT_YEAR 2023)
+set(COPYRIGHT_YEAR 2025)
 
 option(NYMEA_ENABLE_TESTS "Build nymea-remoteproxy tests" ON)
 option(NYMEA_ENABLE_COVERAGE "Enable coverage instrumentation" OFF)
