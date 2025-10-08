@@ -50,7 +50,7 @@ add_library(nymea-remoteproxy-lib SHARED
 
 set_target_properties(nymea-remoteproxy-lib PROPERTIES
     VERSION ${PROJECT_VERSION}
-    SOVERSION ${API_VERSION_MAJOR}
+    SOVERSION 1.0.0
     EXPORT_NAME nymea-remoteproxy
     OUTPUT_NAME nymea-remoteproxy
 )
@@ -66,9 +66,9 @@ target_include_directories(nymea-remoteproxy-lib
 
 target_link_libraries(nymea-remoteproxy-lib
     PUBLIC
-        Qt5::Core
-        Qt5::Network
-        Qt5::WebSockets
+        Qt6::Core
+        Qt6::Network
+        Qt6::WebSockets
 )
 
 install(TARGETS nymea-remoteproxy-lib
