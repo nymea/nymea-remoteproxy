@@ -34,8 +34,7 @@ The repository ships the helper module `cmake/nymea-remoteproxyclient-sources.cm
 which exposes absolute paths to all `.cpp` and `.h` files as well as the required
 include directories. The `libnymea-remoteproxyclient/common` directory is a
 relative symlink to the shared `common/` sources so consumers can treat those
-files like part of the client library tree. A complete, minimal example that
-embeds the client library can be found under `examples/embed-client/`.
+files like part of the client library tree.
 
 1. Add this repository as a submodule or vendor drop next to your own sources.
 2. From your project, include the helper module and build the library using those lists:
@@ -79,16 +78,6 @@ embeds the client library can be found under `examples/embed-client/`.
 The library target defined above contains all client sources plus the shared
 `common/` files. Once you link against `nymea-remoteproxyclient`, the correct
 include paths are propagated automatically to consumers of your target.
-
-The `examples/embed-client` directory contains a complete CMake project that
-demonstrates the same integration. You can build it from the repository root
-with the following commands (Qt6 development packages must be installed):
-
-```bash
-cmake -S examples/embed-client -B build/embed-client
-cmake --build build/embed-client
-```
-
 
 # Install
 
