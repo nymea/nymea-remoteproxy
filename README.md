@@ -26,6 +26,59 @@ If you want to start the proxy server from the build directory, you need to expo
     $ ./server/nymea-remoteproxy -c ../nymea-remoteproxy/nymea-remoteproxy.conf
 
 
+## Embedding the client library in another CMake project
+
+When you need to build the `libnymea-remoteproxyclient` sources directly inside another
+project, you can reuse the same source lists that the upstream CMake build relies on.
+The repository ships the helper module `cmake/nymea-remoteproxyclient-sources.cmake`
+which exposes absolute paths to all `.cpp` and `.h` files as well as the required
+include directories.
+
+1. Add this repository as a submodule or vendor drop next to your own sources.
+2. From your project, include the helper module and build the library using those lists:
+
+    ```cmake
+    # Adjust this path to wherever the nymea-remoteproxy sources live in your tree
+    set(NYMEA_REMOTE_PROXY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/nymea-remoteproxy")
+
+    find_package(Qt6 REQUIRED COMPONENTS Core Network WebSockets)
+
+    include("${NYMEA_REMOTE_PROXY_DIR}/cmake/nymea-remoteproxyclient-sources.cmake")
+
+    add_library(nymea-remoteproxyclient STATIC
+        ${NYMEA_REMOTEPROXYCLIENT_SOURCES}
+    )
+
+    target_link_libraries(nymea-remoteproxyclient
+        PUBLIC
+            Qt6::Core
+            Qt6::Network
+            Qt6::WebSockets
+    )
+
+    target_include_directories(nymea-remoteproxyclient
+        PUBLIC
+            ${NYMEA_REMOTEPROXYCLIENT_SOURCE_ROOT}
+            ${NYMEA_REMOTEPROXYCLIENT_COMMON_ROOT}
+    )
+
+    configure_file(
+        "${NYMEA_REMOTE_PROXY_DIR}/version.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/nymea-remoteproxy/version.h"
+        @ONLY
+    )
+
+    target_include_directories(nymea-remoteproxyclient
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/nymea-remoteproxy>
+    )
+    ```
+
+The library target defined above contains all client sources plus the shared
+`common/` files. Once you link against `nymea-remoteproxyclient`, the correct
+include paths are propagated automatically to consumers of your target.
+
+
 # Install
 
 ## From repository

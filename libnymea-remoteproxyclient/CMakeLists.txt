@@ -1,29 +1,7 @@
-set(LIBNYMEA_REMOTE_PROXYCLIENT_SOURCES
-    tunnelproxy/tunnelproxyremoteconnection.cpp
-    tunnelproxy/tunnelproxysocket.cpp
-    tunnelproxy/tunnelproxysocketserver.cpp
-    tcpsocketconnection.cpp
-    proxyjsonrpcclient.cpp
-    jsonreply.cpp
-    proxyconnection.cpp
-    websocketconnection.cpp
-    ../common/slipdataprocessor.cpp
-)
-
-set(LIBNYMEA_REMOTE_PROXYCLIENT_HEADERS
-    tunnelproxy/tunnelproxyremoteconnection.h
-    tunnelproxy/tunnelproxysocket.h
-    tunnelproxy/tunnelproxysocketserver.h
-    tcpsocketconnection.h
-    proxyjsonrpcclient.h
-    jsonreply.h
-    proxyconnection.h
-    websocketconnection.h
-    ../common/slipdataprocessor.h
-)
+include(${PROJECT_SOURCE_DIR}/cmake/nymea-remoteproxyclient-sources.cmake)
 
 add_library(nymea-remoteproxyclient SHARED
-    ${LIBNYMEA_REMOTE_PROXYCLIENT_SOURCES}
+    ${NYMEA_REMOTEPROXYCLIENT_SOURCES}
 )
 
 set_target_properties(nymea-remoteproxyclient PROPERTIES
@@ -36,8 +14,8 @@ nymea_add_library_version_links(nymea-remoteproxyclient)
 
 target_include_directories(nymea-remoteproxyclient
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/common>
+        $<BUILD_INTERFACE:${NYMEA_REMOTEPROXYCLIENT_SOURCE_ROOT}>
+        $<BUILD_INTERFACE:${NYMEA_REMOTEPROXYCLIENT_COMMON_ROOT}>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nymea-remoteproxyclient>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nymea-remoteproxyclient/common>
@@ -57,7 +35,7 @@ install(TARGETS nymea-remoteproxyclient
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-foreach(header IN LISTS LIBNYMEA_REMOTE_PROXYCLIENT_HEADERS)
+foreach(header IN LISTS NYMEA_REMOTEPROXYCLIENT_HEADER_RELATIVE_PATHS)
     get_filename_component(header_dir "${header}" DIRECTORY)
     if(header_dir)
         string(REGEX REPLACE "^\.\./" "" header_dir "${header_dir}")
