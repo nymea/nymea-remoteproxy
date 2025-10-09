@@ -138,20 +138,42 @@ Cflags: -I${includedir}
     install(FILES "${_output}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endfunction()
 
-nymea_configure_pkgconfig(
-    nymea-remoteproxy
-    "libnymea-remoteproxy"
-    "nymea-remoteproxy"
-    "nymea-remoteproxy"
-    "nymea remoteproxy development library"
-)
-nymea_configure_pkgconfig(
-    nymea-remoteproxyclient
-    "libnymea-remoteproxyclient"
-    "nymea-remoteproxyclient"
-    "nymea-remoteproxyclient"
-    "nymea remoteproxy client development library"
-)
+function(nymea_install_pkgconfig_for_library target)
+    set(options)
+    set(oneValueArgs BASENAME INCLUDE_SUBDIR DESCRIPTION)
+    cmake_parse_arguments(NYMEA_PKG "${options}" "${oneValueArgs}" "" ${ARGN})
+
+    get_target_property(_output_name ${target} OUTPUT_NAME)
+    if(NOT _output_name)
+        set(_output_name ${target})
+    endif()
+
+    if(NYMEA_PKG_BASENAME)
+        set(_basename "${NYMEA_PKG_BASENAME}")
+    else()
+        set(_basename "${_output_name}")
+    endif()
+
+    if(NYMEA_PKG_INCLUDE_SUBDIR)
+        set(_include_subdir "${NYMEA_PKG_INCLUDE_SUBDIR}")
+    else()
+        set(_include_subdir "${_basename}")
+    endif()
+
+    if(NYMEA_PKG_DESCRIPTION)
+        set(_description "${NYMEA_PKG_DESCRIPTION}")
+    else()
+        set(_description "${_output_name} library")
+    endif()
+
+    nymea_configure_pkgconfig(
+        ${_basename}
+        "lib${_output_name}"
+        "${_include_subdir}"
+        "${_output_name}"
+        "${_description}"
+    )
+endfunction()
 
 add_subdirectory(libnymea-remoteproxy)
 add_subdirectory(libnymea-remoteproxyclient)

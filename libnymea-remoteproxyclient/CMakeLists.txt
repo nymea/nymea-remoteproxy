@@ -4,6 +4,10 @@ add_library(nymea-remoteproxyclient SHARED
     ${NYMEA_REMOTEPROXYCLIENT_SOURCES}
 )
 
+target_sources(nymea-remoteproxyclient PRIVATE
+    ${NYMEA_REMOTEPROXYCLIENT_HEADERS}
+)
+
 set_target_properties(nymea-remoteproxyclient PROPERTIES
     VERSION ${NYMEA_LIBRARY_VERSION}
     SOVERSION ${NYMEA_LIBRARY_VERSION_MAJOR}
@@ -46,3 +50,8 @@ foreach(header IN LISTS NYMEA_REMOTEPROXYCLIENT_HEADER_RELATIVE_PATHS)
 endforeach()
 
 install(FILES ${PROJECT_BINARY_DIR}/version.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nymea-remoteproxyclient)
+
+nymea_install_pkgconfig_for_library(nymea-remoteproxyclient
+    BASENAME nymea-remoteproxyclient
+    DESCRIPTION "nymea remoteproxy client development library"
+)
