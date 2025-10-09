@@ -32,7 +32,9 @@ When you need to build the `libnymea-remoteproxyclient` sources directly inside 
 project, you can reuse the same source lists that the upstream CMake build relies on.
 The repository ships the helper module `cmake/nymea-remoteproxyclient-sources.cmake`
 which exposes absolute paths to all `.cpp` and `.h` files as well as the required
-include directories.
+include directories. The `libnymea-remoteproxyclient/common` directory is a
+relative symlink to the shared `common/` sources so consumers can treat those
+files like part of the client library tree.
 
 1. Add this repository as a submodule or vendor drop next to your own sources.
 2. From your project, include the helper module and build the library using those lists:
@@ -59,7 +61,6 @@ include directories.
     target_include_directories(nymea-remoteproxyclient
         PUBLIC
             ${NYMEA_REMOTEPROXYCLIENT_SOURCE_ROOT}
-            ${NYMEA_REMOTEPROXYCLIENT_COMMON_ROOT}
     )
 
     configure_file(

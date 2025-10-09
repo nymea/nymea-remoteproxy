@@ -15,7 +15,6 @@ nymea_add_library_version_links(nymea-remoteproxyclient)
 target_include_directories(nymea-remoteproxyclient
     PUBLIC
         $<BUILD_INTERFACE:${NYMEA_REMOTEPROXYCLIENT_SOURCE_ROOT}>
-        $<BUILD_INTERFACE:${NYMEA_REMOTEPROXYCLIENT_COMMON_ROOT}>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nymea-remoteproxyclient>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nymea-remoteproxyclient/common>
