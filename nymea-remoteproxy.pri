@@ -21,6 +21,11 @@ QMAKE_CXXFLAGS *= -Werror -g -Wno-deprecated-declarations
 top_srcdir=$$PWD
 top_builddir=$$shadowed($$PWD)
 
+# Ensure generated headers in the build root (e.g. version.h) are found when
+# building with qmake. CMake injects the binary dir automatically but the qmake
+# projects relied on relative includes before, so add the path explicitly here.
+INCLUDEPATH += $$top_builddir
+
 ccache {
     QMAKE_CXX = ccache g++
 }
