@@ -1,12 +1,12 @@
 Source: nymea-remoteproxy
 Section: net
 Priority: optional
-Maintainer: nymea GmbH <developer@nymea.io>
+Maintainer: chargebyte austria GmbH <contact@nymea.io>
 Standards-Version: 4.7.2
 Homepage: https://nymea.io
 Vcs-Git: https://github.com/nymea/nymea-remoteproxy.git
-Build-depends: debhelper (>= 9.0.0),
-               dpkg-dev (>= 1.16.1~),
+Build-depends: debhelper,
+               dpkg-dev,
                pkg-config,
                qt6-base-dev,
                qt6-base-dev-tools,

@@ -1,7 +1,8 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: nymea-remoteproxy
-Upstream-Contact: Simon Stürz <simon.stuerz@nymea.io>
-Copyright: 2018 - 2024, nymea GmbH
+Upstream-Contact: chargebyte austria GmbH <contact@nymea.io>
+Copyright: 2018-2024, nymea GmbH
+           2024-2025, chargebyte austria GmbH
 Download: http://www.github.com/nymea/nymea-remoteproxy
 Source: https://github.com/nymea/nymea-remoteproxy.git
 
@@ -14,5 +15,13 @@ License: LGPL-3
  Public License can be found in `/usr/share/common-licenses/LGPL-3'.
 
 Files: *
-License: LGPL-3
 Copyright: 2018 - 2024, nymea GmbH <developer@nymea.io>
+           2024 - 2025, chargebyte austria GmbH <contact@nymea.io>
+License: GPL-3
+
+Files: libnymea-remoteproxy/*
+       libnymea-remoteproxyclient/*
+       common/*
+Copyright: 2018 - 2024, nymea GmbH <developer@nymea.io>
+           2024 - 2025, chargebyte austria GmbH <contact@nymea.io>
+License: LGPL-3
