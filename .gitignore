@@ -1,5 +1,5 @@
 *.pro.user*
-
+build/
 
 coverage-html
 client/nymea-remoteproxy-client
