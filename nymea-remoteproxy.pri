@@ -16,7 +16,16 @@ greaterThan(QT_MAJOR_VERSION, 5) {
     DEFINES += QT_DISABLE_DEPRECATED_UP_TO=0x050F00
 }
 
-QMAKE_CXXFLAGS *= -Werror -g -Wno-deprecated-declarations
+win32-msvc {
+    QMAKE_CXXFLAGS += /WX
+    QMAKE_CXXFLAGS += /wd4996
+} else {
+    QMAKE_CXXFLAGS += -Werror
+    QMAKE_CXXFLAGS += -Wno-deprecated-declarations
+    QMAKE_CXXFLAGS += -Wno-deprecated-copy
+}
+
+QMAKE_CXXFLAGS += -g
 
 top_srcdir=$$PWD
 top_builddir=$$shadowed($$PWD)
