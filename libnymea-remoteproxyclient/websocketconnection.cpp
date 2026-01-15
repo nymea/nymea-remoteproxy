@@ -37,6 +37,7 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
     m_webSocket = new QWebSocket("libnymea-remoteproxyclient", QWebSocketProtocol::Version13, this);
 
     connect(m_webSocket, &QWebSocket::disconnected, this, &WebSocketConnection::onDisconnected);
+    connect(m_webSocket, &QWebSocket::binaryMessageReceived, this, &WebSocketConnection::onBinaryMessageReceived);
     connect(m_webSocket, &QWebSocket::textMessageReceived, this, &WebSocketConnection::onTextMessageReceived);
 
     connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
@@ -51,7 +52,7 @@ WebSocketConnection::~WebSocketConnection()
 
 void WebSocketConnection::sendData(const QByteArray &data)
 {
-    m_webSocket->sendTextMessage(QString::fromUtf8(data));
+    m_webSocket->sendBinaryMessage(data);
 }
 
 void WebSocketConnection::ignoreSslErrors()
@@ -91,6 +92,11 @@ void WebSocketConnection::onStateChanged(QAbstractSocket::SocketState state)
     }
 
     emit stateChanged(state);
+}
+
+void WebSocketConnection::onBinaryMessageReceived(const QByteArray &data)
+{
+    emit dataReceived(data);
 }
 
 void WebSocketConnection::onTextMessageReceived(const QString &message)

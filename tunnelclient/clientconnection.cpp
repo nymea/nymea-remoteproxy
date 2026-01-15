@@ -48,6 +48,9 @@ ClientConnection::ClientConnection(const QUrl &serverUrl, const QString &name, c
         case TunnelProxyRemoteConnection::StateRegister:
             qDebug() << "Connected with" << m_remoteConnection->remoteProxyServer() << m_remoteConnection->remoteProxyServerName() << m_remoteConnection->remoteProxyServerVersion() << m_remoteConnection->remoteProxyApiVersion();
             break;
+        case TunnelProxyRemoteConnection::StateE2eeHandshake:
+            qDebug() << "Starting end-to-end encryption handshake.";
+            break;
         default:
             break;
         }

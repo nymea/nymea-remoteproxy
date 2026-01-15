@@ -32,6 +32,10 @@
 
 namespace remoteproxyclient {
 
+namespace {
+const int kMaxPendingBytes = 1024 * 1024;
+}
+
 TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent) :
     QObject(parent),
     m_connection(connection),
@@ -39,7 +43,8 @@ TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySoc
     m_clientName(clientName),
     m_clientUuid(clientUuid),
     m_clientPeerAddress(clientPeerAddress),
-    m_socketAddress(socketAddress)
+    m_socketAddress(socketAddress),
+    m_e2ee(TunnelProxyE2ee::RoleServer)
 {
 
 }
@@ -71,15 +76,95 @@ bool TunnelProxySocket::connected() const
 
 void TunnelProxySocket::writeData(const QByteArray &data)
 {
-    SlipDataProcessor::Frame frame;
-    frame.socketAddress = m_socketAddress;
-    frame.data = data;
-    m_connection->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+    if (!m_e2ee.established()) {
+        queuePendingData(data);
+        return;
+    }
+
+    sendEncryptedData(data);
 }
 
 void TunnelProxySocket::disconnectSocket()
 {
     m_socketServer->requestSocketDisconnect(m_socketAddress);
+}
+
+void TunnelProxySocket::processIncomingData(const QByteArray &data)
+{
+    QList<QByteArray> plaintexts;
+    QList<QByteArray> responseFrames;
+    QString error;
+    bool wasEstablished = m_e2ee.established();
+
+    if (!m_e2ee.processIncoming(data, &plaintexts, &responseFrames, &error)) {
+        qCWarning(dcTunnelProxySocketServer()) << "E2EE processing failed:" << error << "Disconnecting socket" << m_socketAddress;
+        disconnectSocket();
+        return;
+    }
+
+    foreach (const QByteArray &frame, responseFrames) {
+        sendFrame(frame);
+    }
+
+    if (!wasEstablished && m_e2ee.established()) {
+        flushPendingData();
+    }
+
+    foreach (const QByteArray &plaintext, plaintexts) {
+        emit dataReceived(plaintext);
+    }
+}
+
+void TunnelProxySocket::sendFrame(const QByteArray &payload)
+{
+    SlipDataProcessor::Frame frame;
+    frame.socketAddress = m_socketAddress;
+    frame.data = payload;
+    m_connection->sendData(SlipDataProcessor::serializeData(SlipDataProcessor::buildFrame(frame)));
+}
+
+bool TunnelProxySocket::sendEncryptedData(const QByteArray &data)
+{
+    QList<QByteArray> frames;
+    QString error;
+    if (!m_e2ee.buildDataFrames(data, &frames, &error)) {
+        qCWarning(dcTunnelProxySocketServer()) << "Failed to encrypt data:" << error << "Disconnecting socket" << m_socketAddress;
+        disconnectSocket();
+        return false;
+    }
+
+    foreach (const QByteArray &frame, frames) {
+        sendFrame(frame);
+    }
+
+    return true;
+}
+
+void TunnelProxySocket::queuePendingData(const QByteArray &data)
+{
+    if (m_pendingBytes + data.size() > kMaxPendingBytes) {
+        qCWarning(dcTunnelProxySocketServer()) << "Pending E2EE data limit exceeded. Disconnecting socket" << m_socketAddress;
+        disconnectSocket();
+        return;
+    }
+
+    m_pendingData.append(data);
+    m_pendingBytes += data.size();
+}
+
+void TunnelProxySocket::flushPendingData()
+{
+    if (m_pendingData.isEmpty())
+        return;
+
+    QList<QByteArray> pending = m_pendingData;
+    m_pendingData.clear();
+    m_pendingBytes = 0;
+
+    foreach (const QByteArray &data, pending) {
+        if (!sendEncryptedData(data))
+            return;
+    }
 }
 
 void TunnelProxySocket::setDisconnected()

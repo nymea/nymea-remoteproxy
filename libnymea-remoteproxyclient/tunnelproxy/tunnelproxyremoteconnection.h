@@ -34,6 +34,9 @@
 #include <QSslError>
 #include <QAbstractSocket>
 #include <QLoggingCategory>
+#include <QList>
+
+#include "tunnelproxye2ee.h"
 
 Q_DECLARE_LOGGING_CATEGORY(dcTunnelProxyRemoteConnection)
 
@@ -53,6 +56,7 @@ public:
         StateConnected,
         StateInitializing,
         StateRegister,
+        StateE2eeHandshake,
         StateRemoteConnected,
         StateDiconnecting,
         StateDisconnected,
@@ -131,11 +135,21 @@ private:
     ProxyConnection *m_connection = nullptr;
     JsonRpcClient *m_jsonClient = nullptr;
 
+    TunnelProxyE2ee m_e2ee;
+    QList<QByteArray> m_pendingData;
+    int m_pendingBytes = 0;
+
     void setState(State state);
     void setRemoteConnected(bool remoteConnected);
     void setError(QAbstractSocket::SocketError error);
 
     void cleanUp();
+
+    void startE2eeHandshake();
+    void handleE2eeData(const QByteArray &data);
+    bool sendEncryptedData(const QByteArray &data);
+    void queuePendingData(const QByteArray &data);
+    void flushPendingData();
 
 };
 

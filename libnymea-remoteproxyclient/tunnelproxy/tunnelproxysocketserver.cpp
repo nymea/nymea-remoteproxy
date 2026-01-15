@@ -220,7 +220,7 @@ void TunnelProxySocketServer::onConnectionDataAvailable(const QByteArray &data)
                     if (!tunnlProxySocket) {
                         qCWarning(dcTunnelProxySocketServer()) << "Received data from unknown tunnel proxy client with address" << frame.socketAddress << "...ignoring the data";
                     } else {
-                        emit tunnlProxySocket->dataReceived(frame.data);
+                        tunnlProxySocket->processIncomingData(frame.data);
                     }
                 }
             }

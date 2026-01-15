@@ -35,10 +35,15 @@ Q_LOGGING_CATEGORY(dcTunnelProxyRemoteConnection, "TunnelProxyRemoteConnection")
 
 namespace remoteproxyclient {
 
+namespace {
+const int kMaxPendingBytes = 1024 * 1024;
+}
+
 TunnelProxyRemoteConnection::TunnelProxyRemoteConnection(const QUuid &clientUuid, const QString &clientName, QObject *parent) :
     QObject(parent),
     m_clientUuid(clientUuid),
-    m_clientName(clientName)
+    m_clientName(clientName),
+    m_e2ee(TunnelProxyE2ee::RoleClient)
 {
 
 }
@@ -47,7 +52,8 @@ TunnelProxyRemoteConnection::TunnelProxyRemoteConnection(const QUuid &clientUuid
     QObject(parent),
     m_clientUuid(clientUuid),
     m_clientName(clientName),
-    m_connectionType(connectionType)
+    m_connectionType(connectionType),
+    m_e2ee(TunnelProxyE2ee::RoleClient)
 {
 
 }
@@ -150,13 +156,17 @@ void TunnelProxyRemoteConnection::disconnectServer()
 
 bool TunnelProxyRemoteConnection::sendData(const QByteArray &data)
 {
-    if (!remoteConnected()) {
+    if (!m_e2ee.established()) {
+        if (m_state == StateE2eeHandshake) {
+            queuePendingData(data);
+            return true;
+        }
+
         qCWarning(dcTunnelProxyRemoteConnection()) << "Could not send data. Not connected.";
         return false;
     }
 
-    m_connection->sendData(data);
-    return true;
+    return sendEncryptedData(data);
 }
 
 void TunnelProxyRemoteConnection::onConnectionChanged(bool connected)
@@ -176,12 +186,12 @@ void TunnelProxyRemoteConnection::onConnectionChanged(bool connected)
 
 void TunnelProxyRemoteConnection::onConnectionDataAvailable(const QByteArray &data)
 {
-    if (m_state != StateRemoteConnected) {
-        m_jsonClient->processData(data);
+    if (m_state == StateRemoteConnected || m_state == StateE2eeHandshake) {
+        handleE2eeData(data);
         return;
     }
 
-    emit dataReady(data);
+    m_jsonClient->processData(data);
 }
 
 void TunnelProxyRemoteConnection::onConnectionSocketError(QAbstractSocket::SocketError error)
@@ -262,7 +272,8 @@ void TunnelProxyRemoteConnection::onClientRegistrationFinished()
     }
 
     qCDebug(dcTunnelProxyRemoteConnection()) << "Registered successfully as tunnel client on the remote proxy server.";
-    setState(StateRemoteConnected);
+    setState(StateE2eeHandshake);
+    startE2eeHandshake();
 }
 
 void TunnelProxyRemoteConnection::setState(State state)
@@ -305,12 +316,103 @@ void TunnelProxyRemoteConnection::cleanUp()
         m_connection = nullptr;
     }
 
+    m_e2ee.reset();
+    m_pendingData.clear();
+    m_pendingBytes = 0;
+
     m_remoteProxyServer.clear();
     m_remoteProxyServerName.clear();
     m_remoteProxyServerVersion.clear();
     m_remoteProxyApiVersion.clear();
 
     setState(StateDisconnected);
+}
+
+void TunnelProxyRemoteConnection::startE2eeHandshake()
+{
+    QString error;
+    QByteArray frame;
+    if (!m_e2ee.startClientHandshake(&frame, &error)) {
+        qCWarning(dcTunnelProxyRemoteConnection()) << "Failed to start E2EE handshake:" << error;
+        if (m_connection)
+            m_connection->disconnectServer();
+        return;
+    }
+
+    m_connection->sendData(frame);
+}
+
+void TunnelProxyRemoteConnection::handleE2eeData(const QByteArray &data)
+{
+    QList<QByteArray> plaintexts;
+    QList<QByteArray> responseFrames;
+    QString error;
+    if (!m_e2ee.processIncoming(data, &plaintexts, &responseFrames, &error)) {
+        qCWarning(dcTunnelProxyRemoteConnection()) << "E2EE processing failed:" << error;
+        if (m_connection)
+            m_connection->disconnectServer();
+        return;
+    }
+
+    foreach (const QByteArray &frame, responseFrames) {
+        m_connection->sendData(frame);
+    }
+
+    if (m_e2ee.established() && m_state == StateE2eeHandshake) {
+        setState(StateRemoteConnected);
+        flushPendingData();
+    }
+
+    foreach (const QByteArray &plaintext, plaintexts) {
+        emit dataReady(plaintext);
+    }
+}
+
+bool TunnelProxyRemoteConnection::sendEncryptedData(const QByteArray &data)
+{
+    QList<QByteArray> frames;
+    QString error;
+    if (!m_e2ee.buildDataFrames(data, &frames, &error)) {
+        qCWarning(dcTunnelProxyRemoteConnection()) << "Failed to encrypt data:" << error;
+        if (m_connection)
+            m_connection->disconnectServer();
+        return false;
+    }
+
+    foreach (const QByteArray &frame, frames) {
+        m_connection->sendData(frame);
+    }
+
+    return true;
+}
+
+void TunnelProxyRemoteConnection::queuePendingData(const QByteArray &data)
+{
+    if (m_pendingBytes + data.size() > kMaxPendingBytes) {
+        qCWarning(dcTunnelProxyRemoteConnection()) << "Pending E2EE data limit exceeded. Disconnecting.";
+        if (m_connection)
+            m_connection->disconnectServer();
+
+        return;
+    }
+
+    m_pendingData.append(data);
+    m_pendingBytes += data.size();
+}
+
+void TunnelProxyRemoteConnection::flushPendingData()
+{
+    if (m_pendingData.isEmpty())
+        return;
+
+    QList<QByteArray> pending = m_pendingData;
+    m_pendingData.clear();
+    m_pendingBytes = 0;
+
+    foreach (const QByteArray &data, pending) {
+        if (!sendEncryptedData(data))
+            return;
+    }
 }
 
 }

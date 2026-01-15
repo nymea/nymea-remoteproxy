@@ -31,6 +31,9 @@
 #include <QUuid>
 #include <QObject>
 #include <QHostAddress>
+#include <QList>
+
+#include "tunnelproxye2ee.h"
 
 namespace remoteproxyclient {
 
@@ -72,6 +75,16 @@ private:
     QUuid m_clientUuid;
     QHostAddress m_clientPeerAddress;
     quint16 m_socketAddress = 0xFFFF;
+
+    TunnelProxyE2ee m_e2ee;
+    QList<QByteArray> m_pendingData;
+    int m_pendingBytes = 0;
+
+    void processIncomingData(const QByteArray &data);
+    void sendFrame(const QByteArray &payload);
+    bool sendEncryptedData(const QByteArray &data);
+    void queuePendingData(const QByteArray &data);
+    void flushPendingData();
 
     void setDisconnected();
 
