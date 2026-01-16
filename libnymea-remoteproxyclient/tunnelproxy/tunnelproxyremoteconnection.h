@@ -32,6 +32,8 @@
 #include <QUuid>
 #include <QObject>
 #include <QSslError>
+#include <QSslCertificate>
+#include <QSslKey>
 #include <QAbstractSocket>
 #include <QLoggingCategory>
 #include <QList>
@@ -88,6 +90,10 @@ public:
     QString remoteProxyServerName() const;
     QString remoteProxyServerVersion() const;
     QString remoteProxyApiVersion() const;
+    bool e2eeEnabled() const;
+    void setE2eeEnabled(bool e2eeEnabled);
+    void setExpectedServerCertificate(const QSslCertificate &certificate);
+    void setClientIdentity(const QSslCertificate &certificate, const QSslKey &privateKey);
 
 public slots:
     bool connectServer(const QUrl &url, const QUuid &serverUuid);
@@ -131,6 +137,11 @@ private:
     QUrl m_serverUrl;
     QAbstractSocket::SocketError m_error = QAbstractSocket::UnknownSocketError;
     State m_state = StateDisconnected;
+    bool m_useE2ee = true;
+    bool m_remoteE2eeAvailable = true;
+    QSslCertificate m_expectedServerCertificate;
+    QSslCertificate m_clientCertificate;
+    QSslKey m_clientPrivateKey;
 
     ProxyConnection *m_connection = nullptr;
     JsonRpcClient *m_jsonClient = nullptr;
@@ -150,6 +161,7 @@ private:
     bool sendEncryptedData(const QByteArray &data);
     void queuePendingData(const QByteArray &data);
     void flushPendingData();
+    bool shouldUseE2ee() const;
 
 };
 

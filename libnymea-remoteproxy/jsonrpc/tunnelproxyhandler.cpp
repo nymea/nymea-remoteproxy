@@ -45,9 +45,11 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     setDescription("RegisterServer", "Register a new TunnelProxy server on this instance. Multiple TunnelProxy clients can be connected to the registered server on success.");
     params.insert("serverName", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("serverUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
+    params.insert("o:e2eeAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setParams("RegisterServer", params);
     returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
     returns.insert("slipEnabled", JsonTypes::basicTypeToString(JsonTypes::Bool));
+    returns.insert("e2eeAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setReturns("RegisterServer", returns);
 
     params.clear(); returns.clear();
@@ -71,8 +73,10 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     params.insert("clientName", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("clientUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
     params.insert("serverUuid", JsonTypes::basicTypeToString(JsonTypes::Uuid));
+    params.insert("o:e2eeAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setParams("RegisterClient", params);
     returns.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorRef());
+    returns.insert("e2eeAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setReturns("RegisterClient", returns);
 
     // Notifications
@@ -85,6 +89,7 @@ TunnelProxyHandler::TunnelProxyHandler(QObject *parent) : JsonHandler(parent)
     params.insert("clientUuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("clientPeerAddress", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("socketAddress", JsonTypes::basicTypeToString(JsonTypes::UInt));
+    params.insert("e2eAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setParams("ClientConnected", params);
 
     params.clear(); returns.clear();
@@ -104,17 +109,19 @@ JsonReply *TunnelProxyHandler::RegisterServer(const QVariantMap &params, Transpo
     qCDebug(dcJsonRpc()) << name() << "register server" << params << transportClient;
     QUuid serverUuid = params.value("serverUuid").toUuid();
     TunnelProxyServer::TunnelProxyError error = TunnelProxyServer::TunnelProxyErrorNoError;
+    bool e2eeAvailable = params.value("e2eeAvailable", true).toBool();
     if (serverUuid.isNull()) {
         qCWarning(dcJsonRpc()) << "Invalid uuid received" << params.value("serverUuid").toString() << serverUuid;
         error = TunnelProxyServer::TunnelProxyErrorInvalidUuid;
     } else {
         QString serverName = params.value("serverName").toString();
-        error = Engine::instance()->tunnelProxyServer()->registerServer(transportClient->clientId(), serverUuid, serverName);
+        error = Engine::instance()->tunnelProxyServer()->registerServer(transportClient->clientId(), serverUuid, serverName, e2eeAvailable);
     }
 
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
     response.insert("slipEnabled", error == TunnelProxyServer::TunnelProxyErrorNoError);
+    response.insert("e2eeAvailable", error == TunnelProxyServer::TunnelProxyErrorNoError && e2eeAvailable);
     return createReply("RegisterServer", response);
 }
 
@@ -144,7 +151,9 @@ JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, Transpo
     QString clientName = params.value("clientName").toString();
     QUuid clientUuid = params.value("clientUuid").toUuid();
     QUuid serverUuid = params.value("serverUuid").toUuid();
+    bool clientE2eeAvailable = params.value("e2eeAvailable", true).toBool();
     TunnelProxyServer::TunnelProxyError error = TunnelProxyServer::TunnelProxyErrorNoError;
+    bool e2eeAvailable = false;
     if (serverUuid.isNull()) {
         qCWarning(dcJsonRpc()) << "Invalid server uuid received" << params.value("serverUuid").toString() << serverUuid;
         error = TunnelProxyServer::TunnelProxyErrorInvalidUuid;
@@ -152,11 +161,12 @@ JsonReply *TunnelProxyHandler::RegisterClient(const QVariantMap &params, Transpo
         qCWarning(dcJsonRpc()) << "Invalid client uuid received" << params.value("clientUuid").toString() << clientUuid;
         error = TunnelProxyServer::TunnelProxyErrorInvalidUuid;
     } else {
-        error = Engine::instance()->tunnelProxyServer()->registerClient(transportClient->clientId(), clientUuid, clientName, serverUuid);
+        error = Engine::instance()->tunnelProxyServer()->registerClient(transportClient->clientId(), clientUuid, clientName, serverUuid, clientE2eeAvailable, &e2eeAvailable);
     }
 
     QVariantMap response;
     response.insert("tunnelProxyError", JsonTypes::tunnelProxyErrorToString(error));
+    response.insert("e2eeAvailable", error == TunnelProxyServer::TunnelProxyErrorNoError && e2eeAvailable);
     return createReply("RegisterClient", response);
 }
 

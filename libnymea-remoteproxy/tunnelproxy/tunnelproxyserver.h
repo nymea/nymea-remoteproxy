@@ -63,8 +63,8 @@ public:
 
     void registerTransportInterface(TransportInterface *interface);
 
-    TunnelProxyServer::TunnelProxyError registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName);
-    TunnelProxyServer::TunnelProxyError registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
+    TunnelProxyServer::TunnelProxyError registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable);
+    TunnelProxyServer::TunnelProxyError registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, bool clientE2eAvailable, bool *e2eeAvailable);
     TunnelProxyServer::TunnelProxyError disconnectClient(const QUuid &clientId, quint16 socketAddress);
 
     QVariantMap currentStatistics(bool printAll = false);

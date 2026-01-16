@@ -113,6 +113,29 @@ QString TunnelProxyRemoteConnection::remoteProxyApiVersion() const
     return m_remoteProxyApiVersion;
 }
 
+bool TunnelProxyRemoteConnection::e2eeEnabled() const
+{
+    return m_useE2ee;
+}
+
+void TunnelProxyRemoteConnection::setE2eeEnabled(bool e2eeEnabled)
+{
+    m_useE2ee = e2eeEnabled;
+}
+
+void TunnelProxyRemoteConnection::setExpectedServerCertificate(const QSslCertificate &certificate)
+{
+    m_expectedServerCertificate = certificate;
+    m_e2ee.setExpectedPeerCertificate(certificate);
+}
+
+void TunnelProxyRemoteConnection::setClientIdentity(const QSslCertificate &certificate, const QSslKey &privateKey)
+{
+    m_clientCertificate = certificate;
+    m_clientPrivateKey = privateKey;
+    m_e2ee.setLocalIdentity(certificate, privateKey);
+}
+
 bool TunnelProxyRemoteConnection::connectServer(const QUrl &url, const QUuid &serverUuid)
 {
     m_serverUrl = url;
@@ -156,6 +179,16 @@ void TunnelProxyRemoteConnection::disconnectServer()
 
 bool TunnelProxyRemoteConnection::sendData(const QByteArray &data)
 {
+    if (!shouldUseE2ee()) {
+        if (!m_connection) {
+            qCWarning(dcTunnelProxyRemoteConnection()) << "Could not send data. Not connected.";
+            return false;
+        }
+
+        m_connection->sendData(data);
+        return true;
+    }
+
     if (!m_e2ee.established()) {
         if (m_state == StateE2eeHandshake) {
             queuePendingData(data);
@@ -186,8 +219,13 @@ void TunnelProxyRemoteConnection::onConnectionChanged(bool connected)
 
 void TunnelProxyRemoteConnection::onConnectionDataAvailable(const QByteArray &data)
 {
-    if (m_state == StateRemoteConnected || m_state == StateE2eeHandshake) {
+    if (shouldUseE2ee() && (m_state == StateRemoteConnected || m_state == StateE2eeHandshake)) {
         handleE2eeData(data);
+        return;
+    }
+
+    if (!shouldUseE2ee() && m_state == StateRemoteConnected) {
+        emit dataReady(data);
         return;
     }
 
@@ -246,7 +284,7 @@ void TunnelProxyRemoteConnection::onHelloFinished()
 
     setState(StateRegister);
 
-    JsonReply *registerReply = m_jsonClient->callRegisterClient(m_clientUuid, m_clientName, m_serverUuid);
+    JsonReply *registerReply = m_jsonClient->callRegisterClient(m_clientUuid, m_clientName, m_serverUuid, m_useE2ee);
     connect(registerReply, &JsonReply::finished, this, &TunnelProxyRemoteConnection::onClientRegistrationFinished);
 }
 
@@ -271,9 +309,15 @@ void TunnelProxyRemoteConnection::onClientRegistrationFinished()
         return;
     }
 
+    m_remoteE2eeAvailable = responseParams.value("e2eeAvailable", m_useE2ee).toBool();
+
     qCDebug(dcTunnelProxyRemoteConnection()) << "Registered successfully as tunnel client on the remote proxy server.";
-    setState(StateE2eeHandshake);
-    startE2eeHandshake();
+    if (shouldUseE2ee()) {
+        setState(StateE2eeHandshake);
+        startE2eeHandshake();
+    } else {
+        setState(StateRemoteConnected);
+    }
 }
 
 void TunnelProxyRemoteConnection::setState(State state)
@@ -324,12 +368,18 @@ void TunnelProxyRemoteConnection::cleanUp()
     m_remoteProxyServerName.clear();
     m_remoteProxyServerVersion.clear();
     m_remoteProxyApiVersion.clear();
+    m_remoteE2eeAvailable = true;
 
     setState(StateDisconnected);
 }
 
 void TunnelProxyRemoteConnection::startE2eeHandshake()
 {
+    m_e2ee.setExpectedPeerCertificate(m_expectedServerCertificate);
+    if (!m_clientCertificate.isNull() && !m_clientPrivateKey.isNull()) {
+        m_e2ee.setLocalIdentity(m_clientCertificate, m_clientPrivateKey);
+    }
+
     QString error;
     QByteArray frame;
     if (!m_e2ee.startClientHandshake(&frame, &error)) {
@@ -413,6 +463,11 @@ void TunnelProxyRemoteConnection::flushPendingData()
         if (!sendEncryptedData(data))
             return;
     }
+}
+
+bool TunnelProxyRemoteConnection::shouldUseE2ee() const
+{
+    return m_useE2ee && m_remoteE2eeAvailable;
 }
 
 }

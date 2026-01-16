@@ -133,7 +133,7 @@ QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, cons
 
     QWebSocket *socket = new QWebSocket("tunnelproxy-testclient", QWebSocketProtocol::Version13);
     connect(socket, &QWebSocket::sslErrors, this, &BaseTest::sslErrors);
-    QSignalSpy spyConnection(socket, SIGNAL(connected()));
+    QSignalSpy spyConnection(socket, &QWebSocket::connected);
     socket->open(Engine::instance()->webSocketServerTunnelProxy()->serverUrl());
     spyConnection.wait();
     if (spyConnection.count() == 0) {
@@ -141,7 +141,7 @@ QVariant BaseTest::invokeWebSocketTunnelProxyApiCall(const QString &method, cons
         return QVariant();
     }
 
-    QSignalSpy dataSpy(socket, SIGNAL(textMessageReceived(QString)));
+    QSignalSpy dataSpy(socket, &QWebSocket::textMessageReceived);
     socket->sendTextMessage(QString(jsonDoc.toJson(QJsonDocument::Compact)));
     dataSpy.wait();
 

@@ -32,6 +32,8 @@
 #include <QObject>
 #include <QHostAddress>
 #include <QList>
+#include <QSslCertificate>
+#include <QSslKey>
 
 #include "tunnelproxye2ee.h"
 
@@ -56,6 +58,8 @@ public:
     void writeData(const QByteArray &data);
 
     void disconnectSocket();
+    void setE2eeEnabled(bool enabled);
+    void setE2eeIdentity(const QSslCertificate &certificate, const QSslKey &privateKey);
 
 signals:
     void dataReceived(const QByteArray &data);
@@ -64,7 +68,7 @@ signals:
     void disconnected();
 
 private:
-    explicit TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent = nullptr);
+    explicit TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, bool useE2ee, QObject *parent = nullptr);
     ~TunnelProxySocket() = default;
 
     ProxyConnection *m_connection = nullptr;
@@ -76,6 +80,7 @@ private:
     QHostAddress m_clientPeerAddress;
     quint16 m_socketAddress = 0xFFFF;
 
+    bool m_useE2ee = true;
     TunnelProxyE2ee m_e2ee;
     QList<QByteArray> m_pendingData;
     int m_pendingBytes = 0;

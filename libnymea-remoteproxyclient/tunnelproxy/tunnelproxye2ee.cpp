@@ -28,6 +28,7 @@
 #include "tunnelproxye2ee.h"
 
 #include <QtEndian>
+#include <QCryptographicHash>
 
 #include <cstring>
 
@@ -36,6 +37,9 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+#include <limits>
 
 namespace remoteproxyclient {
 
@@ -126,10 +130,13 @@ bool TunnelProxyE2ee::startClientHandshake(QByteArray *outFrame, QString *error)
     payload.append(m_publicKey);
     payload.append(m_clientNonce);
 
-    if (payload.size() != kE2eeHelloSize) {
-        if (error)
-            *error = "Invalid client hello payload size.";
-        return false;
+    if (!m_localCertificate.isNull() && !m_localPrivateKey.isNull()) {
+        QByteArray signature;
+        if (!signData(helloSignatureInput(m_publicKey, m_clientNonce, QByteArray(), QByteArray()), &signature, error))
+            return false;
+
+        if (!appendAuthPayload(&payload, signature, error))
+            return false;
     }
 
     *outFrame = buildFrame(kE2eeTypeClientHello, payload);
@@ -232,8 +239,25 @@ bool TunnelProxyE2ee::established() const
 void TunnelProxyE2ee::reset()
 {
     m_buffer.clear();
+    m_peerCertificate = QSslCertificate();
     clearKeyMaterial();
     m_state = (m_role == RoleClient) ? StateIdle : StateAwaitClientHello;
+}
+
+void TunnelProxyE2ee::setLocalIdentity(const QSslCertificate &certificate, const QSslKey &privateKey)
+{
+    m_localCertificate = certificate;
+    m_localPrivateKey = privateKey;
+}
+
+void TunnelProxyE2ee::setExpectedPeerCertificate(const QSslCertificate &certificate)
+{
+    m_expectedPeerCertificate = certificate;
+}
+
+QSslCertificate TunnelProxyE2ee::expectedPeerCertificate() const
+{
+    return m_expectedPeerCertificate;
 }
 
 bool TunnelProxyE2ee::parseFrame(Frame *frame, QString *error)
@@ -299,7 +323,7 @@ bool TunnelProxyE2ee::handleClientHello(const Frame &frame, QList<QByteArray> *o
         return false;
     }
 
-    if (frame.payload.size() != kE2eeHelloSize) {
+    if (frame.payload.size() < kE2eeHelloSize) {
         if (error)
             *error = "Invalid client hello payload size.";
 
@@ -308,6 +332,47 @@ bool TunnelProxyE2ee::handleClientHello(const Frame &frame, QList<QByteArray> *o
 
     m_peerPublicKey = frame.payload.left(kE2eeKeySize);
     m_clientNonce = frame.payload.mid(kE2eeKeySize, kE2eeKeySize);
+    QSslCertificate peerCertificate;
+    QByteArray peerSignature;
+    if (!parseAuthPayload(frame.payload.mid(kE2eeHelloSize), &peerCertificate, &peerSignature, error))
+        return false;
+
+    if (!peerCertificate.isNull()) {
+        m_peerCertificate = peerCertificate;
+    }
+
+    if (!m_expectedPeerCertificate.isNull()) {
+        if (peerCertificate.isNull()) {
+            if (error)
+                *error = "Peer certificate missing.";
+
+            return false;
+        }
+
+        if (peerCertificate.digest(QCryptographicHash::Sha256) != m_expectedPeerCertificate.digest(QCryptographicHash::Sha256)) {
+            if (error)
+                *error = "Peer certificate fingerprint mismatch.";
+
+            return false;
+        }
+    }
+
+    if (!peerSignature.isEmpty()) {
+        if (peerCertificate.isNull()) {
+            if (error)
+                *error = "Signature received without certificate.";
+
+            return false;
+        }
+
+        if (!verifySignature(peerCertificate, helloSignatureInput(m_peerPublicKey, m_clientNonce, QByteArray(), QByteArray()), peerSignature, error))
+            return false;
+    } else if (!m_expectedPeerCertificate.isNull()) {
+        if (error)
+            *error = "Peer certificate provided without signature.";
+
+        return false;
+    }
 
     if (!ensureKeyPair(error))
         return false;
@@ -323,6 +388,15 @@ bool TunnelProxyE2ee::handleClientHello(const Frame &frame, QList<QByteArray> *o
     payload.append(m_publicKey);
     payload.append(m_serverNonce);
 
+    if (!m_localCertificate.isNull() && !m_localPrivateKey.isNull()) {
+        QByteArray signature;
+        if (!signData(helloSignatureInput(m_publicKey, m_serverNonce, m_peerPublicKey, m_clientNonce), &signature, error))
+            return false;
+
+        if (!appendAuthPayload(&payload, signature, error))
+            return false;
+    }
+
     outFrames->append(buildFrame(kE2eeTypeServerHello, payload));
     m_state = StateEstablished;
     return true;
@@ -337,7 +411,7 @@ bool TunnelProxyE2ee::handleServerHello(const Frame &frame, QString *error)
         return false;
     }
 
-    if (frame.payload.size() != kE2eeHelloSize) {
+    if (frame.payload.size() < kE2eeHelloSize) {
         if (error)
             *error = "Invalid server hello payload size.";
 
@@ -346,6 +420,47 @@ bool TunnelProxyE2ee::handleServerHello(const Frame &frame, QString *error)
 
     m_peerPublicKey = frame.payload.left(kE2eeKeySize);
     m_serverNonce = frame.payload.mid(kE2eeKeySize, kE2eeKeySize);
+    QSslCertificate peerCertificate;
+    QByteArray peerSignature;
+    if (!parseAuthPayload(frame.payload.mid(kE2eeHelloSize), &peerCertificate, &peerSignature, error))
+        return false;
+
+    if (!peerCertificate.isNull()) {
+        m_peerCertificate = peerCertificate;
+    }
+
+    if (!m_expectedPeerCertificate.isNull()) {
+        if (peerCertificate.isNull()) {
+            if (error)
+                *error = "Peer certificate missing.";
+
+            return false;
+        }
+
+        if (peerCertificate.digest(QCryptographicHash::Sha256) != m_expectedPeerCertificate.digest(QCryptographicHash::Sha256)) {
+            if (error)
+                *error = "Peer certificate fingerprint mismatch.";
+
+            return false;
+        }
+    }
+
+    if (!peerSignature.isEmpty()) {
+        if (peerCertificate.isNull()) {
+            if (error)
+                *error = "Signature received without certificate.";
+
+            return false;
+        }
+
+        if (!verifySignature(peerCertificate, helloSignatureInput(m_peerPublicKey, m_serverNonce, m_publicKey, m_clientNonce), peerSignature, error))
+            return false;
+    } else if (!m_expectedPeerCertificate.isNull()) {
+        if (error)
+            *error = "Peer certificate provided without signature.";
+
+        return false;
+    }
 
     if (!deriveSessionKeys(error))
         return false;
@@ -388,6 +503,251 @@ bool TunnelProxyE2ee::handleDataFrame(const Frame &frame, QList<QByteArray> *out
     outPlaintexts->append(plaintext);
     m_recvCounter++;
     return true;
+}
+
+bool TunnelProxyE2ee::appendAuthPayload(QByteArray *payload, const QByteArray &signature, QString *error) const
+{
+    if (m_localCertificate.isNull()) {
+        if (error)
+            *error = "No local certificate configured.";
+
+        return false;
+    }
+
+    QByteArray certDer = m_localCertificate.toDer();
+    if (certDer.isEmpty()) {
+        if (error)
+            *error = "Failed to serialize local certificate.";
+
+        return false;
+    }
+
+    if (certDer.size() > std::numeric_limits<quint16>::max() || signature.size() > std::numeric_limits<quint16>::max()) {
+        if (error)
+            *error = "Authentication payload too large.";
+
+        return false;
+    }
+
+    quint16 certLen = static_cast<quint16>(certDer.size());
+    quint16 sigLen = static_cast<quint16>(signature.size());
+    quint16 certLenBe = qToBigEndian(certLen);
+    quint16 sigLenBe = qToBigEndian(sigLen);
+
+    payload->append(reinterpret_cast<const char *>(&certLenBe), sizeof(certLenBe));
+    payload->append(certDer);
+    payload->append(reinterpret_cast<const char *>(&sigLenBe), sizeof(sigLenBe));
+    payload->append(signature);
+    return true;
+}
+
+bool TunnelProxyE2ee::parseAuthPayload(const QByteArray &payload, QSslCertificate *certificate, QByteArray *signature, QString *error) const
+{
+    if (certificate)
+        *certificate = QSslCertificate();
+
+    if (signature)
+        signature->clear();
+
+    if (payload.isEmpty())
+        return true;
+
+    if (payload.size() < static_cast<int>(sizeof(quint16) * 2)) {
+        if (error)
+            *error = "Invalid authentication payload size.";
+
+        return false;
+    }
+
+    int offset = 0;
+    quint16 certLen = qFromBigEndian<quint16>(reinterpret_cast<const uchar *>(payload.constData() + offset));
+    offset += static_cast<int>(sizeof(quint16));
+
+    if (payload.size() < offset + certLen + static_cast<int>(sizeof(quint16))) {
+        if (error)
+            *error = "Authentication payload truncated.";
+
+        return false;
+    }
+
+    if (certLen > 0) {
+        QByteArray certDer = payload.mid(offset, certLen);
+        QSslCertificate peerCert(certDer, QSsl::Der);
+        if (peerCert.isNull()) {
+            if (error)
+                *error = "Failed to parse peer certificate.";
+
+            return false;
+        }
+
+        if (certificate)
+            *certificate = peerCert;
+    }
+    offset += certLen;
+
+    quint16 sigLen = qFromBigEndian<quint16>(reinterpret_cast<const uchar *>(payload.constData() + offset));
+    offset += static_cast<int>(sizeof(quint16));
+
+    if (payload.size() < offset + sigLen) {
+        if (error)
+            *error = "Authentication signature truncated.";
+
+        return false;
+    }
+
+    if (sigLen > 0 && signature) {
+        *signature = payload.mid(offset, sigLen);
+    }
+
+    if (payload.size() != offset + sigLen) {
+        if (error)
+            *error = "Unexpected authentication payload size.";
+
+        return false;
+    }
+
+    return true;
+}
+
+QByteArray TunnelProxyE2ee::helloSignatureInput(const QByteArray &publicKey, const QByteArray &nonce, const QByteArray &peerPublicKey, const QByteArray &peerNonce) const
+{
+    QByteArray data = publicKey + nonce;
+    data.append(peerPublicKey);
+    data.append(peerNonce);
+    return data;
+}
+
+bool TunnelProxyE2ee::signData(const QByteArray &data, QByteArray *signature, QString *error) const
+{
+    if (m_localPrivateKey.isNull()) {
+        if (error)
+            *error = "No private key configured.";
+
+        return false;
+    }
+
+    QByteArray keyDer = m_localPrivateKey.toDer();
+    const unsigned char *ptr = reinterpret_cast<const unsigned char *>(keyDer.constData());
+    EVP_PKEY *pkey = d2i_AutoPrivateKey(nullptr, &ptr, keyDer.size());
+    if (!pkey) {
+        if (error)
+            *error = QString("Failed to parse private key: %1").arg(opensslErrorString());
+
+        return false;
+    }
+
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        if (error)
+            *error = "Failed to create signing context.";
+
+        EVP_PKEY_free(pkey);
+        return false;
+    }
+
+    int type = EVP_PKEY_base_id(pkey);
+    bool useDigest = (type != EVP_PKEY_ED25519 && type != EVP_PKEY_ED448);
+    size_t sigLen = 0;
+    bool ok = false;
+
+    if (useDigest) {
+        ok = (EVP_DigestSignInit(ctx, nullptr, EVP_sha256(), nullptr, pkey) == 1) &&
+             (EVP_DigestSignUpdate(ctx, reinterpret_cast<const unsigned char *>(data.constData()), static_cast<size_t>(data.size())) == 1) &&
+             (EVP_DigestSignFinal(ctx, nullptr, &sigLen) == 1);
+
+        if (ok) {
+            QByteArray sig(static_cast<int>(sigLen), 0);
+            ok = (EVP_DigestSignFinal(ctx, reinterpret_cast<unsigned char *>(sig.data()), &sigLen) == 1);
+            if (ok) {
+                sig.resize(static_cast<int>(sigLen));
+                *signature = sig;
+            }
+        }
+    } else {
+        ok = (EVP_DigestSignInit(ctx, nullptr, nullptr, nullptr, pkey) == 1) &&
+             (EVP_DigestSign(ctx, nullptr, &sigLen, reinterpret_cast<const unsigned char *>(data.constData()), static_cast<size_t>(data.size())) == 1);
+
+        if (ok) {
+            QByteArray sig(static_cast<int>(sigLen), 0);
+            ok = (EVP_DigestSign(ctx, reinterpret_cast<unsigned char *>(sig.data()), &sigLen,
+                                 reinterpret_cast<const unsigned char *>(data.constData()), static_cast<size_t>(data.size())) == 1);
+            if (ok) {
+                sig.resize(static_cast<int>(sigLen));
+                *signature = sig;
+            }
+        }
+    }
+
+    if (!ok && error)
+        *error = QString("Signing failed: %1").arg(opensslErrorString());
+
+    EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+    return ok;
+}
+
+bool TunnelProxyE2ee::verifySignature(const QSslCertificate &certificate, const QByteArray &data, const QByteArray &signature, QString *error) const
+{
+    QByteArray certDer = certificate.toDer();
+    if (certDer.isEmpty()) {
+        if (error)
+            *error = "Failed to serialize peer certificate.";
+
+        return false;
+    }
+
+    const unsigned char *ptr = reinterpret_cast<const unsigned char *>(certDer.constData());
+    X509 *x509 = d2i_X509(nullptr, &ptr, certDer.size());
+    if (!x509) {
+        if (error)
+            *error = "Failed to parse peer certificate.";
+
+        return false;
+    }
+
+    EVP_PKEY *pkey = X509_get_pubkey(x509);
+    if (!pkey) {
+        if (error)
+            *error = "Failed to extract peer public key.";
+
+        X509_free(x509);
+        return false;
+    }
+
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    if (!ctx) {
+        if (error)
+            *error = "Failed to create verification context.";
+
+        EVP_PKEY_free(pkey);
+        X509_free(x509);
+        return false;
+    }
+
+    int type = EVP_PKEY_base_id(pkey);
+    bool useDigest = (type != EVP_PKEY_ED25519 && type != EVP_PKEY_ED448);
+    bool ok = false;
+
+    if (useDigest) {
+        ok = (EVP_DigestVerifyInit(ctx, nullptr, EVP_sha256(), nullptr, pkey) == 1) &&
+             (EVP_DigestVerifyUpdate(ctx, reinterpret_cast<const unsigned char *>(data.constData()), static_cast<size_t>(data.size())) == 1) &&
+             (EVP_DigestVerifyFinal(ctx, reinterpret_cast<const unsigned char *>(signature.constData()), static_cast<size_t>(signature.size())) == 1);
+    } else {
+        ok = (EVP_DigestVerifyInit(ctx, nullptr, nullptr, nullptr, pkey) == 1) &&
+             (EVP_DigestVerify(ctx,
+                               reinterpret_cast<const unsigned char *>(signature.constData()),
+                               static_cast<size_t>(signature.size()),
+                               reinterpret_cast<const unsigned char *>(data.constData()),
+                               static_cast<size_t>(data.size())) == 1);
+    }
+
+    if (!ok && error)
+        *error = QString("Signature verification failed: %1").arg(opensslErrorString());
+
+    EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
+    X509_free(x509);
+    return ok;
 }
 
 bool TunnelProxyE2ee::ensureKeyPair(QString *error)

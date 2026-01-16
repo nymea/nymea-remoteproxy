@@ -74,6 +74,7 @@ JsonRpcServer::JsonRpcServer(QObject *parent) :
                                         "about the other tunnel client.");
     params.insert("uuid", JsonTypes::basicTypeToString(JsonTypes::String));
     params.insert("name", JsonTypes::basicTypeToString(JsonTypes::String));
+    params.insert("o:e2eeAvailable", JsonTypes::basicTypeToString(JsonTypes::Bool));
     setParams("TunnelEstablished", params);
 
 }

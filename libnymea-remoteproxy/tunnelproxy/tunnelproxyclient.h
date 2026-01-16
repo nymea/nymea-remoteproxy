@@ -57,6 +57,7 @@ public:
     // This method will be called from the proxy server once the client is
     // registered correctly as server or client connection and is now active
     void activateClient();
+    void restartInactiveTimer();
 
 signals:
     void typeChanged(Type type);

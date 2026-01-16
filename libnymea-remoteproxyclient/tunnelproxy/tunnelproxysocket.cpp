@@ -36,7 +36,7 @@ namespace {
 const int kMaxPendingBytes = 1024 * 1024;
 }
 
-TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent) :
+TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, bool useE2ee, QObject *parent) :
     QObject(parent),
     m_connection(connection),
     m_socketServer(socketServer),
@@ -44,6 +44,7 @@ TunnelProxySocket::TunnelProxySocket(ProxyConnection *connection, TunnelProxySoc
     m_clientUuid(clientUuid),
     m_clientPeerAddress(clientPeerAddress),
     m_socketAddress(socketAddress),
+    m_useE2ee(useE2ee),
     m_e2ee(TunnelProxyE2ee::RoleServer)
 {
 
@@ -76,6 +77,11 @@ bool TunnelProxySocket::connected() const
 
 void TunnelProxySocket::writeData(const QByteArray &data)
 {
+    if (!m_useE2ee) {
+        sendFrame(data);
+        return;
+    }
+
     if (!m_e2ee.established()) {
         queuePendingData(data);
         return;
@@ -89,8 +95,27 @@ void TunnelProxySocket::disconnectSocket()
     m_socketServer->requestSocketDisconnect(m_socketAddress);
 }
 
+void TunnelProxySocket::setE2eeEnabled(bool enabled)
+{
+    m_useE2ee = enabled;
+    if (!m_useE2ee) {
+        m_pendingData.clear();
+        m_pendingBytes = 0;
+    }
+}
+
+void TunnelProxySocket::setE2eeIdentity(const QSslCertificate &certificate, const QSslKey &privateKey)
+{
+    m_e2ee.setLocalIdentity(certificate, privateKey);
+}
+
 void TunnelProxySocket::processIncomingData(const QByteArray &data)
 {
+    if (!m_useE2ee) {
+        emit dataReceived(data);
+        return;
+    }
+
     QList<QByteArray> plaintexts;
     QList<QByteArray> responseFrames;
     QString error;

@@ -41,12 +41,13 @@ class TunnelProxyServerConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit TunnelProxyServerConnection(TransportClient *transportClient, const QUuid &serverUuid, const QString &serverName, QObject *parent = nullptr);
+    explicit TunnelProxyServerConnection(TransportClient *transportClient, const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable, QObject *parent = nullptr);
 
     TransportClient *transportClient() const;
 
     QUuid serverUuid() const;
     QString serverName() const;
+    bool e2eeAvailable() const;
 
     QList<TunnelProxyClientConnection *> clientConnections() const;
 
@@ -59,6 +60,7 @@ private:
     TransportClient *m_transportClient = nullptr;
     QUuid m_serverUuid;
     QString m_serverName;
+    bool m_e2eeAvailable = false;
     quint16 m_connectionLimit = 100;
 
     quint16 m_currentAddressCounter = 0;

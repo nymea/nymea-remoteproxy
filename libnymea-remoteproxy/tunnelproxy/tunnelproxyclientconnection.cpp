@@ -76,6 +76,16 @@ QUuid TunnelProxyClientConnection::serverUuid() const
     return m_serverUuid;
 }
 
+bool TunnelProxyClientConnection::e2eAvailable() const
+{
+    return m_e2eAvailable;
+}
+
+void TunnelProxyClientConnection::setE2eAvailable(bool e2eAvailable)
+{
+    m_e2eAvailable = e2eAvailable;
+}
+
 quint16 TunnelProxyClientConnection::socketAddress() const
 {
     return m_socketAddress;

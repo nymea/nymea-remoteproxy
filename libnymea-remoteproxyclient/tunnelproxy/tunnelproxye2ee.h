@@ -31,6 +31,8 @@
 #include <QByteArray>
 #include <QList>
 #include <QString>
+#include <QSslCertificate>
+#include <QSslKey>
 #include <QtGlobal>
 
 namespace remoteproxyclient {
@@ -51,6 +53,9 @@ public:
 
     bool established() const;
     void reset();
+    void setLocalIdentity(const QSslCertificate &certificate, const QSslKey &privateKey);
+    void setExpectedPeerCertificate(const QSslCertificate &certificate);
+    QSslCertificate expectedPeerCertificate() const;
 
 private:
     enum State {
@@ -73,6 +78,10 @@ private:
     QByteArray m_privateKey;
     QByteArray m_publicKey;
     QByteArray m_peerPublicKey;
+    QSslCertificate m_peerCertificate;
+    QSslCertificate m_expectedPeerCertificate;
+    QSslCertificate m_localCertificate;
+    QSslKey m_localPrivateKey;
     QByteArray m_clientNonce;
     QByteArray m_serverNonce;
 
@@ -89,6 +98,11 @@ private:
     bool handleClientHello(const Frame &frame, QList<QByteArray> *outFrames, QString *error);
     bool handleServerHello(const Frame &frame, QString *error);
     bool handleDataFrame(const Frame &frame, QList<QByteArray> *outPlaintexts, QString *error);
+    bool appendAuthPayload(QByteArray *payload, const QByteArray &signature, QString *error) const;
+    bool parseAuthPayload(const QByteArray &payload, QSslCertificate *certificate, QByteArray *signature, QString *error) const;
+    QByteArray helloSignatureInput(const QByteArray &publicKey, const QByteArray &nonce, const QByteArray &peerPublicKey, const QByteArray &peerNonce) const;
+    bool signData(const QByteArray &data, QByteArray *signature, QString *error) const;
+    bool verifySignature(const QSslCertificate &certificate, const QByteArray &data, const QByteArray &signature, QString *error) const;
 
     bool ensureKeyPair(QString *error);
     bool deriveSessionKeys(QString *error);
