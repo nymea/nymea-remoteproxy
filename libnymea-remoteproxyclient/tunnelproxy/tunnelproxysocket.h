@@ -31,6 +31,11 @@
 #include <QUuid>
 #include <QObject>
 #include <QHostAddress>
+#include <QList>
+#include <QSslCertificate>
+#include <QSslKey>
+
+#include "tunnelproxye2ee.h"
 
 namespace remoteproxyclient {
 
@@ -53,6 +58,8 @@ public:
     void writeData(const QByteArray &data);
 
     void disconnectSocket();
+    void setE2eeEnabled(bool enabled);
+    void setE2eeIdentity(const QSslCertificate &certificate, const QSslKey &privateKey);
 
 signals:
     void dataReceived(const QByteArray &data);
@@ -61,7 +68,7 @@ signals:
     void disconnected();
 
 private:
-    explicit TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, QObject *parent = nullptr);
+    explicit TunnelProxySocket(ProxyConnection *connection, TunnelProxySocketServer *socketServer, const QString &clientName, const QUuid &clientUuid, const QHostAddress &clientPeerAddress, quint16 socketAddress, bool useE2ee, QObject *parent = nullptr);
     ~TunnelProxySocket() = default;
 
     ProxyConnection *m_connection = nullptr;
@@ -72,6 +79,17 @@ private:
     QUuid m_clientUuid;
     QHostAddress m_clientPeerAddress;
     quint16 m_socketAddress = 0xFFFF;
+
+    bool m_useE2ee = true;
+    TunnelProxyE2ee m_e2ee;
+    QList<QByteArray> m_pendingData;
+    int m_pendingBytes = 0;
+
+    void processIncomingData(const QByteArray &data);
+    void sendFrame(const QByteArray &payload);
+    bool sendEncryptedData(const QByteArray &data);
+    void queuePendingData(const QByteArray &data);
+    void flushPendingData();
 
     void setDisconnected();
 

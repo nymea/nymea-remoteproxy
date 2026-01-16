@@ -64,7 +64,7 @@ void WebSocketServer::sendData(const QUuid &clientId, const QByteArray &data)
     client = m_clientList.value(clientId);
     if (client) {
         qCDebug(dcWebSocketServerTraffic()) << "--> Sending data to client:" << data;
-        client->sendTextMessage(data);
+        client->sendBinaryMessage(data);
     } else {
         qCWarning(dcWebSocketServer()) << "Client" << clientId << "unknown to this transport";
     }
@@ -142,9 +142,8 @@ void WebSocketServer::onTextMessageReceived(const QString &message)
 void WebSocketServer::onBinaryMessageReceived(const QByteArray &data)
 {
     QWebSocket *client = static_cast<QWebSocket *>(sender());
-    qCWarning(dcWebSocketServerTraffic()) << "<-- Binary message from" << client->peerAddress().toString() << ":" << data;
-    // Note: this is not expected, so close this client connection.
-    client->close(QWebSocketProtocol::CloseCodeBadOperation, "Binary message not expected.");
+    qCDebug(dcWebSocketServerTraffic()) << "Binary message from" << client->peerAddress().toString() << ":" << data;
+    emit dataAvailable(m_clientList.key(client), data);
 }
 
 void WebSocketServer::onClientError(QAbstractSocket::SocketError error)

@@ -624,6 +624,7 @@ void RemoteProxyTestsTunnelProxy::registerClient()
         QVERIFY(response.value("status").toString() == "success");
         QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
         QVERIFY(response.value("params").toMap().contains("slipEnabled"));
+        QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
         //QVERIFY(response.value("params").toMap().value("slipEnabled").toBool()));
         verifyTunnelProxyError(response, expectedServerError);
     }
@@ -639,6 +640,7 @@ void RemoteProxyTestsTunnelProxy::registerClient()
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+    QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
     verifyTunnelProxyError(response, expectedError);
 
     QTest::qWait(100);
@@ -648,6 +650,7 @@ void RemoteProxyTestsTunnelProxy::registerClient()
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+    QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
     verifyTunnelProxyError(response, expectedError);
 
     QTest::qWait(100);
@@ -716,6 +719,7 @@ void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
     QVERIFY(response.value("params").toMap().contains("slipEnabled"));
+    QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
     QVERIFY(response.value("params").toMap().value("slipEnabled").toBool());
     verifyTunnelProxyError(response);
 
@@ -744,6 +748,7 @@ void RemoteProxyTestsTunnelProxy::registerServerDuplicated()
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+    QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
     verifyTunnelProxyError(response);
 
     resetDebugCategories();
@@ -801,6 +806,7 @@ void RemoteProxyTestsTunnelProxy::registerClientDuplicated()
     QVERIFY(!response.isEmpty());
     QVERIFY(response.value("status").toString() == "success");
     QVERIFY(response.value("params").toMap().contains("tunnelProxyError"));
+    QVERIFY(response.value("params").toMap().contains("e2eeAvailable"));
     verifyTunnelProxyError(response, TunnelProxyServer::TunnelProxyErrorAlreadyRegistered);
 
     // CleanUp

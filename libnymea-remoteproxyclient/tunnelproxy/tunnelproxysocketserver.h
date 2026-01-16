@@ -33,6 +33,8 @@
 #include <QTimer>
 #include <QObject>
 #include <QSslError>
+#include <QSslCertificate>
+#include <QSslKey>
 #include <QLoggingCategory>
 
 #include "tunnelproxysocket.h"
@@ -99,6 +101,10 @@ public:
     QString remoteProxyServerName() const;
     QString remoteProxyServerVersion() const;
     QString remoteProxyApiVersion() const;
+    bool e2eeEnabled() const;
+    void setE2eeEnabled(bool e2eeEnabled);
+    void setE2eeCertificate(const QSslCertificate &certificate, const QSslKey &privateKey);
+    QSslCertificate e2eeCertificate() const;
 
 public slots:
     bool startServer(const QUrl &serverUrl);
@@ -127,7 +133,7 @@ private slots:
     void onServerRegistrationFinished();
 
     // Client notifications
-    void onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress);
+    void onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress, bool e2eAvailable);
     void onTunnelProxyClientDisconnected(quint16 socketAddress);
 
 private:
@@ -135,6 +141,10 @@ private:
     QUuid m_serverUuid;
     QString m_serverName;
     ConnectionType m_connectionType = ConnectionTypeTcpSocket;
+    bool m_e2eeEnabled = true;
+    QSslCertificate m_e2eeCertificate;
+    QSslKey m_e2eePrivateKey;
+    bool m_remoteE2eAvailable = false;
 
     // Remote proxy server information
     QString m_remoteProxyServer;

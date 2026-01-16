@@ -81,7 +81,7 @@ void TunnelProxyServer::registerTransportInterface(TransportInterface *interface
     m_transportInterfaces.append(interface);
 }
 
-TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName)
+TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUuid &clientId, const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable)
 {
     qCDebug(dcTunnelProxyServer()) << "Register new server" << m_proxyClients.value(clientId) << serverName << serverUuid.toString();
 
@@ -124,14 +124,14 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerServer(const QUui
     // Enable SLIP from now on
     tunnelProxyClient->enableSlipAfterResponse();
 
-    TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, tunnelProxyClient);
+    TunnelProxyServerConnection *serverConnection = new TunnelProxyServerConnection(tunnelProxyClient, serverUuid, serverName, e2eeAvailable, tunnelProxyClient);
     m_tunnelProxyServerConnections.insert(serverUuid, serverConnection);
     qCDebug(dcTunnelProxyServer()) << "New server connection registered successfully" << serverConnection;
 
     return TunnelProxyServer::TunnelProxyErrorNoError;
 }
 
-TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid)
+TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUuid &clientId, const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, bool clientE2eAvailable, bool *e2eeAvailable)
 {
     TunnelProxyClient *tunnelProxyClient = m_proxyClients.value(clientId);
     if (!tunnelProxyClient) {
@@ -167,6 +167,10 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
         tunnelProxyClient->killConnectionAfterResponse("Unknown server");
         return TunnelProxyServer::TunnelProxyErrorServerNotFound;
     }
+    bool negotiatedE2eAvailable = serverConnection->e2eeAvailable() && clientE2eAvailable;
+    if (e2eeAvailable) {
+        *e2eeAvailable = negotiatedE2eAvailable;
+    }
 
 
     // Not registered yet, we have a connected server for the requested server uuid
@@ -180,6 +184,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
 
     TunnelProxyClientConnection *clientConnection = new TunnelProxyClientConnection(tunnelProxyClient, clientUuid, clientName, this);
     clientConnection->setServerConnection(serverConnection);
+    clientConnection->setE2eAvailable(negotiatedE2eAvailable);
     m_tunnelProxyClientConnections.insert(clientUuid, clientConnection);
 
     serverConnection->registerClientConnection(clientConnection);
@@ -191,6 +196,7 @@ TunnelProxyServer::TunnelProxyError TunnelProxyServer::registerClient(const QUui
     params.insert("clientUuid", tunnelProxyClient->uuid().toString());
     params.insert("clientPeerAddress", tunnelProxyClient->peerAddress().toString());
     params.insert("socketAddress", clientConnection->socketAddress());
+    params.insert("e2eAvailable", negotiatedE2eAvailable);
     m_jsonRpcServer->sendNotification("TunnelProxy", "ClientConnected", params, serverConnection->transportClient());
 
     // Note: check if a confirmation from the server would be needed, for rejection or limit or something. For now they are directly connected.

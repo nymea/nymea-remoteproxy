@@ -52,11 +52,12 @@ JsonReply *JsonRpcClient::callHello()
     return reply;
 }
 
-JsonReply *JsonRpcClient::callRegisterServer(const QUuid &serverUuid, const QString &serverName)
+JsonReply *JsonRpcClient::callRegisterServer(const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable)
 {
     QVariantMap params;
     params.insert("serverName", serverName);
     params.insert("serverUuid", serverUuid.toString());
+    params.insert("e2eeAvailable", e2eeAvailable);
 
     JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "RegisterServer", params, this);
     qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
@@ -65,12 +66,13 @@ JsonReply *JsonRpcClient::callRegisterServer(const QUuid &serverUuid, const QStr
     return reply;
 }
 
-JsonReply *JsonRpcClient::callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid)
+JsonReply *JsonRpcClient::callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, bool e2eAvailable)
 {
     QVariantMap params;
     params.insert("clientUuid", clientUuid);
     params.insert("clientName", clientName);
     params.insert("serverUuid", serverUuid.toString());
+    params.insert("e2eAvailable", e2eAvailable);
 
     JsonReply *reply = new JsonReply(m_commandId, "TunnelProxy", "RegisterClient", params, this);
     qCDebug(dcRemoteProxyClientJsonRpc()) << "Calling" << QString("%1.%2").arg(reply->nameSpace()).arg(reply->method());
@@ -159,13 +161,16 @@ void JsonRpcClient::processDataPacket(const QByteArray &data)
         if (nameSpace == "RemoteProxy" && notificationName == "TunnelEstablished") {
             QString clientName = notificationParams.value("name").toString();
             QString clientUuid = notificationParams.value("uuid").toString();
+            bool e2eeAvailable = notificationParams.value("e2eeAvailable", true).toBool();
             emit tunnelEstablished(clientName, clientUuid);
+            emit tunnelEstablishedWithE2e(clientName, clientUuid, e2eeAvailable);
         } else if (nameSpace == "TunnelProxy" && notificationName == "ClientConnected") {
             QString clientName = notificationParams.value("clientName").toString();
             QUuid clientUuid = notificationParams.value("clientUuid").toUuid();
             QString clientPeerAddress = notificationParams.value("clientPeerAddress").toString();
             quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
-            emit tunnelProxyClientConnected(clientName, clientUuid, clientPeerAddress, socketAddress);
+            bool e2eAvailable = notificationParams.value("e2eAvailable", true).toBool();
+            emit tunnelProxyClientConnected(clientName, clientUuid, clientPeerAddress, socketAddress, e2eAvailable);
         } else if (nameSpace == "TunnelProxy" && notificationName == "ClientDisconnected") {
             quint16 socketAddress = static_cast<quint16>(notificationParams.value("socketAddress").toUInt());
             emit tunnelProxyClientDisonnected(socketAddress);

@@ -66,6 +66,11 @@ void TunnelProxyClient::setType(Type type)
 
 QList<QByteArray> TunnelProxyClient::processData(const QByteArray &data)
 {
+    // Reset inactivity timer while exchanging JSON before registration.
+    if (m_inactiveTimer && m_type == TypeNone) {
+        m_inactiveTimer->start();
+    }
+
     QList<QByteArray> packets;
 
     // Parse packets depending on the encoded
@@ -130,6 +135,14 @@ void TunnelProxyClient::activateClient()
 
     m_inactiveTimer->setInterval(60000);
     m_inactiveTimer->setSingleShot(false);
+    m_inactiveTimer->start();
+}
+
+void TunnelProxyClient::restartInactiveTimer()
+{
+    if (!m_inactiveTimer)
+        return;
+
     m_inactiveTimer->start();
 }
 

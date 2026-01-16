@@ -51,6 +51,8 @@ public:
     QUuid clientUuid() const;
     QString clientName() const;
     QUuid serverUuid() const;
+    bool e2eAvailable() const;
+    void setE2eAvailable(bool e2eAvailable);
 
     quint16 socketAddress() const;
     void setSocketAddress(quint16 socketAddress);
@@ -63,6 +65,7 @@ private:
     QString m_clientName;
     QUuid m_serverUuid;
     quint16 m_socketAddress = 0xFFFF;
+    bool m_e2eAvailable = true;
 };
 
 QDebug operator<<(QDebug debug, TunnelProxyClientConnection *clientConnection);

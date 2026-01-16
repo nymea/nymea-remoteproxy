@@ -59,6 +59,27 @@ TunnelProxySocketServer::~TunnelProxySocketServer()
 
 }
 
+bool TunnelProxySocketServer::e2eeEnabled() const
+{
+    return m_e2eeEnabled;
+}
+
+void TunnelProxySocketServer::setE2eeEnabled(bool e2eeEnabled)
+{
+    m_e2eeEnabled = e2eeEnabled;
+}
+
+void TunnelProxySocketServer::setE2eeCertificate(const QSslCertificate &certificate, const QSslKey &privateKey)
+{
+    m_e2eeCertificate = certificate;
+    m_e2eePrivateKey = privateKey;
+}
+
+QSslCertificate TunnelProxySocketServer::e2eeCertificate() const
+{
+    return m_e2eeCertificate;
+}
+
 bool TunnelProxySocketServer::running() const
 {
     return m_running;
@@ -220,7 +241,7 @@ void TunnelProxySocketServer::onConnectionDataAvailable(const QByteArray &data)
                     if (!tunnlProxySocket) {
                         qCWarning(dcTunnelProxySocketServer()) << "Received data from unknown tunnel proxy client with address" << frame.socketAddress << "...ignoring the data";
                     } else {
-                        emit tunnlProxySocket->dataReceived(frame.data);
+                        tunnlProxySocket->processIncomingData(frame.data);
                     }
                 }
             }
@@ -287,7 +308,8 @@ void TunnelProxySocketServer::onHelloFinished()
 
     setState(StateRegister);
 
-    JsonReply *registerReply = m_jsonClient->callRegisterServer(m_serverUuid, m_serverName);
+    bool announceE2ee = m_e2eeEnabled;
+    JsonReply *registerReply = m_jsonClient->callRegisterServer(m_serverUuid, m_serverName, announceE2ee);
     connect(registerReply, &JsonReply::finished, this, &TunnelProxySocketServer::onServerRegistrationFinished);
 }
 
@@ -314,14 +336,25 @@ void TunnelProxySocketServer::onServerRegistrationFinished()
         return;
     }
 
+    m_remoteE2eAvailable = responseParams.value("e2eeAvailable", m_e2eeEnabled).toBool();
+    if (m_e2eeEnabled && !m_remoteE2eAvailable) {
+        qCWarning(dcTunnelProxySocketServer()) << "Remote proxy does not support E2EE for this tunnel registration. Disabling E2EE for sockets.";
+    }
+
     qCDebug(dcTunnelProxySocketServer()) << "Registered successfully as tunnel server on the remote proxy server.";
     setState(StateRunning);
     m_serverError = ErrorNoError;
 }
 
-void TunnelProxySocketServer::onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress)
+void TunnelProxySocketServer::onTunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress, bool e2eAvailable)
 {
-    TunnelProxySocket *tunnelProxySocket = new TunnelProxySocket(m_connection, this, clientName, clientUuid, QHostAddress(clientPeerAddress), socketAddress, this);
+    bool useE2ee = m_e2eeEnabled && m_remoteE2eAvailable && e2eAvailable;
+    TunnelProxySocket *tunnelProxySocket = new TunnelProxySocket(m_connection, this, clientName, clientUuid, QHostAddress(clientPeerAddress), socketAddress, useE2ee, this);
+    if (useE2ee && !m_e2eeCertificate.isNull() && !m_e2eePrivateKey.isNull()) {
+        tunnelProxySocket->setE2eeIdentity(m_e2eeCertificate, m_e2eePrivateKey);
+    } else if (useE2ee && m_e2eeEnabled && (m_e2eeCertificate.isNull() || m_e2eePrivateKey.isNull())) {
+        qCWarning(dcTunnelProxySocketServer()) << "E2EE enabled without certificate/private key configured. Using unauthenticated E2EE for socket" << socketAddress;
+    }
     qCDebug(dcTunnelProxySocketServer()) << "--> New client connected" << tunnelProxySocket;
     m_tunnelProxySockets.insert(socketAddress, tunnelProxySocket);
     emit clientConnected(tunnelProxySocket);
@@ -465,6 +498,7 @@ void TunnelProxySocketServer::cleanUp()
     m_remoteProxyServerName.clear();
     m_remoteProxyServerVersion.clear();
     m_remoteProxyApiVersion.clear();
+    m_remoteE2eAvailable = false;
 
     setState(StateDisconnected);
 }

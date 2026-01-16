@@ -31,11 +31,12 @@
 
 namespace remoteproxy {
 
-TunnelProxyServerConnection::TunnelProxyServerConnection(TransportClient *transportClient, const QUuid &serverUuid, const QString &serverName, QObject *parent) :
+TunnelProxyServerConnection::TunnelProxyServerConnection(TransportClient *transportClient, const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable, QObject *parent) :
     QObject(parent),
     m_transportClient(transportClient),
     m_serverUuid(serverUuid),
-    m_serverName(serverName)
+    m_serverName(serverName),
+    m_e2eeAvailable(e2eeAvailable)
 {
 
 }
@@ -53,6 +54,11 @@ QUuid TunnelProxyServerConnection::serverUuid() const
 QString TunnelProxyServerConnection::serverName() const
 {
     return m_serverName;
+}
+
+bool TunnelProxyServerConnection::e2eeAvailable() const
+{
+    return m_e2eeAvailable;
 }
 
 QList<TunnelProxyClientConnection *> TunnelProxyServerConnection::clientConnections() const
@@ -104,6 +110,7 @@ QDebug operator<<(QDebug debug, TunnelProxyServerConnection *serverConnection)
     debug.nospace() << "TunnelProxyServerConnection(";
     debug.nospace() << serverConnection->serverName() << ", ";
     debug.nospace() << serverConnection->serverUuid().toString() << ", ";
+    debug.nospace() << "e2eeAvailable: " << serverConnection->e2eeAvailable() << ", ";
     debug.nospace() << serverConnection->transportClient() << ")";
     return debug;
 }

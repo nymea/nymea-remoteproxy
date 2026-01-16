@@ -51,8 +51,8 @@ public:
     JsonReply *callHello();
 
     // Tunnel proxy
-    JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName);
-    JsonReply *callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid);
+    JsonReply *callRegisterServer(const QUuid &serverUuid, const QString &serverName, bool e2eeAvailable);
+    JsonReply *callRegisterClient(const QUuid &clientUuid, const QString &clientName, const QUuid &serverUuid, bool e2eAvailable);
     JsonReply *callDisconnectClient(quint16 socketAddress);
     JsonReply *callPing(uint timestamp);
 
@@ -69,7 +69,8 @@ private:
 
 signals:
     void tunnelEstablished(const QString clientName, const QString &clientUuid);
-    void tunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress);
+    void tunnelEstablishedWithE2e(const QString clientName, const QString &clientUuid, bool e2eeAvailable);
+    void tunnelProxyClientConnected(const QString &clientName, const QUuid &clientUuid, const QString &clientPeerAddress, quint16 socketAddress, bool e2eAvailable);
     void tunnelProxyClientDisonnected(quint16 socketAddress);
 
 public slots:
