@@ -3,7 +3,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *
 * Copyright (C) 2013 - 2024, nymea GmbH
-* Copyright (C) 2024 - 2025, chargebyte austria GmbH
+* Copyright (C) 2024 - 2026, chargebyte austria GmbH
 *
 * This file is part of nymea-remoteproxy.
 *
@@ -59,6 +59,11 @@ static const char *const normal = "\033[0m";
 static const char *const warning = "\e[33m";
 static const char *const error = "\e[31m";
 
+static QString preferredConfigPath(const QString &runtimePath, const QString &defaultPath)
+{
+    return QFileInfo::exists(runtimePath) ? runtimePath : defaultPath;
+}
+
 static void consoleLogHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
     QString messageString;
@@ -98,12 +103,21 @@ int main(int argc, char *argv[])
 {
     qInstallMessageHandler(consoleLogHandler);
 
+    const QString runtimeConfigFile = QStringLiteral("/var/lib/nymea/nymea-remoteproxy.conf");
+    const QString defaultConfigFile = QStringLiteral("/usr/share/nymea/defaults/nymea-remoteproxy.conf");
+    const QString runtimeLoggingConfigFile = QStringLiteral("/var/lib/nymea/nymea-remoteproxy-logging.conf");
+    const QString defaultLoggingConfigFile = QStringLiteral("/usr/share/nymea/defaults/nymea-remoteproxy-logging.conf");
+
+    if (!qEnvironmentVariableIsSet("QT_LOGGING_CONF")) {
+        qputenv("QT_LOGGING_CONF", preferredConfigPath(runtimeLoggingConfigFile, defaultLoggingConfigFile).toUtf8());
+    }
+
     RemoteProxyServerApplication application(argc, argv);
     application.setApplicationName(SERVER_NAME_STRING);
     application.setOrganizationName("nymea");
     application.setApplicationVersion(SERVER_VERSION_STRING);
 
-    QString configFile = "/etc/nymea/nymea-remoteproxy.conf";
+    QString configFile;
 
     // command line parser
     QCommandLineParser parser;
@@ -122,8 +136,10 @@ int main(int argc, char *argv[])
                                      "logfile", "/var/log/nymea-remoteproxy.log");
     parser.addOption(logfileOption);
 
-    QCommandLineOption configOption(QStringList() << "c" <<"configuration", "The path to the proxy server configuration file. The default is " + configFile, "configuration");
-    configOption.setDefaultValue(configFile);
+    QCommandLineOption configOption(QStringList() << "c" <<"configuration",
+                                    "The path to the proxy server configuration file. The default is "
+                                    + runtimeConfigFile + " if it exists, otherwise " + defaultConfigFile,
+                                    "configuration");
     parser.addOption(configOption);
 
     QCommandLineOption verboseOption(QStringList() << "verbose", "Print more verbose.");
@@ -133,12 +149,15 @@ int main(int argc, char *argv[])
 
     // Create a default configuration
     ProxyConfiguration *configuration = new ProxyConfiguration(nullptr);
-    if (parser.isSet(configOption))
+    if (parser.isSet(configOption)) {
         configFile = parser.value(configOption);
+    } else {
+        configFile = preferredConfigPath(runtimeConfigFile, defaultConfigFile);
+    }
 
     qCDebug(dcApplication()) << "Loading configuration file from" << configFile;
-    if (!configuration->loadConfiguration(parser.value(configOption))) {
-        qCCritical(dcApplication()) << "Invalid configuration file passed" << parser.value(configOption);
+    if (!configuration->loadConfiguration(configFile)) {
+        qCCritical(dcApplication()) << "Invalid configuration file passed" << configFile;
         exit(EXIT_FAILURE);
     }
 
