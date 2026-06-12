@@ -47,8 +47,13 @@ public:
 
     QString name() const override;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    Q_INVOKABLE remoteproxy::JsonReply *Hello(const QVariantMap &params, remoteproxy::TransportClient *transportClient = nullptr) const;
+    Q_INVOKABLE remoteproxy::JsonReply *Introspect(const QVariantMap &params, remoteproxy::TransportClient *transportClient = nullptr) const;
+#else
     Q_INVOKABLE JsonReply *Hello(const QVariantMap &params, TransportClient *transportClient = nullptr) const;
     Q_INVOKABLE JsonReply *Introspect(const QVariantMap &params, TransportClient *transportClient = nullptr) const;
+#endif
 
     void registerHandler(JsonHandler *handler);
     void unregisterHandler(JsonHandler *handler);

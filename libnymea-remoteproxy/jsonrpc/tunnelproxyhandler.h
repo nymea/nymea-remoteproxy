@@ -47,12 +47,12 @@ public:
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     // Server
-    Q_INVOKABLE remoteproxy::JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);
-    Q_INVOKABLE remoteproxy::JsonReply *DisconnectClient(const QVariantMap &params, TransportClient *transportClient);
-    Q_INVOKABLE remoteproxy::JsonReply *Ping(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *RegisterServer(const QVariantMap &params, remoteproxy::TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *DisconnectClient(const QVariantMap &params, remoteproxy::TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *Ping(const QVariantMap &params, remoteproxy::TransportClient *transportClient);
 
     // Client
-    Q_INVOKABLE remoteproxy::JsonReply *RegisterClient(const QVariantMap &params, TransportClient *transportClient);
+    Q_INVOKABLE remoteproxy::JsonReply *RegisterClient(const QVariantMap &params, remoteproxy::TransportClient *transportClient);
 #else
     // Server
     Q_INVOKABLE JsonReply *RegisterServer(const QVariantMap &params, TransportClient *transportClient);

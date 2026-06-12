@@ -39,9 +39,13 @@ WebSocketConnection::WebSocketConnection(QObject *parent) :
     connect(m_webSocket, &QWebSocket::disconnected, this, &WebSocketConnection::onDisconnected);
     connect(m_webSocket, &QWebSocket::textMessageReceived, this, &WebSocketConnection::onTextMessageReceived);
 
-    connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
     connect(m_webSocket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)));
     connect(m_webSocket, SIGNAL(sslErrors(QList<QSslError>)), this, SIGNAL(sslErrors(QList<QSslError>)));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(m_webSocket, &QWebSocket::errorOccurred, this, &WebSocketConnection::onError);
+#else
+    connect(m_webSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onError(QAbstractSocket::SocketError)));
+#endif
 }
 
 WebSocketConnection::~WebSocketConnection()

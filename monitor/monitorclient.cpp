@@ -37,7 +37,11 @@ MonitorClient::MonitorClient(const QString &serverName, bool jsonMode, QObject *
     connect(m_socket, &QLocalSocket::connected, this, &MonitorClient::onConnected);
     connect(m_socket, &QLocalSocket::disconnected, this, &MonitorClient::onDisconnected);
     connect(m_socket, &QLocalSocket::readyRead, this, &MonitorClient::onReadyRead);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    connect(m_socket, &QLocalSocket::errorOccurred, this, &MonitorClient::onErrorOccurred);
+#else
     connect(m_socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(onErrorOccurred(QLocalSocket::LocalSocketError)));
+#endif
 }
 
 bool MonitorClient::printAll() const
