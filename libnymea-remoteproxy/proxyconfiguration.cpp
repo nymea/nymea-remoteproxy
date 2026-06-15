@@ -94,10 +94,14 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
         qCWarning(dcApplication()) << "Could not open certificate file" << sslCertificateFileName() << certFile.errorString();
         return false;
     }
-    QSslCertificate certificate(&certFile, QSsl::Pem);
+    QList<QSslCertificate> localCertificateChain = QSslCertificate::fromDevice(&certFile, QSsl::Pem);
+    if (localCertificateChain.isEmpty()) {
+        qCWarning(dcApplication()) << "Could not load certificate from file" << sslCertificateFileName();
+        return false;
+    }
     qCDebug(dcApplication()) << "Loaded successfully certificate" << sslCertificateFileName();
     certFile.close();
-    sslConfiguration.setLocalCertificate(certificate);
+    sslConfiguration.setLocalCertificate(localCertificateChain.first());
 
     // SSL certificate key
     QFile certKeyFile(sslCertificateKeyFileName());
@@ -117,12 +121,17 @@ bool ProxyConfiguration::loadConfiguration(const QString &fileName)
             qCWarning(dcApplication()) << "Could not open certificate chain file:" << sslCertificateChainFileName() << certChainFile.errorString();
             return false;
         }
-        QSslCertificate certificate(&certChainFile, QSsl::Pem);
-        sslConfiguration.setCaCertificates( QList<QSslCertificate>() << certificate );
+        QList<QSslCertificate> chainCertificates = QSslCertificate::fromDevice(&certChainFile, QSsl::Pem);
+        if (chainCertificates.isEmpty()) {
+            qCWarning(dcApplication()) << "Could not load certificate chain from file:" << sslCertificateChainFileName();
+            return false;
+        }
+        localCertificateChain.append(chainCertificates);
         certChainFile.close();
-        qCDebug(dcApplication()) << "Loaded successfully certificate chain" << sslCertificateKeyFileName();
+        qCDebug(dcApplication()) << "Loaded successfully certificate chain" << sslCertificateChainFileName();
     }
 
+    sslConfiguration.setLocalCertificateChain(localCertificateChain);
     m_sslConfiguration = sslConfiguration;
 
     return true;

@@ -83,6 +83,92 @@ host=127.0.0.1
 port=2213
 ```
 
+## Let's Encrypt certificates
+
+For public deployments, the proxy can use certificates issued by Let's Encrypt
+through Certbot. The proxy expects PEM encoded files and supports both common
+Certbot layouts.
+
+Create or renew the certificate:
+
+```
+sudo certbot certonly --standalone --key-type rsa -d proxy.example.com \
+        --post-hook /usr/local/bin/renew-certificate-remoteproxy-hook
+```
+
+Certbot stores the active certificate material below
+`/etc/letsencrypt/live/proxy.example.com/`. Replace `proxy.example.com` with the
+actual tunnel proxy host name in the examples below.
+
+### Renewal hook
+
+The proxy process must be restarted after Certbot renews the certificate so it
+loads the new files. Create a post-renewal hook:
+
+```
+sudo tee /usr/local/bin/renew-certificate-remoteproxy-hook >/dev/null <<'EOF'
+#!/bin/bash
+
+echo "Restart nymea-remoteproxy due to certificate renewal ..."
+systemctl restart nymea-remoteproxy.service
+EOF
+sudo chmod +x /usr/local/bin/renew-certificate-remoteproxy-hook
+```
+
+When the certificate was already created without the hook, add it to the
+existing renewal configuration by renewing once with `--force-renewal`:
+
+```
+sudo certbot certonly --force-renewal --standalone --key-type rsa \
+        -d proxy.example.com \
+        --post-hook /usr/local/bin/renew-certificate-remoteproxy-hook
+```
+
+Test the renewal path without changing the live certificate:
+
+```
+sudo certbot renew --dry-run
+```
+
+### Using fullchain.pem
+
+This is the preferred configuration. `fullchain.pem` contains the leaf
+certificate followed by the issuer chain, so no separate chain file is needed.
+
+```
+[SSL]
+enabled=true
+certificate=/etc/letsencrypt/live/proxy.example.com/fullchain.pem
+certificateKey=/etc/letsencrypt/live/proxy.example.com/privkey.pem
+certificateChain=
+```
+
+### Using cert.pem and chain.pem
+
+The split Certbot layout can be used as well. `cert.pem` contains only the leaf
+certificate and `chain.pem` contains the issuer chain.
+
+```
+[SSL]
+enabled=true
+certificate=/etc/letsencrypt/live/proxy.example.com/cert.pem
+certificateKey=/etc/letsencrypt/live/proxy.example.com/privkey.pem
+certificateChain=/etc/letsencrypt/live/proxy.example.com/chain.pem
+```
+
+Restart the service after changing the configuration:
+
+```
+sudo systemctl restart nymea-remoteproxy.service
+```
+
+Verify the certificate chain served by the TCP tunnel endpoint:
+
+```
+openssl s_client -connect proxy.example.com:2213 \
+        -servername proxy.example.com -showcerts
+```
+
 ## Test coverage
 
 To generate a line coverage report:
