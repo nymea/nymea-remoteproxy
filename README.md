@@ -53,7 +53,9 @@ sudo make install
 
 ## Configuration
 
-The package ships `/etc/nymea/nymea-remoteproxy.conf` which can be used verbatim or as a template:
+The package ships default configs in `/usr/share/nymea/defaults/`. At runtime the server prefers `/var/lib/nymea/nymea-remoteproxy.conf` when present and otherwise falls back to `/usr/share/nymea/defaults/nymea-remoteproxy.conf`.
+
+The default config file looks like this:
 
 ```
 [ProxyServer]
@@ -106,7 +108,7 @@ sudo apt update
 sudo apt install nymea-remoteproxy nymea-remoteproxy-tunnelclient
 ```
 
-After installation the daemon starts automatically using `/etc/nymea/nymea-remoteproxy.conf`, which you can adapt for local testing. Create a throwaway certificate:
+After installation the daemon prefers `/var/lib/nymea/nymea-remoteproxy.conf` when present and otherwise uses `/usr/share/nymea/defaults/nymea-remoteproxy.conf`. Create a throwaway certificate:
 
 ```
 cd /tmp
@@ -128,7 +130,7 @@ Restart manually for verbose output:
 
 ```
 sudo systemctl stop nymea-remoteproxy.service
-sudo nymea-remoteproxy -c /etc/nymea/nymea-remoteproxy.conf --verbose
+sudo nymea-remoteproxy -c /usr/share/nymea/defaults/nymea-remoteproxy.conf --verbose
 ```
 
 ## License
