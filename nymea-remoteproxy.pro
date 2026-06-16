@@ -12,7 +12,7 @@ SERVER_VERSION=$$system('dpkg-parsechangelog | sed -n -e "s/^Version: //p"')
 QMAKE_SUBSTITUTES += version.h.in
 
 TEMPLATE=subdirs
-SUBDIRS += server tunnelclient monitor libnymea-remoteproxy libnymea-remoteproxyclient
+SUBDIRS += server tunnelclient testutils monitor libnymea-remoteproxy libnymea-remoteproxyclient
 
 !disabletests {
     SUBDIRS += tests
@@ -20,6 +20,7 @@ SUBDIRS += server tunnelclient monitor libnymea-remoteproxy libnymea-remoteproxy
 
 server.depends = libnymea-remoteproxy
 tunnelclient.depends = libnymea-remoteproxyclient
+testutils.depends = libnymea-remoteproxyclient
 tests.depends = libnymea-remoteproxy libnymea-remoteproxyclient
 
 test.commands = LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$$top_builddir/libnymea-remoteproxy:$$top_builddir/libnymea-remoteproxyclient \
@@ -40,4 +41,3 @@ coverage {
 ccache {
     message("Building with ccache support")
 }
-
