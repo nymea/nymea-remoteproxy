@@ -112,8 +112,12 @@ void WebSocketServer::onClientConnected()
 
     connect(client, SIGNAL(binaryMessageReceived(QByteArray)), this, SLOT(onBinaryMessageReceived(QByteArray)));
     connect(client, SIGNAL(textMessageReceived(QString)), this, SLOT(onTextMessageReceived(QString)));
-    connect(client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
     connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(client, &QWebSocket::errorOccurred, this, &WebSocketServer::onClientError);
+#else
+    connect(client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onClientError(QAbstractSocket::SocketError)));
+#endif
 
     emit clientConnected(clientId, client->peerAddress());
 }
