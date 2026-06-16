@@ -1,3 +1,13 @@
+nymea-remoteproxy (1.15.1) resolute; urgency=medium
+
+  [ Simon Stürz ]
+  * Migtrate configuration files from /etc/nymea to /var/lib/nymea
+  * Fix leftover Qt6 porting issues
+  * Add multi-certificate file loading for fullchain SSL support
+  * Add nymea-tunnelproxy-testutils for online server tests
+
+ -- jenkins <developer@nymea.io>  Tue, 16 Jun 2026 08:58:28 +0200
+
 nymea-remoteproxy (1.15.0) noble; urgency=medium
 
 
