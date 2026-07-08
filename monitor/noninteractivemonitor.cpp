@@ -23,10 +23,21 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "noninteractivemonitor.h"
+#include "monitordata.h"
 #include "utils.h"
 
 #include <QDebug>
+#include <QDateTime>
 #include <QTextStream>
+
+namespace {
+
+QString formatTimestamp(uint timestamp)
+{
+    return QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(timestamp) * 1000).toString("dd.MM.yyyy hh:mm:ss");
+}
+
+} // namespace
 
 NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, bool jsonMode, bool printAll, QObject *parent)
     : QObject{parent},
@@ -43,63 +54,44 @@ NonInteractiveMonitor::NonInteractiveMonitor(const QString &serverName, bool jso
 void NonInteractiveMonitor::onConnected()
 {
     connect(m_monitorClient, &MonitorClient::dataReady, this, [](const QVariantMap &dataMap){
-
-        QVariantMap tunnelProxyMap = dataMap.value("tunnelProxyStatistic").toMap();
+        const MonitorSnapshot snapshot = MonitorData::fromVariant(dataMap);
+        const TunnelProxyStatistics &statistics = snapshot.tunnelProxyStatistic;
 
         qStdOut() << "---------------------------------------------------------------------\n";
-        qStdOut() << "Server name:" << dataMap.value("serverName", "-").toString() << "\n";
-        qStdOut() << "Server version:" << dataMap.value("serverVersion", "-").toString() << "\n";
-        qStdOut() << "API version:" << dataMap.value("apiVersion", "-").toString() << "\n";
-        qStdOut() << "Total client count:" << tunnelProxyMap.value("totalClientCount", 0).toInt() << "\n";
-        qStdOut() << "Server connections:" << tunnelProxyMap.value("serverConnectionsCount", 0).toInt() << "\n";
-        qStdOut() << "Client connections:" << tunnelProxyMap.value("clientConnectionsCount", 0).toInt() << "\n";
-        qStdOut() << "Data troughput:" << Utils::humanReadableTraffic(tunnelProxyMap.value("troughput", 0).toInt()) + " / s" << "\n";
+        qStdOut() << "Server name:" << snapshot.serverName << "\n";
+        qStdOut() << "Server version:" << snapshot.serverVersion << "\n";
+        qStdOut() << "API version:" << snapshot.apiVersion << "\n";
+        qStdOut() << "Total client count:" << statistics.totalClientCount << "\n";
+        qStdOut() << "Server connections:" << statistics.serverConnectionsCount << "\n";
+        qStdOut() << "Client connections:" << statistics.clientConnectionsCount << "\n";
+        qStdOut() << "Data troughput:" << Utils::humanReadableTraffic(statistics.throughputBytesPerSecond) + " / s" << "\n";
         qStdOut() << "---------------------------------------------------------------------" << "\n";
-        QVariantMap transportsMap = tunnelProxyMap.value("transports").toMap();
-        foreach(const QString &transportInterface, transportsMap.keys()) {
-            qStdOut() << "Connections on " << transportInterface << ": " << transportsMap.value(transportInterface).toInt() << "\n";
-        }
+        for (auto it = statistics.transportConnectionCounts.constBegin(); it != statistics.transportConnectionCounts.constEnd(); ++it)
+            qStdOut() << "Connections on " << it.key() << ": " << it.value() << "\n";
         qStdOut() << "---------------------------------------------------------------------" << "\n";
 
-        foreach (const QVariant &serverVariant, tunnelProxyMap.value("tunnelConnections").toList()) {
-            QVariantMap serverMap = serverVariant.toMap();
-            QVariantList clientList = serverMap.value("clientConnections").toList();
-
-            // Server line
-            QString serverConnectionTime = QDateTime::fromMSecsSinceEpoch(serverMap.value("timestamp").toLongLong() * 1000).toString("dd.MM.yyyy hh:mm:ss");
-            QString serverLinePrint;
-            if (clientList.isEmpty()) {
-                serverLinePrint.prepend("├──");
-            } else {
-                serverLinePrint.prepend("├┬─");
-            }
-
+        for (const TunnelConnectionInfo &connection : statistics.tunnelConnections) {
+            QString serverLinePrint = connection.clients.isEmpty() ? QStringLiteral("├──") : QStringLiteral("├┬─");
             serverLinePrint += QString("%1 | %2 | %3 RX: %4 TX: %5 | %6")
-                    .arg(serverConnectionTime)
-                    .arg(serverMap.value("serverUuid").toString())
-                    .arg(serverMap.value("address").toString(), - 15)
-                    .arg(Utils::humanReadableTraffic(serverMap.value("rxDataCount").toInt()), - 9)
-                    .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
-                    .arg(serverMap.value("name").toString());
+                    .arg(formatTimestamp(connection.timestamp))
+                    .arg(connection.serverUuid.toString())
+                    .arg(connection.address.toString(), -15)
+                    .arg(Utils::humanReadableTraffic(connection.rxDataCount), -9)
+                    .arg(Utils::humanReadableTraffic(connection.txDataCount), -9)
+                    .arg(connection.name);
 
             qStdOut() << serverLinePrint << "\n";
 
-            for (int cc = 0; cc < clientList.count(); cc++) {
-                QVariantMap clientMap = clientList.at(cc).toMap();
-                QString clientLinePrint;
-                if (cc >= clientList.count() - 1) {
-                    clientLinePrint.append("│└─");
-                } else {
-                    clientLinePrint.prepend("│├─");
-                }
-
+            for (int cc = 0; cc < connection.clients.count(); cc++) {
+                const TunnelClientInfo &client = connection.clients.at(cc);
+                QString clientLinePrint = (cc >= connection.clients.count() - 1) ? QStringLiteral("│└─") : QStringLiteral("│├─");
                 clientLinePrint += QString("%1 | %2 | %3 RX: %4 TX: %5 | %6")
-                        .arg(QDateTime::fromMSecsSinceEpoch(clientMap.value("timestamp").toLongLong() * 1000).toString("dd.MM.yyyy hh:mm:ss"))
-                        .arg(clientMap.value("clientUuid").toString())
-                        .arg(clientMap.value("address").toString(), - 15)
-                        .arg(Utils::humanReadableTraffic(serverMap.value("rxDataCount").toInt()), - 9)
-                        .arg(Utils::humanReadableTraffic(serverMap.value("txDataCount").toInt()), - 9)
-                        .arg(clientMap.value("name").toString(), -30);
+                        .arg(formatTimestamp(client.timestamp))
+                        .arg(client.clientUuid.toString())
+                        .arg(client.address.toString(), -15)
+                        .arg(Utils::humanReadableTraffic(client.rxDataCount), -9)
+                        .arg(Utils::humanReadableTraffic(client.txDataCount), -9)
+                        .arg(client.name, -30);
 
                 qStdOut() << clientLinePrint << "\n";
             }

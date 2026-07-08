@@ -43,11 +43,12 @@ Monitor::Monitor(const QString &serverName, bool jsonMode, QObject *parent) :
 void Monitor::onConnected()
 {
     if (!m_jsonMode) {
-        m_terminal = new TerminalWindow(this);
-        connect(m_monitorClient, &MonitorClient::dataReady, m_terminal, &TerminalWindow::refreshWindow);
+        m_view = new MonitorView(this);
+        connect(m_monitorClient, &MonitorClient::dataReady, m_view, &MonitorView::refreshView);
+        connect(m_view, &MonitorView::quitRequested, this, &Monitor::onViewQuit);
     }
 
-    refresh();
+    m_monitorClient->refresh();
     m_timer.start();
 }
 
@@ -55,11 +56,19 @@ void Monitor::onDisconnected()
 {
     m_timer.stop();
 
-    if (!m_terminal)
+    if (!m_view)
         return;
 
-    delete m_terminal;
-    m_terminal = nullptr;
+    delete m_view;
+    m_view = nullptr;
     qDebug() << "Monitor disconnected.";
+    exit(0);
+}
+
+void Monitor::onViewQuit()
+{
+    delete m_view;
+    m_view = nullptr;
+    qDebug() << "Closing monitor. Have a nice day!";
     exit(0);
 }

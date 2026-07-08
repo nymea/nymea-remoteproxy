@@ -11,7 +11,9 @@ Build-depends: debhelper,
                qtbase5-dev,
                qtbase5-dev-tools,
                libqt5websockets5-dev,
-               libncurses5-dev
+               cmake,
+               git,
+               ca-certificates
 
 
 Package: nymea-remoteproxy

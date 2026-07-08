@@ -12,7 +12,26 @@ PREPROCESS_FILES := $(wildcard debian/*.in)
 $(PREPROCESS_FILES:.in=): %: %.in
 	sed 's,/@DEB_HOST_MULTIARCH@,$(DEB_HOST_MULTIARCH:%=/%),g' $< > $@
 
-override_dh_install: $(PREPROCESS_FILES:.in=)
+# nymea-remoteproxy-monitor is a standalone CMake project (needs FTXUI, which
+# qmake can't fetch/build) - it's built as a second buildsystem alongside the
+# qmake tree, staged into the same debian/tmp so the existing .install files
+# still pick up usr/bin/nymea-remoteproxy-monitor unchanged. This distro carries
+# a system libftxui-dev, so use that instead of fetching/building our own.
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=qmake6
+	dh_auto_configure --buildsystem=cmake --sourcedirectory=monitor --builddirectory=monitor-build -- \
+		-Dftxui_DIR=/usr/lib/cmake/ftxui \
+		-DQt6_DIR=/usr/lib/$(DEB_HOST_MULTIARCH)/cmake/Qt6 \
+		-DNYMEA_USE_SYSTEM_FTXUI=ON \
+		-DNYMEA_ALLOW_FETCHCONTENT_FTXUI=OFF
+
+override_dh_auto_build:
+	dh_auto_build --buildsystem=qmake6 --parallel
+	dh_auto_build --buildsystem=cmake --sourcedirectory=monitor --builddirectory=monitor-build --parallel
+
+override_dh_auto_install: $(PREPROCESS_FILES:.in=)
+	dh_auto_install --buildsystem=qmake6
+	dh_auto_install --buildsystem=cmake --sourcedirectory=monitor --builddirectory=monitor-build
 	dh_install
 
 # Note that this is the default with compat level 12.
@@ -20,7 +39,8 @@ override_dh_missing:
 	dh_missing --list-missing
 
 override_dh_auto_clean:
-	dh_auto_clean
+	dh_auto_clean --buildsystem=qmake6
+	dh_auto_clean --buildsystem=cmake --sourcedirectory=monitor --builddirectory=monitor-build
 	rm -rf $(PREPROCESS_FILES:.in=)
 
 override_dh_auto_test:

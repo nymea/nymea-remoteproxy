@@ -29,7 +29,7 @@
 #include <QTimer>
 
 #include "monitorclient.h"
-#include "terminalwindow.h"
+#include "monitorview.h"
 
 class Monitor : public QObject
 {
@@ -38,7 +38,7 @@ public:
     explicit Monitor(const QString &serverName, bool jsonMode, QObject *parent = nullptr);
 
 private:
-    TerminalWindow *m_terminal = nullptr;
+    MonitorView *m_view = nullptr;
     MonitorClient *m_monitorClient = nullptr;
     bool m_jsonMode = false;
     QTimer m_timer;
@@ -46,6 +46,7 @@ private:
 private slots:
     void onConnected();
     void onDisconnected();
+    void onViewQuit();
 
 };
 

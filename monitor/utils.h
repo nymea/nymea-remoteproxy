@@ -49,8 +49,8 @@ public:
         return QString::asprintf("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    inline static QString humanReadableTraffic(int bytes) {
-        double dataCount = bytes;
+    inline static QString humanReadableTraffic(qint64 bytes) {
+        double dataCount = static_cast<double>(bytes);
         QStringList list;
         list << "KB" << "MB" << "GB" << "TB";
 

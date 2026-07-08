@@ -54,10 +54,10 @@ void MonitorClient::setPrintAll(bool printAll)
     m_printAll = printAll;
 }
 
-void MonitorClient::processBufferData()
+void MonitorClient::processBufferData(const QByteArray &message)
 {
     QJsonParseError error;
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(m_dataBuffer, &error);
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(message, &error);
     if(error.error != QJsonParseError::NoError) {
         qWarning() << "Failed to parse JSON data:" << error.errorString();
         return;
@@ -89,18 +89,15 @@ void MonitorClient::onDisconnected()
 void MonitorClient::onReadyRead()
 {
     // Note: the server sends the data compact with "\n" at the end
-    QByteArray data = m_socket->readAll();
+    m_dataBuffer.append(m_socket->readAll());
 
-    int index = data.indexOf("}\n");
-    if (index < 0) {
-        // Append the entire data and continue
-        m_dataBuffer.append(data);
-        return;
-    } else {
-        m_dataBuffer.append(data.left(index + 1));
-        processBufferData();
-        m_dataBuffer.clear();
-        m_dataBuffer.append(data.right(data.length() - index - 2));
+    // Drain every complete message currently in the buffer, not just the first one,
+    // in case more than one refresh reply arrived in a single read.
+    int index;
+    while ((index = m_dataBuffer.indexOf("}\n")) >= 0) {
+        QByteArray message = m_dataBuffer.left(index + 1);
+        m_dataBuffer.remove(0, index + 2);
+        processBufferData(message);
     }
 }
 

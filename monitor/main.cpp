@@ -31,7 +31,7 @@
 
 #include "monitor.h"
 #include "noninteractivemonitor.h"
-#include "../version.h"
+#include "version.h"
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
         Q_UNUSED(monitor);
     } else {
         if (parser.isSet(allOption)) {
-            qWarning() << "Error: The \"all\" option is only available with the non-interavtice mode.";
+            qWarning() << "Error: The \"all\" option is only available with the non-interactive mode.";
             exit(EXIT_FAILURE);
         }
 

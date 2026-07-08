@@ -11,8 +11,10 @@ SERVER_VERSION=$$system('dpkg-parsechangelog | sed -n -e "s/^Version: //p"')
 
 QMAKE_SUBSTITUTES += version.h.in
 
+# Note: monitor/ is a standalone CMake project (see monitor/CMakeLists.txt), not
+# part of this qmake build - it needs FTXUI, which is fetched/built independently.
 TEMPLATE=subdirs
-SUBDIRS += server tunnelclient testutils monitor libnymea-remoteproxy libnymea-remoteproxyclient
+SUBDIRS += server tunnelclient testutils libnymea-remoteproxy libnymea-remoteproxyclient
 
 !disabletests {
     SUBDIRS += tests

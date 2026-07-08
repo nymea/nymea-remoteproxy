@@ -27,8 +27,7 @@
 
 #include <QObject>
 #include <QLocalSocket>
-
-#include "terminalwindow.h"
+#include <QVariantMap>
 
 class MonitorClient : public QObject
 {
@@ -48,7 +47,7 @@ private:
     bool m_printAll = false;
     QByteArray m_dataBuffer;
 
-    void processBufferData();
+    void processBufferData(const QByteArray &message);
 
 signals:
     void connected();
