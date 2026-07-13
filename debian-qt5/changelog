@@ -1,3 +1,10 @@
+nymea-remoteproxy (1.16.0) resolute; urgency=medium
+
+  [ Simon Stürz ]
+  * Rework the monitor using ftxui
+
+ -- jenkins <developer@nymea.io>  Mon, 13 Jul 2026 23:31:58 +0200
+
 nymea-remoteproxy (1.15.2) resolute; urgency=medium
 
 
