@@ -47,12 +47,18 @@ SOURCES += \
     tunnelproxy/tunnelproxyserverconnection.cpp
 
 
-# install header file with relative subdirectory
+# Install header files with relative subdirectory, keeping the public API surface
+# to this library's own headers. common.pri contributes slipdataprocessor.h via an
+# absolute $$PWD path (its own directory, not this one) -- it is compiled directly
+# into this library and was never a public header, so skip anything not given as a
+# path relative to this .pro file.
 for (header, HEADERS) {
-    path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxy/$${dirname(header)}
-    eval(headers_$${path}.files += $${header})
-    eval(headers_$${path}.path = $${path})
-    eval(INSTALLS *= headers_$${path})
+    !contains(header, ^/.*) {
+        path = $$[QT_INSTALL_PREFIX]/include/nymea-remoteproxy/$${dirname(header)}
+        eval(headers_$${path}.files += $${header})
+        eval(headers_$${path}.path = $${path})
+        eval(INSTALLS *= headers_$${path})
+    }
 }
 
 target.path = $$[QT_INSTALL_LIBS]
